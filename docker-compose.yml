@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: bdms-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bdms
+    volumes:
+      - bdms-db-data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: bdms-backend
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/bdms
+      PORT: 5001
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/prisma/generated
+
+  frontend:
+    build: ./frontend
+    container_name: bdms-frontend
+    ports:
+      - "5002:5002"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  bdms-db-data:
