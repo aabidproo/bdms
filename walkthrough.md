@@ -36,11 +36,40 @@ I have set up the following branches:
 
 Developers should work on their respective branches (`shiwen`/`heman`), push changes, and then create PRs to `development`. After PM review, `development` is merged into `main`.
 
-## Verification Results
+## Developer Guide
 
-- **Backend API**: `http://localhost:5001` returns a welcome message.
-- **Health Check**: `http://localhost:5001/health` confirms database connectivity.
-- **Frontend App**: `http://localhost:5002` displays the "Hello World" page and fetches data from the backend.
+### 1. Getting Started
+```bash
+# Clone the repository
+git clone https://github.com/aabidproo/bdms.git
+cd bdms
+
+# Start the environment
+docker-compose up -d --build
+```
+
+### 2. Working on Features
+1. **Switch to your branch**:
+   ```bash
+   git checkout <your-name> # e.g., git checkout shiwen
+   ```
+2. **Make changes and commit**:
+   ```bash
+   git add .
+   git commit -m "feat: Add new feature"
+   ```
+3. **Push to your branch**:
+   ```bash
+   git push origin <your-name>
+   ```
+
+### 3. Merging to Development
+When your feature is ready, create a Pull Request (PR) from your branch to `development` on GitHub.
+
+### 4. Viewing the App
+- **Frontend**: `http://localhost:5002`
+- **Backend API**: `http://localhost:5001`
+- **Health Check**: `http://localhost:5001/health`
 
 > [!IMPORTANT]
 > The setup uses ports **5001, 5002, and 5433** to avoid conflict with your other project (Sambandha).
