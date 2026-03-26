@@ -26,6 +26,16 @@ Your team can start the project by running:
 docker-compose up -d --build
 ```
 
+## Git Branching Strategy
+
+I have set up the following branches:
+- `main`: Clean branch with a README pointing to `development`.
+- `development`: Primary integration branch containing all project code.
+- `shiwen`: Developer branch (baselined from `development`).
+- `heman`: Developer branch (baselined from `development`).
+
+Developers should work on their respective branches (`shiwen`/`heman`), push changes, and then create PRs to `development`. After PM review, `development` is merged into `main`.
+
 ## Verification Results
 
 - **Backend API**: `http://localhost:5001` returns a welcome message.
