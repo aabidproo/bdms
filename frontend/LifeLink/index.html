@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeLink - Blood Donation Platform</title>
+    
+    <!-- Google Fonts for clean sans-serif typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    
+    <!-- Essential custom logic CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="antialiased selection:bg-indigo-300 selection:text-indigo-900">
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-[#b11e28] backdrop-blur-xl border-b border-red-900/30 shadow-md py-3 px-6 md:px-12 flex justify-between items-center w-full">
+        <a href="#" class="logo text-2xl font-bold text-white tracking-tight flex items-center gap-3 transition hover:text-white/90" data-target="home">
+            <img src="../photos/January is National Blood Donor Month - Blood Donations Needed!.jfif" alt="LifeLink Logo" class="h-10 w-10 object-cover rounded-xl shadow-sm border border-white/20">
+            <span class="text-xl font-extrabold tracking-tight">LifeLink</span>
+        </a>
+        <div class="nav-links hidden md:flex items-center gap-8 font-medium">
+            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide" data-target="home">Home</a>
+            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Find Blood</a>
+            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">About Us</a>
+            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Donors</a>
+            <button class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95" data-target="login">
+                Portal Login
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page 1: Home Page (Landing) -->
+    <section id="home" class="page-section active">
+
+        <!-- Hero Section -->
+        <div class="relative overflow-hidden">
+            <!-- Subtle background pattern -->
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-white"></div>
+            <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-rose-100/40 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+            <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-indigo-100/40 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
+
+            <div class="relative max-w-6xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28">
+                <div class="text-center max-w-3xl mx-auto">
+                    <!-- Urgent Badge -->
+                    <div class="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-rose-50 border border-rose-200/60 mb-8 animate-badge-pulse">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                        </span>
+                        <span class="text-rose-700 font-semibold text-xs tracking-wide uppercase">Urgent: O- Negative donors needed</span>
+                    </div>
+
+                    <!-- Main Heading -->
+                    <h1 class="text-5xl md:text-[4.25rem] font-black text-gray-900 tracking-tight leading-[1.1] mb-6">
+                        Donate Blood,<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-rose-600 to-indigo-600">Save Lives Today</span>
+                    </h1>
+
+                    <!-- Subtitle -->
+                    <p class="text-lg md:text-xl text-gray-500 leading-relaxed max-w-2xl mx-auto mb-10 font-medium">
+                        Join thousands of heroes in our mission. A single donation can save up to <strong class="text-gray-700">three lives</strong>. Register today and make a difference.
+                    </p>
+
+                    <!-- Search Bar -->
+                    <div class="max-w-xl mx-auto mb-10 relative group">
+                        <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                        </div>
+                        <input type="text" placeholder="Search blood banks, drives, or facilities..." class="w-full pl-12 pr-6 py-4 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-gray-200/40 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all text-base placeholder-gray-400 font-medium">
+                    </div>
+
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button class="group bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-8 py-4 rounded-2xl font-bold text-base hover:shadow-xl hover:shadow-indigo-600/25 transition-all active:scale-[0.97] hover:-translate-y-0.5" onclick="navigateTo('login'); document.getElementById('login').classList.add('sign-up-active');">
+                            Register as Donor
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <button class="bg-white text-gray-700 border border-gray-200 px-8 py-4 rounded-2xl font-bold text-base hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg transition-all active:scale-[0.97] hover:-translate-y-0.5" onclick="navigateTo('login'); document.getElementById('login').classList.add('sign-up-active');">
+                            Request Registration
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto animate-fade-in-up" style="animation-delay: 0.3s;">
+                    <div class="text-center p-4">
+                        <div class="text-3xl md:text-4xl font-black text-gray-900 mb-1">10K<span class="text-indigo-500">+</span></div>
+                        <div class="text-sm text-gray-500 font-medium">Active Donors</div>
+                    </div>
+                    <div class="text-center p-4">
+                        <div class="text-3xl md:text-4xl font-black text-gray-900 mb-1">500<span class="text-indigo-500">+</span></div>
+                        <div class="text-sm text-gray-500 font-medium">Hospitals</div>
+                    </div>
+                    <div class="text-center p-4">
+                        <div class="text-3xl md:text-4xl font-black text-gray-900 mb-1">50K<span class="text-indigo-500">+</span></div>
+                        <div class="text-sm text-gray-500 font-medium">Lives Saved</div>
+                    </div>
+                    <div class="text-center p-4">
+                        <div class="text-3xl md:text-4xl font-black text-gray-900 mb-1">24<span class="text-indigo-500">/7</span></div>
+                        <div class="text-sm text-gray-500 font-medium">Support</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="max-w-6xl mx-auto px-6 pb-20">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card-animate group bg-white p-8 rounded-3xl border border-gray-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 cursor-default relative overflow-hidden" style="animation-delay: 0.1s;">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-3xl"></div>
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                        <i class="fas fa-clipboard-list text-xl"></i>
+                    </div>
+                    <span class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2 block">Step 1</span>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Quick Registration</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">Register in just a few minutes through our streamlined portal and immediately become a hero in your community.</p>
+                </div>
+                <div class="card-animate group bg-white p-8 rounded-3xl border border-gray-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 cursor-default relative overflow-hidden" style="animation-delay: 0.2s;">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-indigo-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-3xl"></div>
+                    <div class="w-14 h-14 bg-gradient-to-br from-indigo-50 to-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                        <i class="fas fa-calendar-check text-xl"></i>
+                    </div>
+                    <span class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2 block">Step 2</span>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Smart Scheduling</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">Book your donation slot at a time and facility that suits you best using our intelligent scheduling engine.</p>
+                </div>
+                <div class="card-animate group bg-white p-8 rounded-3xl border border-gray-100 hover:border-rose-100 hover:shadow-xl hover:shadow-rose-100/40 transition-all duration-300 cursor-default relative overflow-hidden" style="animation-delay: 0.3s;">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-rose-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-t-3xl"></div>
+                    <div class="w-14 h-14 bg-gradient-to-br from-rose-50 to-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                        <i class="fas fa-heartbeat text-xl"></i>
+                    </div>
+                    <span class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-2 block">Step 3</span>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Save 3 Lives</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">A single pint of blood can be separated into components to save up to three individual lives.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="bg-gray-50/60 border-y border-gray-100">
+            <div class="max-w-5xl mx-auto px-6 py-20">
+                <div class="text-center mb-14">
+                    <span class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-3 block">Process</span>
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">How It Works</h2>
+                    <p class="text-gray-500 mt-3 max-w-lg mx-auto">From registration to saving lives — our streamlined process makes donating blood simple and rewarding.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                    <!-- Connecting line (desktop only) -->
+                    <div class="hidden md:block absolute top-12 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent"></div>
+
+                    <div class="text-center relative animate-fade-in-up" style="animation-delay: 0.1s;">
+                        <div class="w-16 h-16 mx-auto bg-white border-2 border-indigo-200 text-indigo-600 rounded-full flex items-center justify-center mb-5 text-xl font-black shadow-sm relative z-10">1</div>
+                        <h4 class="text-base font-bold text-gray-900 mb-2">Create Your Profile</h4>
+                        <p class="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">Sign up with your details and verify your identity through our secure portal.</p>
+                    </div>
+                    <div class="text-center relative animate-fade-in-up" style="animation-delay: 0.25s;">
+                        <div class="w-16 h-16 mx-auto bg-white border-2 border-indigo-200 text-indigo-600 rounded-full flex items-center justify-center mb-5 text-xl font-black shadow-sm relative z-10">2</div>
+                        <h4 class="text-base font-bold text-gray-900 mb-2">Schedule Donation</h4>
+                        <p class="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">Pick a time, date and nearby facility that fits your schedule. We handle the rest.</p>
+                    </div>
+                    <div class="text-center relative animate-fade-in-up" style="animation-delay: 0.4s;">
+                        <div class="w-16 h-16 mx-auto bg-white border-2 border-indigo-200 text-indigo-600 rounded-full flex items-center justify-center mb-5 text-xl font-black shadow-sm relative z-10">3</div>
+                        <h4 class="text-base font-bold text-gray-900 mb-2">Donate & Save Lives</h4>
+                        <p class="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">Visit the center, donate safely, and track the impact of your life-saving contribution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-100">
+            <div class="max-w-6xl mx-auto px-6 py-12">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <img src="../photos/January is National Blood Donor Month - Blood Donations Needed!.jfif" alt="LifeLink" class="h-8 w-8 object-cover rounded-lg">
+                        <span class="text-base font-bold text-gray-900">LifeLink</span>
+                    </div>
+                    <div class="flex items-center gap-6 text-sm text-gray-500 font-medium">
+                        <a href="#" class="hover:text-indigo-600 transition-colors">Privacy Policy</a>
+                        <a href="#" class="hover:text-indigo-600 transition-colors">Terms of Service</a>
+                        <a href="#" class="hover:text-indigo-600 transition-colors">Contact</a>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-indigo-100 hover:text-indigo-600 transition-all text-sm">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-indigo-100 hover:text-indigo-600 transition-all text-sm">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-indigo-100 hover:text-indigo-600 transition-all text-sm">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <p class="text-xs text-gray-400">&copy; 2026 LifeLink Blood Donation Platform. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </section>
+
+    <!-- Page 2: Auth Portal (Sliding Sign In / Sign Up) -->
+    <section id="login" class="page-section h-[calc(100vh-72px)] overflow-hidden w-full group/auth transition-all">
+        <div class="relative w-full h-full flex overflow-hidden bg-gray-900">
+            
+            <!-- Full Screen Image Panel Backgrounds -->
+            <div class="absolute inset-0 w-full h-full z-10 transition-transform duration-300 ease-out">
+                <!-- Sign In Background Image -->
+                <div class="absolute inset-0 bg-cover bg-center transition-all duration-300 ease-out group-[.sign-up-active]/auth:opacity-0 group-[.sign-up-active]/auth:scale-[1.02] transform-gpu will-change-transform will-change-opacity" style="background-image: url('../Photos/pexels-charliehelenrobinson-4531307.jpg');">
+                    <div class="absolute inset-0 bg-blue-900/40"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-900/50 via-gray-900/20 to-gray-900/50 w-full h-full block"></div>
+                </div>
+                
+                <!-- Sign Up Background Image -->
+                <div class="absolute inset-0 bg-cover bg-center transition-all duration-300 ease-out opacity-0 scale-[1.02] group-[.sign-up-active]/auth:opacity-100 group-[.sign-up-active]/auth:scale-100 transform-gpu will-change-transform will-change-opacity" style="background-image: url('../Photos/pexels-cais-4680222.jpg');">
+                    <div class="absolute inset-0 bg-indigo-900/40"></div>
+                    <div class="absolute inset-0 bg-gradient-to-l from-gray-900/50 via-gray-900/20 to-gray-900/50 w-full h-full block"></div>
+                </div>
+            </div>
+
+            <!-- Floating Sliding Form Panel Wrapper (40% width on md) -->
+            <div class="absolute top-0 left-0 w-full md:w-[40%] h-full z-20 bg-transparent transition-transform duration-300 ease-out transform-gpu will-change-transform group-[.sign-up-active]/auth:translate-x-[150%] flex items-center justify-center p-4 sm:p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div class="relative w-full max-w-md h-[640px]">
+                    
+                    <!-- Sign In Floating Card -->
+                    <div class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out group-[.sign-up-active]/auth:opacity-0 group-[.sign-up-active]/auth:pointer-events-none z-20 will-change-opacity">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div class="text-center mb-8">
+                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-50 text-gray-700 mb-4 border border-gray-200 shadow-sm">
+                                    <i class="fas fa-lock text-2xl"></i>
+                                </div>
+                                <h2 class="text-3xl font-extrabold text-gray-900">Clinical Portal</h2>
+                                <p class="text-base text-gray-500 mt-2">Sign in to manage patient records</p>
+                            </div>
+                            <form id="login-form-inner" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                                    <input type="email" placeholder="doctor@facility.org" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
+                                    <input type="password" placeholder="••••••••" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                </div>
+                                <div class="flex items-center justify-between pt-2">
+                                    <label class="flex items-center gap-2 cursor-pointer group">
+                                        <input type="checkbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300 transition-all"> 
+                                        <span class="text-sm font-medium text-gray-500 group-hover:text-gray-800 transition-colors">Keep me signed in</span>
+                                    </label>
+                                    <a href="#" class="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">Forgot Password?</a>
+                                </div>
+                                <button type="button" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
+                                    Sign In <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="text-center pt-6 border-t border-gray-100/60 mt-auto">
+                            <p class="text-sm text-gray-500">Don't have an account? <button type="button" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleAuthMode()">Sign Up / Register</button></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Sign Up Floating Card (Compact Wizard) -->
+                    <div class="absolute inset-0 w-full h-full flex flex-col justify-between bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out opacity-0 pointer-events-none group-[.sign-up-active]/auth:opacity-100 group-[.sign-up-active]/auth:pointer-events-auto z-10 will-change-opacity">
+                        <div class="text-center mb-4">
+                            <h2 class="text-2xl font-extrabold text-gray-900">Registration Workspace</h2>
+                            <p class="text-sm text-indigo-600 font-bold mt-2 pb-4 border-b border-gray-100/50">Step <span id="auth-current-step">1</span> of 2</p>
+                        </div>
+                        
+                        <!-- Wizard Step 1 -->
+                        <div id="auth-step-1" class="flex-1 flex flex-col justify-center space-y-4 block">
+                            <div>
+                                <input type="email" id="reg-email" placeholder="Email Address" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="password" id="reg-password" placeholder="Password" required class="w-full sm:w-1/2 px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
+                                <input type="password" id="reg-confirm" placeholder="Confirm Password" required class="w-full sm:w-1/2 px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
+                            </div>
+                            
+                            <div class="pt-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">I am joining as a...</label>
+                                <div class="flex gap-4">
+                                    <div class="flex-1 auth-role-card bg-white border-2 border-gray-100 rounded-2xl p-5 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/50 shadow-sm transition-all" data-role="donor" onclick="selectAuthRole('donor')">
+                                        <i class="fas fa-hand-holding-heart text-4xl text-gray-400 mb-3 drop-shadow-sm"></i>
+                                        <h4 class="text-base font-bold text-gray-900">Donor</h4>
+                                    </div>
+                                    <div class="flex-1 auth-role-card bg-white border-2 border-gray-100 rounded-2xl p-5 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/50 shadow-sm transition-all" data-role="recipient" onclick="selectAuthRole('recipient')">
+                                        <i class="fas fa-procedures text-4xl text-gray-400 mb-3 drop-shadow-sm"></i>
+                                        <h4 class="text-base font-bold text-gray-900">Recipient</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base" onclick="nextAuthStep()">
+                                Continue <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+
+                        <!-- Wizard Step 2 -->
+                        <div id="auth-step-2" class="flex-1 flex flex-col justify-center space-y-4 hidden">
+                            <div class="bg-blue-50/60 p-5 rounded-2xl border border-blue-100 shadow-sm">
+                                <label class="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">Government ID</label>
+                                <input type="file" class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-blue-200 file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer text-gray-500 transition-all bg-white rounded-xl h-[42px]">
+                            </div>
+                            <div class="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+                                <label class="block text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2">Medical Records (Optional)</label>
+                                <input type="file" class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-indigo-200 file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer text-gray-500 transition-all bg-white rounded-xl h-[42px]">
+                            </div>
+                            
+                            <div class="bg-gray-50/80 p-5 rounded-2xl border border-gray-200 space-y-3 shadow-sm">
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Are you between 18 and 65 years old?</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Do you weigh more than 50kg (110 lbs)?</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Are you in generally good health?</span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex gap-3 mt-4">
+                                <button type="button" class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 shadow-sm transition-all active:scale-[0.98] text-base" onclick="prevAuthStep()">Back</button>
+                                <button type="button" id="final-register-btn" disabled class="w-2/3 bg-indigo-600 text-white font-bold py-3.5 rounded-xl transition-all text-base opacity-50 cursor-not-allowed" onclick="completeRegistration()">
+                                    Register <i class="fas fa-check ml-2"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Registration Success -->
+                        <div id="auth-success" class="flex-1 flex flex-col justify-center items-center space-y-5 hidden py-10">
+                            <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-4xl text-green-500"></i>
+                            </div>
+                            <h3 class="text-2xl font-extrabold text-gray-900">Account Verified!</h3>
+                            <p class="text-sm text-gray-500 text-center px-4">Your clinical profile is ready and authenticated. You can now access core database systems.</p>
+                            <button class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition-all text-base mt-4 shadow-lg shadow-green-500/30" onclick="navigateTo('home'); toggleAuthMode(); resetAuthWizard();">
+                                Proceed to Dashboard
+                            </button>
+                        </div>
+
+                        <div id="auth-footer-toggle" class="text-center mt-auto pt-5 border-t border-gray-100/50 block">
+                            <p class="text-sm text-gray-500">Already have an account? <button type="button" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleAuthMode()">Sign In</button></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- JS Logic -->
+    <script src="script.js"></script>
+</body>
+</html>
