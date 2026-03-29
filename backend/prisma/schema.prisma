@@ -1,0 +1,66 @@
+// LifeLink - Prisma Schema
+// Blood Donation Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User Model ─────────────────────────────────────────
+// Note: SQLite doesn't support native enums.
+// Role values (DONOR, RECIPIENT, ADMIN) are validated 
+// at the application level via Zod.
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // DONOR | RECIPIENT | ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1:1 Relations
+  donorProfile     DonorProfile?
+  recipientProfile RecipientProfile?
+}
+
+// ─── Donor Profile (1:1 with User) ──────────────────────
+
+model DonorProfile {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  phone            String
+  dateOfBirth      DateTime
+  gender           String
+  address          String
+  bloodType        String
+  weight           Float
+  lastDonationDate DateTime?
+  medicalCondition String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ─── Recipient Profile (1:1 with User) ──────────────────
+
+model RecipientProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  phone            String
+  address          String
+  bloodType        String
+  medicalCondition String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
