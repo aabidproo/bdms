@@ -226,7 +226,7 @@
 
             <!-- Floating Sliding Form Panel Wrapper (40% width on md) -->
             <div class="absolute top-0 left-0 w-full md:w-[40%] h-full z-20 bg-transparent transition-transform duration-300 ease-out transform-gpu will-change-transform group-[.sign-up-active]/auth:translate-x-[150%] flex items-center justify-center p-4 sm:p-8 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                <div class="relative w-full max-w-md h-[720px]">
+                <div class="relative w-full max-w-md h-[640px]">
                     
                     <!-- Sign In Floating Card -->
                     <div class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out group-[.sign-up-active]/auth:opacity-0 group-[.sign-up-active]/auth:pointer-events-none z-20 will-change-opacity">
@@ -238,19 +238,14 @@
                                 <h2 class="text-3xl font-extrabold text-gray-900">Clinical Portal</h2>
                                 <p class="text-base text-gray-500 mt-2">Sign in to manage patient records</p>
                             </div>
-                            <!-- Login Error Box -->
-                            <div id="login-error-box" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
-                                <i class="fas fa-exclamation-circle mt-0.5"></i>
-                                <span id="login-error-text">An error occurred</span>
-                            </div>
-                            <form id="login-form-inner" class="space-y-4" onsubmit="handleLogin(event)">
+                            <form id="login-form-inner" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
-                                    <input type="email" id="login-email" placeholder="user@facility.org" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                    <input type="email" placeholder="doctor@facility.org" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
-                                    <input type="password" id="login-password" placeholder="••••••••" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                    <input type="password" placeholder="••••••••" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
                                 </div>
                                 <div class="flex items-center justify-between pt-2">
                                     <label class="flex items-center gap-2 cursor-pointer group">
@@ -259,7 +254,7 @@
                                     </label>
                                     <a href="#" class="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">Forgot Password?</a>
                                 </div>
-                                <button type="submit" id="login-btn" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
+                                <button type="button" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
                                     Sign In <i class="fas fa-arrow-right"></i>
                                 </button>
                             </form>
@@ -273,13 +268,7 @@
                     <div class="absolute inset-0 w-full h-full flex flex-col justify-between bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out opacity-0 pointer-events-none group-[.sign-up-active]/auth:opacity-100 group-[.sign-up-active]/auth:pointer-events-auto z-10 will-change-opacity">
                         <div class="text-center mb-4">
                             <h2 class="text-2xl font-extrabold text-gray-900">Registration Workspace</h2>
-                            <p class="text-sm text-indigo-600 font-bold mt-2 pb-4 border-b border-gray-100/50">Step <span id="auth-current-step">1</span> of <span id="auth-total-steps">3</span></p>
-                        </div>
-                        
-                        <!-- Error Message Box -->
-                        <div id="auth-error-box" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
-                            <i class="fas fa-exclamation-circle mt-0.5"></i>
-                            <span id="auth-error-text">An error occurred</span>
+                            <p class="text-sm text-indigo-600 font-bold mt-2 pb-4 border-b border-gray-100/50">Step <span id="auth-current-step">1</span> of 2</p>
                         </div>
                         
                         <!-- Wizard Step 1 -->
@@ -311,68 +300,33 @@
                             </button>
                         </div>
 
-                        <!-- Wizard Step 2 (All Roles) -->
-                        <div id="auth-step-2" class="flex-1 flex flex-col justify-start space-y-3 hidden">
-                            <div>
-                                <input type="text" id="reg-name" placeholder="Full Name" required class="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
+                        <!-- Wizard Step 2 -->
+                        <div id="auth-step-2" class="flex-1 flex flex-col justify-center space-y-4 hidden">
+                            <div class="bg-blue-50/60 p-5 rounded-2xl border border-blue-100 shadow-sm">
+                                <label class="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">Government ID</label>
+                                <input type="file" class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-blue-200 file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer text-gray-500 transition-all bg-white rounded-xl h-[42px]">
                             </div>
-                            <div class="flex gap-3">
-                                <input type="tel" id="reg-phone" placeholder="Phone Number" required class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-blood" required class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Blood Type</option>
-                                    <option value="A+">A+</option><option value="A-">A-</option>
-                                    <option value="B+">B+</option><option value="B-">B-</option>
-                                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                                    <option value="O+">O+</option><option value="O-">O-</option>
-                                </select>
+                            <div class="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+                                <label class="block text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2">Medical Records (Optional)</label>
+                                <input type="file" class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-indigo-200 file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer text-gray-500 transition-all bg-white rounded-xl h-[42px]">
                             </div>
-                            <div>
-                                <input type="text" id="reg-address" placeholder="Full Address" required class="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
-                            </div>
-                            <div>
-                                <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)" class="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
-                            </div>
-
-                            <div class="flex gap-3 mt-auto pt-4">
-                                <button type="button" class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 shadow-sm transition-all active:scale-[0.98] text-base" onclick="prevAuthStep()">Back</button>
-                                <button type="button" id="step-2-next-btn" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base" onclick="nextAuthStep()">
-                                    Continue <i class="fas fa-arrow-right ml-2"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Wizard Step 3 (Donor Only) -->
-                        <div id="auth-step-3" class="flex-1 flex flex-col justify-start space-y-3 hidden">
-                            <div class="flex gap-3">
-                                <input type="date" id="reg-dob" required class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm text-gray-500">
-                                <select id="reg-gender" required class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Gender</option>
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-3">
-                                <input type="number" id="reg-weight" placeholder="Weight (kg)" required class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm">
-                                <input type="date" id="reg-last-donation" title="Last Donation Date (Optional)" class="w-1/2 px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 text-sm text-gray-500">
-                            </div>
-
-                            <div class="bg-gray-50/80 p-3 rounded-xl border border-gray-200 space-y-2 shadow-sm mt-2">
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
-                                    <span class="text-[13px] font-medium text-gray-700">Between 18 and 65 years old?</span>
+                            
+                            <div class="bg-gray-50/80 p-5 rounded-2xl border border-gray-200 space-y-3 shadow-sm">
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Are you between 18 and 65 years old?</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
-                                    <span class="text-[13px] font-medium text-gray-700">Weigh more than 50kg (110 lbs)?</span>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Do you weigh more than 50kg (110 lbs)?</span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
-                                    <span class="text-[13px] font-medium text-gray-700">In generally good health?</span>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" class="eligibility-check w-5 h-5 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300" onchange="checkEligibility()"> 
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Are you in generally good health?</span>
                                 </label>
                             </div>
                             
-                            <div class="flex gap-3 mt-auto pt-4">
+                            <div class="flex gap-3 mt-4">
                                 <button type="button" class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 shadow-sm transition-all active:scale-[0.98] text-base" onclick="prevAuthStep()">Back</button>
                                 <button type="button" id="final-register-btn" disabled class="w-2/3 bg-indigo-600 text-white font-bold py-3.5 rounded-xl transition-all text-base opacity-50 cursor-not-allowed" onclick="completeRegistration()">
                                     Register <i class="fas fa-check ml-2"></i>
@@ -385,10 +339,10 @@
                             <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
                                 <i class="fas fa-check text-4xl text-green-500"></i>
                             </div>
-                            <h3 class="text-2xl font-extrabold text-gray-900">Registration Successful!</h3>
-                            <p class="text-sm text-gray-500 text-center px-4">Your profile is ready and authenticated. You can now log into the portal to manage your health records.</p>
+                            <h3 class="text-2xl font-extrabold text-gray-900">Account Verified!</h3>
+                            <p class="text-sm text-gray-500 text-center px-4">Your clinical profile is ready and authenticated. You can now access core database systems.</p>
                             <button class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition-all text-base mt-4 shadow-lg shadow-green-500/30" onclick="navigateTo('home'); toggleAuthMode(); resetAuthWizard();">
-                                Proceed to Portal
+                                Proceed to Dashboard
                             </button>
                         </div>
 
@@ -401,89 +355,7 @@
         </div>
     </section>
 
-    <!-- Page 3: Donor Dashboard -->
-    <section id="donor-dashboard" class="page-section bg-gradient-to-br from-gray-50 to-gray-100 min-h-[calc(100vh-72px)] py-12 px-6">
-        <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-rose-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div class="flex justify-between items-start mb-8 relative z-10 border-b border-gray-100 pb-6">
-                <div>
-                    <span class="text-xs font-bold text-rose-500 uppercase tracking-widest mb-1 block">Donor Portal</span>
-                    <h2 class="text-3xl font-extrabold text-gray-900">Welcome, <span id="donor-name-display" class="text-indigo-600">User</span>!</h2>
-                </div>
-                <button class="bg-gray-100 text-gray-600 hover:text-red-600 hover:bg-red-50 px-5 py-2.5 rounded-xl font-bold text-sm transition-all" onclick="logout()">
-                    Logout <i class="fas fa-sign-out-alt ml-1"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
-                    <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xl shadow-sm">
-                        <i class="fas fa-tint"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">Your Blood Type</p>
-                        <p id="donor-blood-display" class="text-2xl font-black text-gray-900">N/A</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Page 4: Recipient Dashboard -->
-    <section id="recipient-dashboard" class="page-section bg-gradient-to-br from-gray-50 to-gray-100 min-h-[calc(100vh-72px)] py-12 px-6">
-        <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div class="flex justify-between items-start mb-8 relative z-10 border-b border-gray-100 pb-6">
-                <div>
-                    <span class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1 block">Recipient Portal</span>
-                    <h2 class="text-3xl font-extrabold text-gray-900">Welcome, <span id="recipient-name-display" class="text-rose-600">User</span>!</h2>
-                </div>
-                <button class="bg-gray-100 text-gray-600 hover:text-red-600 hover:bg-red-50 px-5 py-2.5 rounded-xl font-bold text-sm transition-all" onclick="logout()">
-                    Logout <i class="fas fa-sign-out-alt ml-1"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
-                    <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xl shadow-sm">
-                        <i class="fas fa-procedures"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">Required Blood Type</p>
-                        <p id="recipient-blood-display" class="text-2xl font-black text-gray-900">N/A</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Page 5: Admin Dashboard -->
-    <section id="admin-dashboard" class="page-section bg-gradient-to-br from-gray-50 to-gray-100 min-h-[calc(100vh-72px)] py-12 px-6">
-        <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-gray-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div class="flex justify-between items-start mb-8 relative z-10 border-b border-gray-100 pb-6">
-                <div>
-                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">Administrator</span>
-                    <h2 class="text-3xl font-extrabold text-gray-900">Welcome, Administrator</h2>
-                </div>
-                <button class="bg-gray-100 text-gray-600 hover:text-red-600 hover:bg-red-50 px-5 py-2.5 rounded-xl font-bold text-sm transition-all" onclick="logout()">
-                    Logout <i class="fas fa-sign-out-alt ml-1"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
-                    <div class="w-14 h-14 bg-gray-200 text-gray-700 rounded-full flex items-center justify-center text-xl shadow-sm">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 font-medium">Total System Users</p>
-                        <p class="text-2xl font-black text-gray-900">1,204</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- JS Logic -->
     <script src="script.js"></script>
