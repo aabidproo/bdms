@@ -461,6 +461,14 @@ function logout() {
 }
 
 function checkAuthOnLoad() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+    if (resetToken) {
+        navigateTo('login');
+        showResetBlock();
+        return;
+    }
+
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
@@ -535,3 +543,160 @@ function escapeHtml(unsafe) {
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
 }
+
+// === Forgot & Reset Password Logic ===
+function showForgotBlock(e) {
+    if (e) e.preventDefault();
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.remove('hidden');
+    hideForgotError();
+    hideForgotSuccess();
+}
+
+function showSignInBlock() {
+    document.getElementById('auth-signin-card').classList.remove('hidden');
+    document.getElementById('auth-signup-card').classList.remove('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('login').classList.remove('sign-up-active');
+}
+
+function showResetBlock() {
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.remove('hidden');
+    hideResetError();
+    hideResetSuccess();
+}
+
+function showForgotError(msg) {
+    const errorBox = document.getElementById('forgot-error-box');
+    const errorText = document.getElementById('forgot-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('forgot-success-box').classList.add('hidden');
+}
+
+function hideForgotError() {
+    document.getElementById('forgot-error-box').classList.add('hidden');
+}
+
+function showForgotSuccess(msg) {
+    const successBox = document.getElementById('forgot-success-box');
+    const successText = document.getElementById('forgot-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('forgot-error-box').classList.add('hidden');
+}
+
+function hideForgotSuccess() {
+    document.getElementById('forgot-success-box').classList.add('hidden');
+}
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    hideForgotError();
+    hideForgotSuccess();
+    
+    const email = document.getElementById('forgot-email').value;
+    const btn = document.getElementById('forgot-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showForgotSuccess(data.message);
+        document.getElementById('forgot-form').reset();
+    } catch (error) {
+        showForgotError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+function showResetError(msg) {
+    const errorBox = document.getElementById('reset-error-box');
+    const errorText = document.getElementById('reset-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('reset-success-box').classList.add('hidden');
+}
+
+function hideResetError() {
+    document.getElementById('reset-error-box').classList.add('hidden');
+}
+
+function showResetSuccess(msg) {
+    const successBox = document.getElementById('reset-success-box');
+    const successText = document.getElementById('reset-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('reset-error-box').classList.add('hidden');
+}
+
+function hideResetSuccess() {
+    document.getElementById('reset-success-box').classList.add('hidden');
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    hideResetError();
+    hideResetSuccess();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (!token) return showResetError('No reset token found in URL.');
+    
+    const newPassword = document.getElementById('reset-password').value;
+    const confirmPassword = document.getElementById('reset-confirm').value;
+    
+    if (newPassword !== confirmPassword) {
+        return showResetError('Passwords do not match.');
+    }
+    
+    const btn = document.getElementById('reset-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showResetSuccess(data.message);
+        document.getElementById('reset-form').reset();
+        
+        // Remove token from URL and redirect to login after 2 seconds
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showSignInBlock();
+        }, 2000);
+        
+    } catch (error) {
+        showResetError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+

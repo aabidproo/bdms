@@ -21,8 +21,10 @@ model User {
   password  String
   name      String
   role      String   // DONOR | RECIPIENT | ADMIN
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  resetToken       String?  @unique
+  resetTokenExpiry DateTime?
 
   // 1:1 Relations
   donorProfile     DonorProfile?
