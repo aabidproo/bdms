@@ -7,7 +7,38 @@ const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
 const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
+const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
+
 function navigateTo(targetId) {
+    // Route & Role Protection
+    if (DASHBOARD_ROUTES.includes(targetId)) {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        if (!token || !userStr) {
+            targetId = 'login';
+        } else {
+            try {
+                const user = JSON.parse(userStr);
+                const role = user.role;
+                let expectedDash = '';
+                if (role === 'DONOR') expectedDash = 'donor-dashboard';
+                else if (role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
+                else if (role === 'ADMIN') expectedDash = 'admin-dashboard';
+                
+                if (targetId !== expectedDash && expectedDash !== '') {
+                    targetId = expectedDash;
+                }
+            } catch (e) {
+                logout();
+                return;
+            }
+        }
+    }
+
+    if (targetId === 'admin-dashboard' && localStorage.getItem('token')) {
+        fetchAdminUsers();
+    }
+
     pageSections.forEach(section => {
         section.classList.remove('active');
     });
@@ -379,6 +410,7 @@ async function handleLogin(e) {
 
 function routeUserToDashboard(user) {
     if (!user || !user.role) return;
+    updateNav(user);
     
     // Default blood type for non-admins
     const bloodTypeStr = user.donorProfile?.bloodType || user.recipientProfile?.bloodType || 'Unknown';
@@ -402,9 +434,27 @@ function routeUserToDashboard(user) {
     }
 }
 
+function updateNav(user) {
+    const navUserContainer = document.getElementById('nav-user-container');
+    const navLoginBtn = document.getElementById('nav-login-btn');
+    const navUserName = document.getElementById('nav-user-name');
+    
+    if (user && navUserContainer && navLoginBtn && navUserName) {
+        navUserName.textContent = user.name;
+        navLoginBtn.classList.add('hidden');
+        navUserContainer.classList.remove('hidden');
+        navUserContainer.classList.add('flex');
+    } else if (navUserContainer && navLoginBtn) {
+        navLoginBtn.classList.remove('hidden');
+        navUserContainer.classList.add('hidden');
+        navUserContainer.classList.remove('flex');
+    }
+}
+
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    updateNav(null);
     navigateTo('login');
     const loginSec = document.getElementById('login');
     if (loginSec) loginSec.classList.remove('sign-up-active');
@@ -419,11 +469,69 @@ function checkAuthOnLoad() {
             const user = JSON.parse(userStr);
             routeUserToDashboard(user);
         } catch (e) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            logout();
         }
+    } else {
+        updateNav(null);
     }
 }
 
 // Run auth check on initialization
 document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+
+async function fetchAdminUsers() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401) {
+            logout();
+            showLoginError('Session expired. Please login again.');
+            return;
+        }
+
+        const data = await response.json();
+        const tbody = document.getElementById('admin-users-tbody');
+        const counter = document.getElementById('admin-total-users');
+        
+        if (data.success && tbody) {
+            const users = data.data;
+            if (counter) counter.textContent = users.length;
+            
+            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">No users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 border-b border-gray-100 font-medium text-gray-900">${escapeHtml(u.name)}</td>
+                    <td class="px-6 py-4 border-b border-gray-100 text-gray-500">${escapeHtml(u.email)}</td>
+                    <td class="px-6 py-4 border-b border-gray-100">
+                        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">${escapeHtml(u.role)}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error('Failed to fetch users:', e);
+    }
+}
+
+function escapeHtml(unsafe) {
+    return (unsafe || '').toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}

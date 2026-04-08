@@ -29,7 +29,13 @@
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Find Blood</a>
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">About Us</a>
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Donors</a>
-            <button class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95" data-target="login">
+            <div id="nav-user-container" class="hidden items-center gap-4">
+                <span id="nav-user-name" class="text-white font-bold text-sm"></span>
+                <button onclick="logout()" class="bg-white/10 border border-white/30 text-white px-5 py-2 rounded-full hover:bg-white/20 transition-all font-bold text-sm active:scale-95">
+                    Logout
+                </button>
+            </div>
+            <button id="nav-login-btn" class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95" data-target="login">
                 Portal Login
             </button>
         </div>
@@ -471,15 +477,40 @@
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-8">
                 <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
                     <div class="w-14 h-14 bg-gray-200 text-gray-700 rounded-full flex items-center justify-center text-xl shadow-sm">
                         <i class="fas fa-users"></i>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500 font-medium">Total System Users</p>
-                        <p class="text-2xl font-black text-gray-900">1,204</p>
+                        <p id="admin-total-users" class="text-2xl font-black text-gray-900">0</p>
                     </div>
+                </div>
+            </div>
+
+            <div class="relative z-10 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900">Registered Users</h3>
+                    <button onclick="fetchAdminUsers()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+                </div>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-bold">
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Name</th>
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Email</th>
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Role</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody" class="divide-y divide-gray-100">
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
