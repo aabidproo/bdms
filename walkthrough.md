@@ -2,7 +2,7 @@
 
 I have successfully set up the foundation for the Blood Donation Management System. The project is fully Dockerized and ready for your team to start building features.
 
-## Components
+## Components:
 
 ### 1. Backend (Node.js + Express + Prisma)
 - **Port**: `5001`
