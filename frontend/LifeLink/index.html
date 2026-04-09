@@ -29,7 +29,13 @@
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Find Blood</a>
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">About Us</a>
             <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide">Donors</a>
-            <button class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95" data-target="login">
+            <div id="nav-user-container" class="hidden items-center gap-4">
+                <span id="nav-user-name" class="text-white font-bold text-sm"></span>
+                <button onclick="logout()" class="bg-white/10 border border-white/30 text-white px-5 py-2 rounded-full hover:bg-white/20 transition-all font-bold text-sm active:scale-95">
+                    Logout
+                </button>
+            </div>
+            <button id="nav-login-btn" class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95" data-target="login">
                 Portal Login
             </button>
         </div>
@@ -229,7 +235,7 @@
                 <div class="relative w-full max-w-md h-[720px]">
                     
                     <!-- Sign In Floating Card -->
-                    <div class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out group-[.sign-up-active]/auth:opacity-0 group-[.sign-up-active]/auth:pointer-events-none z-20 will-change-opacity">
+                    <div id="auth-signin-card" class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out group-[.sign-up-active]/auth:opacity-0 group-[.sign-up-active]/auth:pointer-events-none z-20 will-change-opacity">
                         <div class="flex-1 flex flex-col justify-center">
                             <div class="text-center mb-8">
                                 <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-50 text-gray-700 mb-4 border border-gray-200 shadow-sm">
@@ -257,7 +263,7 @@
                                         <input type="checkbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-600 border-gray-300 transition-all"> 
                                         <span class="text-sm font-medium text-gray-500 group-hover:text-gray-800 transition-colors">Keep me signed in</span>
                                     </label>
-                                    <a href="#" class="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">Forgot Password?</a>
+                                    <a href="#" onclick="showForgotBlock(event)" class="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">Forgot Password?</a>
                                 </div>
                                 <button type="submit" id="login-btn" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
                                     Sign In <i class="fas fa-arrow-right"></i>
@@ -270,7 +276,7 @@
                     </div>
                     
                     <!-- Sign Up Floating Card (Compact Wizard) -->
-                    <div class="absolute inset-0 w-full h-full flex flex-col justify-between bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out opacity-0 pointer-events-none group-[.sign-up-active]/auth:opacity-100 group-[.sign-up-active]/auth:pointer-events-auto z-10 will-change-opacity">
+                    <div id="auth-signup-card" class="absolute inset-0 w-full h-full flex flex-col justify-between bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 transition-opacity duration-200 ease-out opacity-0 pointer-events-none group-[.sign-up-active]/auth:opacity-100 group-[.sign-up-active]/auth:pointer-events-auto z-10 will-change-opacity">
                         <div class="text-center mb-4">
                             <h2 class="text-2xl font-extrabold text-gray-900">Registration Workspace</h2>
                             <p class="text-sm text-indigo-600 font-bold mt-2 pb-4 border-b border-gray-100/50">Step <span id="auth-current-step">1</span> of <span id="auth-total-steps">3</span></p>
@@ -396,6 +402,79 @@
                             <p class="text-sm text-gray-500">Already have an account? <button type="button" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="toggleAuthMode()">Sign In</button></p>
                         </div>
                     </div>
+
+                    <!-- Forgot Password Floating Card -->
+                    <div id="auth-forgot-card" class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 hidden z-30">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div class="text-center mb-8">
+                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-50 text-gray-700 mb-4 border border-gray-200 shadow-sm">
+                                    <i class="fas fa-key text-2xl"></i>
+                                </div>
+                                <h2 class="text-3xl font-extrabold text-gray-900">Forgot Password</h2>
+                                <p class="text-base text-gray-500 mt-2">Enter your email to receive a reset link</p>
+                            </div>
+                            <!-- Forgot Error Form -->
+                            <div id="forgot-error-box" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
+                                <i class="fas fa-exclamation-circle mt-0.5"></i>
+                                <span id="forgot-error-text">An error occurred</span>
+                            </div>
+                            <div id="forgot-success-box" class="hidden bg-green-50 border border-green-200 text-green-700 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5"></i>
+                                <span id="forgot-success-text">Reset link sent!</span>
+                            </div>
+                            <form id="forgot-form" class="space-y-4" onsubmit="handleForgotPassword(event)">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                                    <input type="email" id="forgot-email" placeholder="user@facility.org" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                </div>
+                                <button type="submit" id="forgot-btn" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
+                                    Send Reset Link <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="text-center pt-6 border-t border-gray-100/60 mt-auto">
+                            <p class="text-sm text-gray-500">Remember your password? <button type="button" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="showSignInBlock()">Sign In</button></p>
+                        </div>
+                    </div>
+
+                    <!-- Reset Password Floating Card -->
+                    <div id="auth-reset-card" class="absolute inset-0 w-full h-full flex flex-col justify-center bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-gray-100 hidden z-30">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div class="text-center mb-8">
+                                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gray-50 text-gray-700 mb-4 border border-gray-200 shadow-sm">
+                                    <i class="fas fa-unlock-alt text-2xl"></i>
+                                </div>
+                                <h2 class="text-3xl font-extrabold text-gray-900">Reset Password</h2>
+                                <p class="text-base text-gray-500 mt-2">Enter your new password below</p>
+                            </div>
+                            <!-- Reset Error Box -->
+                            <div id="reset-error-box" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
+                                <i class="fas fa-exclamation-circle mt-0.5"></i>
+                                <span id="reset-error-text">An error occurred</span>
+                            </div>
+                            <!-- Reset Success Box -->
+                            <div id="reset-success-box" class="hidden bg-green-50 border border-green-200 text-green-700 text-sm font-medium p-3 rounded-lg mb-4 flex items-start gap-2">
+                                <i class="fas fa-check-circle mt-0.5"></i>
+                                <span id="reset-success-text">Password reset successful!</span>
+                            </div>
+                            <form id="reset-form" class="space-y-4" onsubmit="handleResetPassword(event)">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New Password</label>
+                                    <input type="password" id="reset-password" placeholder="••••••••" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Confirm Password</label>
+                                    <input type="password" id="reset-confirm" placeholder="••••••••" required class="w-full px-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                                </div>
+                                <button type="submit" id="reset-btn" class="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] text-base">
+                                    Update Password <i class="fas fa-save"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="text-center pt-6 border-t border-gray-100/60 mt-auto">
+                            <p class="text-sm text-gray-500"><button type="button" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors" onclick="showSignInBlock()">Back to Sign In</button></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -471,15 +550,40 @@
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mb-8">
                 <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
                     <div class="w-14 h-14 bg-gray-200 text-gray-700 rounded-full flex items-center justify-center text-xl shadow-sm">
                         <i class="fas fa-users"></i>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500 font-medium">Total System Users</p>
-                        <p class="text-2xl font-black text-gray-900">1,204</p>
+                        <p id="admin-total-users" class="text-2xl font-black text-gray-900">0</p>
                     </div>
+                </div>
+            </div>
+
+            <div class="relative z-10 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-900">Registered Users</h3>
+                    <button onclick="fetchAdminUsers()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+                </div>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-bold">
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Name</th>
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Email</th>
+                                <th class="px-6 py-4 border-b border-gray-100 sticky top-0 bg-gray-50">Role</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody" class="divide-y divide-gray-100">
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

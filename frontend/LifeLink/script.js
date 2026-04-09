@@ -7,7 +7,38 @@ const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
 const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
+const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
+
 function navigateTo(targetId) {
+    // Route & Role Protection
+    if (DASHBOARD_ROUTES.includes(targetId)) {
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+        if (!token || !userStr) {
+            targetId = 'login';
+        } else {
+            try {
+                const user = JSON.parse(userStr);
+                const role = user.role;
+                let expectedDash = '';
+                if (role === 'DONOR') expectedDash = 'donor-dashboard';
+                else if (role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
+                else if (role === 'ADMIN') expectedDash = 'admin-dashboard';
+                
+                if (targetId !== expectedDash && expectedDash !== '') {
+                    targetId = expectedDash;
+                }
+            } catch (e) {
+                logout();
+                return;
+            }
+        }
+    }
+
+    if (targetId === 'admin-dashboard' && localStorage.getItem('token')) {
+        fetchAdminUsers();
+    }
+
     pageSections.forEach(section => {
         section.classList.remove('active');
     });
@@ -379,6 +410,7 @@ async function handleLogin(e) {
 
 function routeUserToDashboard(user) {
     if (!user || !user.role) return;
+    updateNav(user);
     
     // Default blood type for non-admins
     const bloodTypeStr = user.donorProfile?.bloodType || user.recipientProfile?.bloodType || 'Unknown';
@@ -402,15 +434,41 @@ function routeUserToDashboard(user) {
     }
 }
 
+function updateNav(user) {
+    const navUserContainer = document.getElementById('nav-user-container');
+    const navLoginBtn = document.getElementById('nav-login-btn');
+    const navUserName = document.getElementById('nav-user-name');
+    
+    if (user && navUserContainer && navLoginBtn && navUserName) {
+        navUserName.textContent = user.name;
+        navLoginBtn.classList.add('hidden');
+        navUserContainer.classList.remove('hidden');
+        navUserContainer.classList.add('flex');
+    } else if (navUserContainer && navLoginBtn) {
+        navLoginBtn.classList.remove('hidden');
+        navUserContainer.classList.add('hidden');
+        navUserContainer.classList.remove('flex');
+    }
+}
+
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    updateNav(null);
     navigateTo('login');
     const loginSec = document.getElementById('login');
     if (loginSec) loginSec.classList.remove('sign-up-active');
 }
 
 function checkAuthOnLoad() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+    if (resetToken) {
+        navigateTo('login');
+        showResetBlock();
+        return;
+    }
+
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
@@ -419,11 +477,226 @@ function checkAuthOnLoad() {
             const user = JSON.parse(userStr);
             routeUserToDashboard(user);
         } catch (e) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            logout();
         }
+    } else {
+        updateNav(null);
     }
 }
 
 // Run auth check on initialization
 document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+
+async function fetchAdminUsers() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401) {
+            logout();
+            showLoginError('Session expired. Please login again.');
+            return;
+        }
+
+        const data = await response.json();
+        const tbody = document.getElementById('admin-users-tbody');
+        const counter = document.getElementById('admin-total-users');
+        
+        if (data.success && tbody) {
+            const users = data.data;
+            if (counter) counter.textContent = users.length;
+            
+            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">No users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 border-b border-gray-100 font-medium text-gray-900">${escapeHtml(u.name)}</td>
+                    <td class="px-6 py-4 border-b border-gray-100 text-gray-500">${escapeHtml(u.email)}</td>
+                    <td class="px-6 py-4 border-b border-gray-100">
+                        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">${escapeHtml(u.role)}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error('Failed to fetch users:', e);
+    }
+}
+
+function escapeHtml(unsafe) {
+    return (unsafe || '').toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+// === Forgot & Reset Password Logic ===
+function showForgotBlock(e) {
+    if (e) e.preventDefault();
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.remove('hidden');
+    hideForgotError();
+    hideForgotSuccess();
+}
+
+function showSignInBlock() {
+    document.getElementById('auth-signin-card').classList.remove('hidden');
+    document.getElementById('auth-signup-card').classList.remove('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('login').classList.remove('sign-up-active');
+}
+
+function showResetBlock() {
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.remove('hidden');
+    hideResetError();
+    hideResetSuccess();
+}
+
+function showForgotError(msg) {
+    const errorBox = document.getElementById('forgot-error-box');
+    const errorText = document.getElementById('forgot-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('forgot-success-box').classList.add('hidden');
+}
+
+function hideForgotError() {
+    document.getElementById('forgot-error-box').classList.add('hidden');
+}
+
+function showForgotSuccess(msg) {
+    const successBox = document.getElementById('forgot-success-box');
+    const successText = document.getElementById('forgot-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('forgot-error-box').classList.add('hidden');
+}
+
+function hideForgotSuccess() {
+    document.getElementById('forgot-success-box').classList.add('hidden');
+}
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    hideForgotError();
+    hideForgotSuccess();
+    
+    const email = document.getElementById('forgot-email').value;
+    const btn = document.getElementById('forgot-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showForgotSuccess(data.message);
+        document.getElementById('forgot-form').reset();
+    } catch (error) {
+        showForgotError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+function showResetError(msg) {
+    const errorBox = document.getElementById('reset-error-box');
+    const errorText = document.getElementById('reset-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('reset-success-box').classList.add('hidden');
+}
+
+function hideResetError() {
+    document.getElementById('reset-error-box').classList.add('hidden');
+}
+
+function showResetSuccess(msg) {
+    const successBox = document.getElementById('reset-success-box');
+    const successText = document.getElementById('reset-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('reset-error-box').classList.add('hidden');
+}
+
+function hideResetSuccess() {
+    document.getElementById('reset-success-box').classList.add('hidden');
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    hideResetError();
+    hideResetSuccess();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (!token) return showResetError('No reset token found in URL.');
+    
+    const newPassword = document.getElementById('reset-password').value;
+    const confirmPassword = document.getElementById('reset-confirm').value;
+    
+    if (newPassword !== confirmPassword) {
+        return showResetError('Passwords do not match.');
+    }
+    
+    const btn = document.getElementById('reset-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showResetSuccess(data.message);
+        document.getElementById('reset-form').reset();
+        
+        // Remove token from URL and redirect to login after 2 seconds
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showSignInBlock();
+        }, 2000);
+        
+    } catch (error) {
+        showResetError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
