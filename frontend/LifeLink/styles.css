@@ -1,0 +1,126 @@
+﻿/* 
+ * LifeLink Application Styles 
+ * Transitioned to Tailwind CSS v4 for layout and styling.
+ * Retaining ONLY essential custom state classes for script.js compatibility.
+ */
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    min-height: 100vh;
+    color: #1f2937;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+/* SPA State Management needed for script.js */
+.page-section {
+    display: none;
+}
+
+.page-section.active {
+    display: block;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Staggered fade-in-up for cards and sections */
+.card-animate,
+.animate-fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Badge pulse glow */
+.animate-badge-pulse {
+    animation: badgePulse 3s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(244, 63, 94, 0.08);
+    }
+}
+
+/* Selection Cards State (Step 2 of Registration) */
+.selection-card {
+    transition: all 0.3s ease;
+}
+
+.selection-card.selected {
+    border-color: #4f46e5;
+    background-color: #eef2ff;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.selection-card.selected i {
+    color: #4f46e5;
+}
+
+/* Success Animation Elements */
+.reg-success {
+    animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.success-icon {
+    opacity: 0;
+    animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation-delay: 0.2s;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Form branching elements needed by JS display properties */
+.branch-form {
+    display: none;
+}

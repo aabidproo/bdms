@@ -1,0 +1,115 @@
+/* 
+ * LifeLink Authentication Pages Styles 
+ * Using Tailwind CSS v4 for base layout and Inter for typography.
+ */
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    min-height: 100vh;
+}
+
+/* Navbar exactly matching index.html */
+.navbar-custom {
+    background-color: #b11e28;
+    backdrop-filter: blur(20px);
+}
+
+/* Navbar button exactly matching Portal Login in index.html */
+.btn-header-pill {
+    background-color: #ffffff;
+    color: #b11e28;
+    padding: 10px 24px;
+    border-radius: 9999px; /* rounded-full */
+    font-weight: 700;
+    font-size: 0.875rem; /* text-sm */
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+.btn-header-pill:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.btn-header-pill:active {
+    transform: scale(0.95);
+}
+
+/* Button matching Sign Up button in index.html */
+.btn-indigo {
+    background-color: #4f46e5; /* Tailwind indigo-600 */
+    color: white;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2), 0 4px 6px -4px rgba(79, 70, 229, 0.2);
+}
+
+.btn-indigo:hover {
+    background-color: #4338ca; /* Tailwind indigo-700 */
+    transform: translateY(-1px);
+    box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.25), 0 8px 10px -6px rgba(79, 70, 229, 0.25);
+}
+
+.btn-indigo:active {
+    transform: translateY(0);
+}
+
+/* Return to Login matching Signup/Register text in index.html */
+.text-login-link {
+    color: #4f46e5; /* Tailwind indigo-600 */
+    font-weight: 700;
+    transition: color 0.2s ease;
+}
+
+.text-login-link:hover {
+    color: #3730a3; /* Tailwind indigo-800 */
+    text-decoration: underline;
+}
+
+/* Auth card stylings matching index.html aesthetics */
+.auth-card {
+    background-color: #ffffff;
+    border: 1px solid rgba(243, 244, 246, 1);
+    border-radius: 24px; /* Matches rounded-3xl of index.html floating cards */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Input fields matching index.html */
+.auth-input {
+    background-color: rgba(249, 250, 251, 0.8);
+    border: 1px solid rgba(229, 231, 235, 1);
+    border-radius: 12px; /* rounded-xl */
+    transition: all 0.2s ease;
+}
+
+.auth-input:focus {
+    background-color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.6);
+}
+
+/* Loading spinner */
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 3px solid #fff;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading .spinner {
+    display: inline-block;
+}
+
+.loading .btn-text {
+    display: none;
+}
