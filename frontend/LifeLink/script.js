@@ -2,6 +2,56 @@
  * LifeLink - Single Page Application Router & Registration Logic
  */
 
+
+// === Admin Dashboard Enhancements ===
+function toggleAdminSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('sidebar-collapsed');
+        // Change icon based on state
+        const icon = document.querySelector('header button i');
+        if (icon) {
+            icon.className = sidebar.classList.contains('sidebar-collapsed') ? 'fas fa-arrow-right' : 'fas fa-bars';
+        }
+    }
+}
+
+function addToActivityFeed(eventText, type = 'info') {
+    const feed = document.getElementById('admin-activity-feed');
+    if (!feed) return;
+    
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    
+    let iconClass = 'info-circle';
+    let bgColor = 'rgba(99,102,241,0.1)';
+    let color = '#6366f1';
+    
+    if (type === 'success') {
+        iconClass = 'plus';
+        bgColor = 'rgba(22,163,74,0.1)';
+        color = '#16a34a';
+    } else if (type === 'alert') {
+        iconClass = 'heartbeat';
+        bgColor = 'rgba(211,47,47,0.1)';
+        color = '#D32F2F';
+    }
+    
+    item.innerHTML = `
+        <div class="activity-icon" style="background:${bgColor}; color:${color};"><i class="fas fa-${iconClass}"></i></div>
+        <div class="activity-content">
+            <div>${eventText}</div>
+            <div class="activity-time">Just now</div>
+        </div>
+    `;
+    
+    feed.prepend(item);
+    // Keep only last 10
+    if (feed.children.length > 10) {
+        feed.removeChild(feed.lastChild);
+    }
+}
+
 // === DOM Element Queries ===
 const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
 const pageSections = document.querySelectorAll('.page-section');
@@ -10,24 +60,33 @@ const pageSections = document.querySelectorAll('.page-section');
 const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
 
 function navigateTo(targetId) {
-    // Route & Role Protection
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+
+    if (token && userStr && !DASHBOARD_ROUTES.includes(targetId) && targetId !== 'login') {
+        try {
+            const user = JSON.parse(userStr);
+            if (user.role === 'DONOR') targetId = 'donor-dashboard';
+            else if (user.role === 'RECIPIENT') targetId = 'recipient-dashboard';
+            else if (user.role === 'ADMIN') targetId = 'admin-dashboard';
+        } catch (e) {
+            logout();
+            return;
+        }
+    }
+
     if (DASHBOARD_ROUTES.includes(targetId)) {
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
         if (!token || !userStr) {
             targetId = 'login';
         } else {
             try {
                 const user = JSON.parse(userStr);
-                const role = user.role;
                 let expectedDash = '';
-                if (role === 'DONOR') expectedDash = 'donor-dashboard';
-                else if (role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
-                else if (role === 'ADMIN') expectedDash = 'admin-dashboard';
+                if (user.role === 'DONOR') expectedDash = 'donor-dashboard';
+                else if (user.role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
+                else if (user.role === 'ADMIN') expectedDash = 'admin-dashboard';
                 
-                if (targetId !== expectedDash && expectedDash !== '') {
-                    targetId = expectedDash;
-                }
+                if (targetId !== expectedDash && expectedDash !== '') targetId = expectedDash;
             } catch (e) {
                 logout();
                 return;
@@ -35,17 +94,28 @@ function navigateTo(targetId) {
         }
     }
 
-    if (targetId === 'admin-dashboard' && localStorage.getItem('token')) {
+    if (targetId === 'admin-dashboard' && token) {
+        navigateAdmin('admin-view-dashboard');
         fetchAdminUsers();
+        fetchInventory();
+        fetchAdminRequests();
     }
 
+    // Explicitly hide all sections and show only the target
     pageSections.forEach(section => {
         section.classList.remove('active');
+        section.style.display = 'none'; // HARD HIDE
     });
 
     const targetSection = document.getElementById(targetId);
     if (targetSection) {
         targetSection.classList.add('active');
+        // Admin dashboard needs flex, others block
+        if (targetId === 'admin-dashboard') {
+            targetSection.style.display = 'flex';
+        } else {
+            targetSection.style.display = 'block';
+        }
     }
 }
 
@@ -265,7 +335,7 @@ async function completeRegistration() {
             }
         }
         
-        const response = await fetch('http://localhost:5000/api/auth/register', {
+        const response = await fetch('http://localhost:5001/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -375,7 +445,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch('http://localhost:5001/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -430,6 +500,8 @@ function routeUserToDashboard(user) {
         navigateTo('recipient-dashboard');
     }
     else if (user.role === 'ADMIN') {
+        const sidebarName = document.getElementById('admin-sidebar-name');
+        if (sidebarName) sidebarName.textContent = user.name;
         navigateTo('admin-dashboard');
     }
 }
@@ -441,13 +513,42 @@ function updateNav(user) {
     
     if (user && navUserContainer && navLoginBtn && navUserName) {
         navUserName.textContent = user.name;
+        navUserName.style.cursor = 'pointer';
+        navUserName.style.textDecoration = 'underline';
+        navUserName.style.textDecorationStyle = 'dotted';
+        navUserName.style.textUnderlineOffset = '4px';
+        navUserName.onclick = goToDashboard;
         navLoginBtn.classList.add('hidden');
         navUserContainer.classList.remove('hidden');
         navUserContainer.classList.add('flex');
+        // Hide public nav links when logged in
+        document.querySelectorAll('.nav-link[data-target]').forEach(link => {
+            link.style.display = 'none';
+        });
     } else if (navUserContainer && navLoginBtn) {
         navLoginBtn.classList.remove('hidden');
         navUserContainer.classList.add('hidden');
         navUserContainer.classList.remove('flex');
+        // Show public nav links when logged out
+        document.querySelectorAll('.nav-link[data-target]').forEach(link => {
+            link.style.display = '';
+        });
+    }
+}
+
+function goToDashboard() {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        navigateTo('login');
+        return;
+    }
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'ADMIN') navigateTo('admin-dashboard');
+        else if (user.role === 'RECIPIENT') navigateTo('recipient-dashboard');
+        else navigateTo('donor-dashboard');
+    } catch (e) {
+        navigateTo('login');
     }
 }
 
@@ -484,18 +585,31 @@ function checkAuthOnLoad() {
     }
 }
 
-// Run auth check on initialization
-document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
+// Run initialization on load
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuthOnLoad();
+});
+
 
 async function fetchAdminUsers() {
+    fetchInventory();
+    fetchAdminRequests();
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    // Update sidebar name
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        try {
+            const u = JSON.parse(userStr);
+            const sidebarName = document.getElementById('admin-sidebar-name');
+            if (sidebarName) sidebarName.textContent = u.name;
+        } catch(e) {}
+    }
+
     try {
-        const response = await fetch('http://localhost:5000/api/admin/users', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const response = await fetch('http://localhost:5001/api/admin/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.status === 401) {
@@ -514,18 +628,24 @@ async function fetchAdminUsers() {
             
             tbody.innerHTML = '';
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">No users found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:3rem;color:#84758c;">No users found.</td></tr>';
                 return;
             }
 
             users.forEach(u => {
+                const initial = (u.name || '?').charAt(0).toUpperCase();
+                const roleBadge = u.role === 'ADMIN' ? 'admin-badge-danger' :
+                                  u.role === 'DONOR' ? 'admin-badge-success' : 'admin-badge-primary';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="px-6 py-4 border-b border-gray-100 font-medium text-gray-900">${escapeHtml(u.name)}</td>
-                    <td class="px-6 py-4 border-b border-gray-100 text-gray-500">${escapeHtml(u.email)}</td>
-                    <td class="px-6 py-4 border-b border-gray-100">
-                        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">${escapeHtml(u.role)}</span>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:0.75rem;">
+                            <div style="width:36px;height:36px;background:rgba(211,47,47,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:700;font-size:0.9rem;">${initial}</div>
+                            <div><div style="font-weight:600;">${escapeHtml(u.name)}</div></div>
+                        </div>
                     </td>
+                    <td style="color:#64748b;">${escapeHtml(u.email)}</td>
+                    <td><span class="${roleBadge}">${escapeHtml(u.role)}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -533,6 +653,15 @@ async function fetchAdminUsers() {
     } catch (e) {
         console.error('Failed to fetch users:', e);
     }
+}
+
+function filterUserTable(query) {
+    const rows = document.querySelectorAll('#admin-users-tbody tr');
+    const q = query.toLowerCase();
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
 }
 
 function escapeHtml(unsafe) {
@@ -608,7 +737,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -674,7 +803,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -700,3 +829,281 @@ async function handleResetPassword(e) {
     }
 }
 
+
+
+// ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
+
+async function fetchInventory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const searchStr = document.getElementById('admin-inventory-search')?.value || '';
+    const sortVal = document.getElementById('admin-inventory-sort')?.value || 'latest';
+
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}&sort=${sortVal}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const tbody = document.getElementById('admin-inventory-tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
+            const unitsEl = document.getElementById('admin-total-units');
+            if (unitsEl) unitsEl.textContent = '0';
+            return;
+        }
+
+        let totalUnits = 0;
+        let criticals = [];
+        const groupLevels = {};
+
+        data.data.forEach(item => {
+            totalUnits += item.units;
+            if (item.units < 5) criticals.push(item.bloodGroup + ' (' + item.units + ')');
+            const percentage = Math.min((item.units / 50) * 100, 100);
+            groupLevels[item.bloodGroup] = { units: item.units, percentage };
+        });
+
+        // Update Supply Matrix
+        const matrixContainer = document.getElementById('supply-matrix-container');
+        if (matrixContainer) {
+            matrixContainer.innerHTML = '';
+            const allGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+            allGroups.forEach(group => {
+                const info = groupLevels[group] || { units: 0, percentage: 0 };
+                let status = 'Stable';
+                let levelClass = 'level-optimal';
+                if (info.units < 5) { status = 'Critical'; levelClass = 'level-low'; }
+                else if (info.units < 15) { status = 'Low Stock'; levelClass = 'level-low'; }
+                else if (info.units > 40) { status = 'Surplus'; levelClass = 'level-surplus'; }
+                const card = document.createElement('div');
+                card.className = 'matrix-card';
+                card.innerHTML = `
+                    <div class="matrix-group">${group}</div>
+                    <div class="matrix-level-outer">
+                        <div class="matrix-level-inner ${levelClass}" style="width:${info.percentage}%;"></div>
+                    </div>
+                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 15 ? '#ef4444' : (info.units > 40 ? '#2563eb' : '#16a34a')};">${status}</span>
+                `;
+                matrixContainer.appendChild(card);
+            });
+        }
+
+        const unitsEl = document.getElementById('admin-total-units');
+        if (unitsEl) unitsEl.textContent = totalUnits;
+
+        const critCard = document.getElementById('admin-critical-card');
+        const critText = document.getElementById('admin-critical-text');
+        if (critCard && critText) {
+            if (criticals.length > 0) {
+                critCard.style.borderLeftColor = '#be123c';
+                critText.textContent = criticals.join(', ');
+                critText.style.color = '#be123c';
+            } else {
+                critCard.style.borderLeftColor = '#16a34a';
+                critText.textContent = 'All stable';
+                critText.style.color = '#16a34a';
+            }
+        }
+
+        data.data.forEach(item => {
+            const tr = document.createElement('tr');
+            let badgeClass = item.units < 5 ? 'admin-badge-danger' : 'admin-badge-success';
+            let stockLabel = item.units < 5 ? 'Low: ' + item.units + ' Total' : item.units + ' Total Stock';
+            const expDate = item.expirationDate ? new Date(item.expirationDate).toLocaleDateString() : 'N/A';
+            tr.innerHTML = '<td><div style="display:flex;align-items:center;gap:0.75rem;"><div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">' + escapeHtml(item.bloodGroup) + '</div><div style="font-weight:600;">' + escapeHtml(item.bloodGroup) + '</div></div></td>' +
+                '<td><span class="' + badgeClass + '">' + stockLabel + '</span></td>' +
+                '<td style="color:#64748b;">' + expDate + '</td>' +
+                '<td style="text-align:right;"><button class="admin-btn-icon delete" onclick="deleteStock(\'' + item.id + '\')" title="Delete"><i class="fas fa-trash"></i></button></td>';
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error('Failed to fetch inventory', error);
+    }
+}
+
+
+
+async function submitAddStock(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const bg = document.getElementById('add-stock-group').value;
+    const units = document.getElementById('add-stock-units').value;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/stock', {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ bloodGroup: bg, units: units })
+        });
+        const data = await response.json();
+        if (data.success) { addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong>`, 'success');
+            document.getElementById('admin-add-stock-form').reset();
+            document.getElementById('add-stock-modal').classList.add('hidden');
+            fetchInventory(); 
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deleteStock(id) {
+    if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) fetchInventory();
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// ─── ADMIN REQUESTS MANAGEMENT ───────────────────────────
+
+async function fetchAdminRequests() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const listDiv = document.getElementById('admin-requests-list');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#84758c;">No active request alerts.</div>';
+            const pendingEl = document.getElementById('admin-pending-count');
+            if (pendingEl) pendingEl.textContent = '0';
+            return;
+        }
+
+        // Count pending
+        const pendingCount = data.data.filter(r => r.status === 'PENDING').length;
+        const pendingEl = document.getElementById('admin-pending-count');
+        if (pendingEl) pendingEl.textContent = pendingCount;
+
+        data.data.forEach(req => {
+            let urgencyBadge = 'admin-badge-success';
+            if (req.urgency === 'High') urgencyBadge = 'admin-badge-primary';
+            else if (req.urgency === 'Critical') urgencyBadge = 'admin-badge-danger';
+
+            const div = document.createElement('div');
+            div.className = 'admin-request-item';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
+                '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(req.bloodGroup) + '</div>' +
+                '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(req.hospital) + '</div>' +
+                '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + urgencyBadge + '">' + escapeHtml(req.urgency) + '</span> &middot; ' + req.units + ' Units &middot; <strong>' + escapeHtml(req.status) + '</strong></div></div></div>' +
+                '<div style="display:flex;gap:0.5rem;">' +
+                '<button class="admin-btn-icon approve" onclick="updateReqStatus(\'' + req.id + '\', \'APPROVED\')" title="Approve"><i class="fas fa-check"></i></button>' +
+                '<button class="admin-btn-icon reject" onclick="updateReqStatus(\'' + req.id + '\', \'REJECTED\')" title="Reject"><i class="fas fa-times"></i></button>' +
+                '</div>';
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function updateReqStatus(id, newStatus) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (response.ok) { addToActivityFeed(`Request for <strong>${id.substring(0,6)}...</strong> was <strong>${newStatus}</strong>`, 'info'); fetchAdminRequests(); }
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            updateNav(user);
+            routeUserToDashboard(user);
+        } catch (e) {
+            logout();
+        }
+    } else {
+        navigateTo('home');
+        updateNav(null);
+    }
+});
+
+/**
+ * ═══════════════════════════════════════════════
+ * ADMIN SUB-NAVIGATION LOGIC
+ * ═══════════════════════════════════════════════
+ */
+function navigateAdmin(viewId) {
+    console.log('Navigating Admin to:', viewId);
+    
+    // 1. Hide all views
+    document.querySelectorAll('.admin-view').forEach(view => {
+        view.classList.remove('active');
+        view.style.display = 'none';
+    });
+
+    // 2. Show target view
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+        // If it's the dashboard, we might need flex, but mostly block is fine for internal views
+        targetView.style.display = 'block'; 
+        
+        // Specific handling for dashboard layout (which uses grids/flex internally)
+        if (viewId === 'admin-view-dashboard') {
+            targetView.style.display = 'block'; // Containers are block, internal elements are flex
+        }
+    }
+
+    // 3. Update Sidebar Links
+    document.querySelectorAll('.admin-sidebar-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    const activeLink = document.getElementById('link-' + viewId);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+
+    // 4. Update Header Title
+    const titleMap = {
+        'admin-view-dashboard': 'Dashboard Overview',
+        'admin-view-inventory': 'Inventory Management',
+        'admin-view-requests': 'Blood Request Triage',
+        'admin-view-users': 'User Directory'
+    };
+    const titleElem = document.getElementById('admin-page-title');
+    if (titleElem) {
+        titleElem.textContent = titleMap[viewId] || 'Admin Panel';
+    }
+
+    // 5. Trigger Data Refreshes if needed
+    if (viewId === 'admin-view-inventory') fetchInventory();
+    if (viewId === 'admin-view-requests') fetchAdminRequests();
+    if (viewId === 'admin-view-users') fetchAdminUsers();
+}
