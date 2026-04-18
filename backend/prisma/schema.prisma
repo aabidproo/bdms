@@ -29,6 +29,9 @@ model User {
   // 1:1 Relations
   donorProfile     DonorProfile?
   recipientProfile RecipientProfile?
+
+  // 1:N Relations
+  requests         BloodRequest[]
 }
 
 // ─── Donor Profile (1:1 with User) ──────────────────────
@@ -65,4 +68,40 @@ model RecipientProfile {
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+// ─── Blood Inventory ────────────────────────────────────
+
+model BloodStock {
+  id           String   @id @default(cuid())
+  bloodGroup   String   // A+, A-, B+, B-, AB+, AB-, O+, O-
+  units        Int
+  rbcCount     Float?   // Red Blood Cell count
+  plasmaCount  Float?   // Plasma units in mL
+  donationDate DateTime
+  expiryDate   DateTime
+  donorName    String?
+  status       String   // Available, Low, Critical
+  healthIndicator String @default("Good") // Excellent, Good, Fair, Poor
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Blood Request ──────────────────────────────────────
+
+model BloodRequest {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bloodGroup   String
+  units        Int
+  urgency      String   // Normal, Urgent, Critical
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED
+  hospital     String
+  notes        String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
