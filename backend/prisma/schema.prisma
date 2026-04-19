@@ -49,6 +49,9 @@ model DonorProfile {
 
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  // 1:N — A donor can have many donations
+  donations        Donation[]
 }
 
 // ─── Recipient Profile (1:1 with User) ──────────────────
@@ -65,4 +68,58 @@ model RecipientProfile {
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  // 1:N — A recipient can have many blood requests
+  bloodRequests    BloodRequest[]
+}
+
+// ─── Blood Inventory (1 row per blood group) ────────────
+
+model BloodInventory {
+  id         String   @id @default(cuid())
+  bloodGroup String   @unique  // A+, A-, B+, B-, AB+, AB-, O+, O-
+  units      Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@map("blood_inventory")
+}
+
+// ─── Donation Record ────────────────────────────────────
+
+model Donation {
+  id             String       @id @default(cuid())
+  donorProfileId String
+  donorProfile   DonorProfile @relation(fields: [donorProfileId], references: [id], onDelete: Cascade)
+
+  bloodType      String       // A+, A-, B+, etc.
+  units          Int          @default(1)
+  location       String       // Hospital / Clinic name
+  scheduledDate  DateTime
+  status         String       @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
+  notes          String?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("donations")
+}
+
+// ─── Blood Request ──────────────────────────────────────
+
+model BloodRequest {
+  id                 String           @id @default(cuid())
+  recipientProfileId String
+  recipientProfile   RecipientProfile @relation(fields: [recipientProfileId], references: [id], onDelete: Cascade)
+
+  bloodGroup         String           // A+, A-, B+, etc.
+  units              Int
+  urgency            String           @default("Normal")  // Normal | High | Critical
+  hospital           String           // Delivery hospital
+  status             String           @default("PENDING")  // PENDING | APPROVED | REJECTED | FULFILLED
+  notes              String?
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@map("blood_requests")
 }
