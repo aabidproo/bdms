@@ -1152,9 +1152,7 @@ async function fetchInventory() {
     injectAddStockFields();
 
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
-    // Sort is handled in-memory now for grouped results
-    const sortVal = document.getElementById('admin-inventory-sort')?.value || 'latest';
-
+    
     try {
         const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -1163,8 +1161,7 @@ async function fetchInventory() {
         const tbody = document.getElementById('admin-inventory-tbody');
         if (!tbody) return;
 
-        // --- Change 1: Column Layout Fix ---
-        // Hide the 3rd column head (Expiration) since we only want 3 columns now
+        // --- Column Layout Fix ---
         const tableHead = document.querySelector('#admin-view-inventory thead tr');
         if (tableHead && tableHead.children.length === 4) {
             tableHead.children[2].style.display = 'none'; 
@@ -1200,7 +1197,7 @@ async function fetchInventory() {
                 let status = 'Stable';
                 let levelClass = 'level-optimal';
                 if (info.units < 10) { status = 'Critical'; levelClass = 'level-low'; }
-                else if (info.units < 30) { status = 'Low Stock'; levelClass = 'level-low'; }
+                else if (info.units < 20) { status = 'Low Stock'; levelClass = 'level-low'; }
                 else if (info.units > 80) { status = 'Surplus'; levelClass = 'level-surplus'; }
                 const card = document.createElement('div');
                 card.className = 'matrix-card';
@@ -1209,7 +1206,7 @@ async function fetchInventory() {
                     <div class="matrix-level-outer">
                         <div class="matrix-level-inner ${levelClass}" style="width:${info.percentage}%;"></div>
                     </div>
-                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 30 ? '#ef4444' : (info.units > 80 ? '#2563eb' : '#16a34a')};">${status}</span>
+                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 20 ? '#ef4444' : (info.units > 80 ? '#2563eb' : '#16a34a')};">${status}</span>
                 `;
                 matrixContainer.appendChild(card);
             });
@@ -1232,10 +1229,13 @@ async function fetchInventory() {
             }
         }
 
-        data.data.forEach((item, index) => {
+        data.data.forEach((item) => {
             const tr = document.createElement('tr');
             let badgeClass = item.totalUnits < 10 ? 'admin-badge-danger' : 'admin-badge-success';
             
+            // To pass the donations array safely to showStockDetails:
+            const donationsJson = JSON.stringify(item.donations).replace(/"/g, '&quot;');
+
             tr.innerHTML = `
                 <td>
                     <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -1251,10 +1251,10 @@ async function fetchInventory() {
                 </td>
                 <td style="text-align:right;">
                     <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
-                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="showStockDetails(${index})" title="View Stock Breakdown">
+                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}', ${donationsJson})" title="View Stock Breakdown">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="openGroupEdit(${index})" title="Detailed Record Access">
+                        <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}', ${donationsJson})" title="Manage Record Updates">
                             <i class="fas fa-pencil-alt"></i>
                         </button>
                     </div>
@@ -1269,71 +1269,80 @@ async function fetchInventory() {
 
 // ─── STOCK DETAILS MODAL (Eye Icon) ─────────────────────
 
-// ─── STOCK DETAILS MODAL (Eye Icon) ─────────────────────
-function showStockDetails(groupIndex) {
-    const group = currentInventoryData[groupIndex];
-    if (!group) return;
+window.showStockDetails = function(bloodGroup, donations) {
+    if (!donations) return;
 
-    let modal = document.getElementById('detailed-stock-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'detailed-stock-modal';
-        modal.className = 'modal-backdrop hidden';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15);">
-                <div style="padding:1.75rem 2rem; background:#fff; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:1rem;">
-                        <div style="width:48px; height:48px; background:#fef2f2; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#D32F2F; font-size:1.2rem; font-weight:800;">${escapeHtml(group.bloodGroup)}</div>
-                        <div>
-                            <h3 id="detail-modal-title" style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;"></h3>
-                            <div style="display:flex; align-items:center; gap:0.5rem; margin-top:2px;">
-                                <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
-                                <p id="detail-modal-subtitle" style="font-size:0.85rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em;"></p>
-                            </div>
+    // Remove existing if any
+    const existing = document.getElementById('detailed-stock-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'detailed-stock-modal';
+    modal.className = 'modal-backdrop'; 
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(15, 23, 42, 0.6)';
+    modal.style.backdropFilter = 'blur(8px)';
+    modal.style.zIndex = '3000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '2rem';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15); animation: adminModalIn 0.3s ease-out;">
+            <div style="padding:1.75rem 2rem; background:#fff; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="width:48px; height:48px; background:#fef2f2; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#D32F2F; font-size:1.2rem; font-weight:800;">${escapeHtml(bloodGroup)}</div>
+                    <div>
+                        <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">${escapeHtml(bloodGroup)} Inventory Details</h3>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:2px;">
+                            <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
+                            <p style="font-size:0.85rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em;">Tracking ${donations.length} Active Batches</p>
                         </div>
                     </div>
-                    <button onclick="document.getElementById('detailed-stock-modal').classList.add('hidden')" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s;">
-                        <i class="fas fa-times"></i>
-                    </button>
+                </div>
+                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div style="padding:1.5rem 2rem;">
+                <div style="margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between;">
+                    <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em;">Stock Breakdown</h4>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live Updates Active</div>
                 </div>
                 
-                <div style="padding:1.5rem 2rem;">
-                    <div style="margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between;">
-                        <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em;">Stock Breakdown</h4>
-                        <div style="font-size:0.75rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live Updates Active</div>
-                    </div>
-                    
-                    <div style="max-height:55vh; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
-                        <table style="width:100%; border-collapse:separate; border-spacing:0 12px;">
-                            <thead>
-                                <tr style="text-align:left;">
-                                    <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donated By</th>
-                                    <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donation Date</th>
-                                    <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Expiration</th>
-                                    <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem; text-align:right;">Stock</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detail-stock-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div style="padding:1.5rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:right; display:flex; justify-content:space-between; align-items:center;">
-                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:500;">Note: Shelf life is exactly 42 days from donation.</p>
-                    <button onclick="document.getElementById('detailed-stock-modal').classList.add('hidden')" style="padding:0.75rem 2rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close Matrix</button>
+                <div style="max-height:55vh; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
+                    <table style="width:100%; border-collapse:separate; border-spacing:0 12px;">
+                        <thead>
+                            <tr style="text-align:left;">
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donated By</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donation Date</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Expiration</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Stock</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem; text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-stock-tbody"></tbody>
+                    </table>
                 </div>
             </div>
-        `;
-        document.body.appendChild(modal);
-    }
 
-    document.getElementById('detail-modal-title').textContent = `${group.bloodGroup} Blood Group Inventory`;
-    document.getElementById('detail-modal-subtitle').textContent = `Tracking ${group.donations.length} Active Batches`;
+            <div style="padding:1.5rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:right; display:flex; justify-content:space-between; align-items:center;">
+                <p style="font-size:0.75rem; color:#94a3b8; font-weight:500;">Note: Shelf life is exactly 42 days from donation.</p>
+                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="padding:0.75rem 2rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close Matrix</button>
+            </div>
+        </div>
+    `;
 
+    document.body.appendChild(modal);
     const tbody = document.getElementById('detail-stock-tbody');
-    tbody.innerHTML = '';
 
-    group.donations.forEach(don => {
+    donations.forEach(don => {
         const tr = document.createElement('tr');
         tr.style.background = '#fff';
         
@@ -1344,158 +1353,155 @@ function showStockDetails(groupIndex) {
         });
 
         tr.innerHTML = `
-            <td style="padding:1.25rem 1rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:16px; border-bottom-left-radius:16px;">
+            <td style="padding:1.15rem 1rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:16px; border-bottom-left-radius:16px;">
                 <div style="font-weight:700; color:#1e293b; font-size:0.95rem;">${escapeHtml(don.donorName)}</div>
-                <div style="font-size:0.75rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.id.substring(don.id.length-8).toUpperCase()}</div>
+                <div style="font-size:0.7rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.id.substring(don.id.length-8).toUpperCase()}</div>
             </td>
-            <td style="padding:1.25rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
                 <div style="font-weight:700; color:#475569; font-size:0.9rem;">${donDate}</div>
             </td>
-            <td style="padding:1.25rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
-                <div class="expiry-timer" data-expiry="${don.expiryDate}" style="font-size:0.85rem; padding:4px 12px; background:#f8fafc; border-radius:20px; display:inline-block; border:1px solid #f1f5f9;">Calculating...</div>
+            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                <div class="expiry-timer" data-expiry="${don.expiryDate}" style="font-size:0.85rem; padding:4px 12px; background:#f8fafc; border-radius:20px; display:inline-block; border:1px solid #f1f5f9; min-width:140px; text-align:center;">Calculating...</div>
             </td>
-            <td style="padding:1.25rem 1rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:16px; border-bottom-right-radius:16px; text-align:right;">
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.4rem;">
-                    <div style="font-weight:800; color:#1e293b; font-size:1rem;">${don.units} Packets</div>
-                    <button onclick="editDonation('${don.id}')" style="font-size:0.7rem; font-weight:700; color:#6366f1; background:none; border:none; border-bottom:1px solid #6366f1; cursor:pointer; padding:0; line-height:1;">EDIT BATCH</button>
-                </div>
+            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                <div style="font-weight:800; color:#1e293b; font-size:1rem;">${don.units} Units</div>
+            </td>
+            <td style="padding:1.15rem 1rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:16px; border-bottom-right-radius:16px; text-align:right;">
+                <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.editStock('${don.id}')" title="Edit Batch">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 
     updateAllTimers();
-    modal.classList.remove('hidden');
-}
+};
 
-// ─── EDIT MODAL LOGIC (Pencil Icon) ─────────────────────
-
-function openGroupEdit(index) {
-    // For "Quick Edit" from main table, we just show the details so they can pick a record
-    showStockDetails(index);
-}
-
-async function editDonation(id) {
+window.editStock = async function(donationId) {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Find record in current data
     let donation = null;
+    let bloodGroup = '';
     currentInventoryData.forEach(g => {
-        const found = g.donations.find(d => d.id === id);
+        const found = g.donations.find(d => d.id === donationId);
         if (found) {
-            donation = { ...found, bloodGroup: g.bloodGroup };
+            donation = found;
+            bloodGroup = g.bloodGroup;
         }
     });
     
     if (!donation) return;
 
-    let modal = document.getElementById('record-edit-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'record-edit-modal';
-        modal.className = 'modal-backdrop hidden';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:500px; padding:2rem; border-radius:24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
-                    <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">Adjust Inventory Batch</h3>
-                    <button onclick="document.getElementById('record-edit-modal').classList.add('hidden')" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+    const existing = document.getElementById('record-edit-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'record-edit-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(15, 23, 42, 0.6)';
+    modal.style.backdropFilter = 'blur(4px)';
+    modal.style.zIndex = '4000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '2rem';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:500px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation: adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <div>
+                    <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">Adjust Batch Details</h3>
+                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-top:2px;">ID: ${donationId.toUpperCase()}</p>
+                </div>
+                <button onclick="document.getElementById('record-edit-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="record-edit-form" class="space-y-5">
+                <input type="hidden" id="edit-id" value="${donationId}">
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Blood Group</label>
+                        <select id="edit-bg" disabled style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #f1f5f9; background:#f8fafc; font-weight:700; color:#1e293b; cursor:not-allowed;">
+                            <option value="${bloodGroup}" selected>${bloodGroup}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Units</label>
+                        <input type="number" id="edit-units" required min="1" value="${donation.units}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
                 </div>
 
-                <form id="record-edit-form" class="space-y-5">
-                    <input type="hidden" id="edit-id">
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
-                        <div>
-                            <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Blood Group</label>
-                            <select id="edit-bg" disabled style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #f1f5f9; background:#f8fafc; font-weight:700; color:#1e293b; cursor:not-allowed;">
-                                <option value="A+">A+</option><option value="A-">A-</option>
-                                <option value="B+">B+</option><option value="B-">B-</option>
-                                <option value="O+">O+</option><option value="O-">O-</option>
-                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Packets/Units</label>
-                            <input type="number" id="edit-units" required min="1" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none; transition:all 0.2s;" onfocus="this.style.borderColor='#6366f1'">
-                        </div>
-                    </div>
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Donor Full Name</label>
+                    <input type="text" id="edit-donor" required value="${escapeHtml(donation.donorName)}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
 
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Collection Date</label>
+                    <input type="date" id="edit-date" required value="${new Date(donation.donationDate).toISOString().split('T')[0]}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Donor Full Name</label>
-                        <input type="text" id="edit-donor" required style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;" onfocus="this.style.borderColor='#6366f1'">
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">RBC Count</label>
+                        <input type="number" step="0.1" id="edit-rbc" value="${donation.rbcCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
                     </div>
-
                     <div>
-                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Collection Date</label>
-                        <input type="date" id="edit-date" required style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;" onfocus="this.style.borderColor='#6366f1'">
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Plasma (mL)</label>
+                        <input type="number" id="edit-plasma" value="${donation.plasmaCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
                     </div>
+                </div>
 
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
-                        <div>
-                            <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">RBC Count</label>
-                            <input type="number" step="0.1" id="edit-rbc" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
-                        </div>
-                        <div>
-                            <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Plasma (mL)</label>
-                            <input type="number" id="edit-plasma" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
-                        </div>
-                    </div>
+                <div style="display:flex; gap:1rem; padding-top:1.5rem;">
+                    <button type="button" onclick="document.getElementById('record-edit-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:#D32F2F; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(211,47,47,0.25);">Save Batch</button>
+                </div>
+            </form>
+        </div>
+    `;
 
-                    <div style="display:flex; gap:1rem; padding-top:1.5rem;">
-                        <button type="button" onclick="document.getElementById('record-edit-modal').classList.add('hidden')" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
-                        <button type="submit" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:#D32F2F; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(211,47,47,0.25);">Apply Updates</button>
-                    </div>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        document.getElementById('record-edit-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const editId = document.getElementById('edit-id').value;
-            const payload = {
-                bloodGroup: donation.bloodGroup, // Still send current to be safe
-                units: document.getElementById('edit-units').value,
-                donorName: document.getElementById('edit-donor').value,
-                donationDate: document.getElementById('edit-date').value,
-                rbcCount: document.getElementById('edit-rbc').value,
-                plasmaCount: document.getElementById('edit-plasma').value
-            };
+    document.body.appendChild(modal);
 
-            try {
-                const res = await fetch(`http://localhost:5000/api/admin/stock/${editId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-                const result = await res.json();
-                if (result.success) {
-                    addToActivityFeed(`Refined inventory batch for <strong>${payload.bloodGroup}</strong>`, 'success');
-                    modal.classList.add('hidden');
-                    document.getElementById('detailed-stock-modal')?.classList.add('hidden');
-                    fetchInventory();
-                } else {
-                    alert(result.message);
-                }
-            } catch (err) { console.error(err); }
-        });
-    }
+    document.getElementById('record-edit-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            bloodGroup: bloodGroup,
+            units: document.getElementById('edit-units').value,
+            donorName: document.getElementById('edit-donor').value,
+            donationDate: document.getElementById('edit-date').value,
+            rbcCount: document.getElementById('edit-rbc').value,
+            plasmaCount: document.getElementById('edit-plasma').value
+        };
 
-    // Fill form
-    document.getElementById('edit-id').value = id;
-    document.getElementById('edit-bg').value = donation.bloodGroup;
-    document.getElementById('edit-units').value = donation.units;
-    document.getElementById('edit-date').value = new Date(donation.donationDate).toISOString().split('T')[0];
-    document.getElementById('edit-donor').value = donation.donorName;
-    document.getElementById('edit-rbc').value = donation.rbcCount || '';
-    document.getElementById('edit-plasma').value = donation.plasmaCount || '';
-
-    modal.classList.remove('hidden');
-}
+        try {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (result.success) {
+                addToActivityFeed(`Successfully refined batch: <strong>${payload.bloodGroup}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                alert(result.message);
+            }
+        } catch (err) { console.error(err); }
+    };
+};
 
 // ─── COUNTDOWN TIMER LOGIC ──────────────────────────────
 
