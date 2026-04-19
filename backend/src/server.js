@@ -42,13 +42,53 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/requests', requestRoutes);
 
-// ─── Protected Test Routes ──────────────────────────────
-app.get('/api/donor/profile', authenticate, authorize('DONOR'), (req, res) => {
-  res.json({ success: true, message: 'Welcome to the Donor profile.', user: req.user });
+// ─── Protected Profile Routes ───────────────────────────
+app.get('/api/donor/profile', authenticate, authorize('DONOR'), async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      include: { donorProfile: true }
+    });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    res.json({ success: true, data: user });
+  } catch (error) { next(error); }
 });
 
-app.get('/api/recipient/profile', authenticate, authorize('RECIPIENT'), (req, res) => {
-  res.json({ success: true, message: 'Welcome to the Recipient profile.', user: req.user });
+app.get('/api/donor/eligibility', authenticate, authorize('DONOR'), async (req, res, next) => {
+  try {
+    const profile = await prisma.donorProfile.findUnique({
+      where: { userId: req.user.userId }
+    });
+    if (!profile) return res.status(404).json({ success: false, message: 'Donor profile not found.' });
+
+    if (!profile.lastDonationDate) {
+      return res.json({ success: true, data: { eligible: true, nextEligibleDate: null } });
+    }
+
+    const lastDate = new Date(profile.lastDonationDate);
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + 60);
+
+    const isEligible = nextDate <= new Date();
+    res.json({ 
+      success: true, 
+      data: { 
+        eligible: isEligible, 
+        nextEligibleDate: nextDate.toISOString() 
+      } 
+    });
+  } catch (error) { next(error); }
+});
+
+app.get('/api/recipient/profile', authenticate, authorize('RECIPIENT'), async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      include: { recipientProfile: true }
+    });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    res.json({ success: true, data: user });
+  } catch (error) { next(error); }
 });
 
 // ─── Centralized Error Handler (must be last) ───────────

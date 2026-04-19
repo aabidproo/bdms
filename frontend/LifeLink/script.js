@@ -481,28 +481,56 @@ async function handleLogin(e) {
 function routeUserToDashboard(user) {
     if (!user || !user.role) return;
     updateNav(user);
-    
-    // Default blood type for non-admins
-    const bloodTypeStr = user.donorProfile?.bloodType || user.recipientProfile?.bloodType || 'Unknown';
+    const token = localStorage.getItem('token');
     
     if (user.role === 'DONOR') {
-        const nameDisplay = document.getElementById('donor-name-display');
-        const bloodDisplay = document.getElementById('donor-blood-display');
-        if (nameDisplay) nameDisplay.textContent = user.name;
-        if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('donor-dashboard');
-        // Fetch live data
+        // Fetch and display real profile data
+        fetch(`http://localhost:5000/api/donor/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.donorProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('donor-name-display');
+                const bloodDisplay = document.getElementById('donor-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'donor');
+            }
+        }).catch(err => console.error('Error fetching donor profile:', err));
+
         setTimeout(() => fetchDonorHistory(), 300);
     } 
     else if (user.role === 'RECIPIENT') {
-        const nameDisplay = document.getElementById('recipient-name-display');
-        const bloodDisplay = document.getElementById('recipient-blood-display');
-        if (nameDisplay) nameDisplay.textContent = user.name;
-        if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('recipient-dashboard');
-        // Fetch live data
+        // Fetch and display real profile data
+        fetch(`http://localhost:5000/api/recipient/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.recipientProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('recipient-name-display');
+                const bloodDisplay = document.getElementById('recipient-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'recipient');
+            }
+        }).catch(err => console.error('Error fetching recipient profile:', err));
+
         setTimeout(() => fetchRecipientHistory(), 300);
-    }
+    } 
     else if (user.role === 'ADMIN') {
         const sidebarName = document.getElementById('admin-sidebar-name');
         if (sidebarName) sidebarName.textContent = user.name;
@@ -917,20 +945,14 @@ async function fetchDonorHistory() {
         if (data.stats) {
             const totalEl = document.getElementById('donor-total-donations');
             const livesEl = document.getElementById('donor-lives-saved');
-            const nextEl = document.getElementById('donor-next-eligible');
             const bloodEl = document.getElementById('donor-blood-display');
 
             if (totalEl) totalEl.textContent = data.stats.totalDonations || 0;
             if (livesEl) livesEl.textContent = data.stats.livesSaved || 0;
             if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
-            if (nextEl) {
-                if (data.stats.nextEligible) {
-                    const d = new Date(data.stats.nextEligible);
-                    nextEl.textContent = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                } else {
-                    nextEl.textContent = 'Eligible Now';
-                }
-            }
+            
+            // Fetch real clinical eligibility
+            fetchDonorEligibility();
         }
 
         // Render history
@@ -1077,12 +1099,23 @@ async function fetchRecipientHistory() {
         const stepper = document.getElementById('recipient-stepper');
 
         if (activeReq && trackerInfo) {
-            trackerInfo.textContent = `Request #${activeReq.id.substring(0,8).toUpperCase()} • ${activeReq.units} Units ${activeReq.bloodGroup}`;
+            // Detailed banner info
+            const idShort = activeReq.id.substring(0,8).toUpperCase();
+            trackerInfo.innerHTML = `Active: <strong>#${idShort}</strong> &bull; ${activeReq.bloodGroup} &bull; ${activeReq.units} Units`;
+            
             if (trackerStatus) {
                 trackerStatus.classList.remove('hidden');
-                trackerStatus.querySelector('span:last-child') || null;
-                const statusText = activeReq.status === 'PENDING' ? 'Pending' : 'Approved';
-                trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ${statusText}`;
+                let colorClass = 'bg-amber-50 text-amber-600 border-amber-100/50';
+                let dotClass = 'bg-amber-500';
+                let label = activeReq.status;
+
+                if (activeReq.status === 'APPROVED') {
+                    colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100/50';
+                    dotClass = 'bg-emerald-500';
+                }
+
+                trackerStatus.className = `px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${colorClass} border shadow-sm`;
+                trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotClass} ${activeReq.status === 'PENDING' ? 'animate-pulse' : ''}"></span> ${label}`;
             }
             if (stepper) {
                 stepper.classList.remove('opacity-50', 'pointer-events-none');
@@ -1907,3 +1940,55 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+async function fetchDonorEligibility() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        
+        const nextEl = document.getElementById('donor-next-eligible');
+        if (!nextEl) return;
+
+        if (result.success && result.data) {
+            const { eligible, nextEligibleDate } = result.data;
+            if (eligible) {
+                nextEl.textContent = '✅ Eligible Now';
+                nextEl.style.color = '#16a34a'; // Green
+            } else {
+                const d = new Date(nextEligibleDate);
+                const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                nextEl.textContent = `❌ ${formatted}`;
+                nextEl.style.color = '#ef4444'; // Red
+            }
+        }
+    } catch (err) { console.error('Eligibility fetch error:', err); }
+}
+
+function populateDetailedProfile(user, role) {
+    const profile = role === 'donor' ? user.donorProfile : user.recipientProfile;
+    if (!profile) return;
+
+    const fields = {
+        [`${role}-profile-phone`]: profile.phone,
+        [`${role}-profile-address`]: profile.address,
+    };
+
+    if (role === 'donor') {
+        fields['donor-profile-weight'] = profile.weight ? `${profile.weight} kg` : null;
+        if (profile.dateOfBirth) {
+            const birth = new Date(profile.dateOfBirth);
+            const age = new Date().getFullYear() - birth.getFullYear();
+            fields['donor-profile-age'] = `${age} Years`;
+        }
+    }
+
+    Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.textContent = val;
+    });
+}
