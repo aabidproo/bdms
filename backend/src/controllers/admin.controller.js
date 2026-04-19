@@ -95,14 +95,24 @@ const getStock = async (req, res, next) => {
 const updateStock = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { bloodGroup, units, donationDate, rbcCount, plasmaCount } = req.body;
+    const { bloodGroup, units, donorName, donationDate, rbcCount, plasmaCount } = req.body;
+
+    // Recalculate expiryDate if donationDate is provided or use current
+    let expiryDate;
+    if (donationDate) {
+      const baseDate = new Date(donationDate);
+      expiryDate = new Date(baseDate);
+      expiryDate.setDate(expiryDate.getDate() + 42);
+    }
 
     const updated = await prisma.bloodInventory.update({
       where: { id },
       data: {
         bloodGroup,
         units: parseInt(units),
+        donorName,
         donationDate: donationDate ? new Date(donationDate) : undefined,
+        expiryDate: expiryDate,
         rbcCount: rbcCount ? parseFloat(rbcCount) : undefined,
         plasmaCount: plasmaCount ? parseFloat(plasmaCount) : undefined
       }
