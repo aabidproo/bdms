@@ -16,6 +16,7 @@ router.get('/stats', adminController.getStats);
 // Stock / Inventory
 router.get('/stock', adminController.getStock);
 router.post('/stock', adminController.addStock);
+router.put('/stock/:id', adminController.updateStock);
 router.delete('/stock/:id', adminController.deleteStock);
 
 // Blood Requests

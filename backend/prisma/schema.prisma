@@ -76,10 +76,17 @@ model RecipientProfile {
 // ─── Blood Inventory (1 row per blood group) ────────────
 
 model BloodInventory {
-  id         String   @id @default(cuid())
-  bloodGroup String   @unique  // A+, A-, B+, B-, AB+, AB-, O+, O-
-  units      Int      @default(0)
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  bloodGroup   String   // A+, A-, B+, etc.
+  units        Int      @default(0)
+  donorName    String?
+  donationDate DateTime?
+  expiryDate   DateTime?
+  rbcCount     Float?
+  plasmaCount  Float?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("blood_inventory")
 }
@@ -95,8 +102,12 @@ model Donation {
   units          Int          @default(1)
   location       String       // Hospital / Clinic name
   scheduledDate  DateTime
+  donationDate   DateTime?    // Date the donation actually took place
   status         String       @default("SCHEDULED") // SCHEDULED | COMPLETED | CANCELLED
   notes          String?
+  rbcCount       Float?       // RBC Count (million cells/mcL)
+  plasmaCount    Float?       // Plasma volume (mL)
+  healthIndicator String?     @default("Good") // Good | Warning | Critical
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

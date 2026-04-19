@@ -13,7 +13,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── Global Middleware ──────────────────────────────────
-app.use(cors());
+const allowedOrigins = [
+  'http://127.0.0.1:5500',
+  'http://127.0.0.1:5501',
+  'http://127.0.0.1:5050',
+  'http://localhost:5500',
+  'http://localhost:5501',
+  'http://localhost:5050'
+];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // ─── Health Check ───────────────────────────────────────

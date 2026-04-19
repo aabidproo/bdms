@@ -335,7 +335,7 @@ async function completeRegistration() {
             }
         }
         
-        const response = await fetch('http://localhost:5001/api/auth/register', {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -445,7 +445,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/login', {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -612,7 +612,7 @@ async function fetchAdminUsers() {
     }
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/users', {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -741,7 +741,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -807,7 +807,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -864,7 +864,7 @@ async function scheduleDonation(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations', {
+        const response = await fetch('http://localhost:5000/api/donations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -903,7 +903,7 @@ async function fetchDonorHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations/my', {
+        const response = await fetch('http://localhost:5000/api/donations/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1014,7 +1014,7 @@ async function submitBloodRequest(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests', {
+        const response = await fetch('http://localhost:5000/api/requests', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1052,7 +1052,7 @@ async function fetchRecipientHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests/my', {
+        const response = await fetch('http://localhost:5000/api/requests/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1142,15 +1142,21 @@ async function fetchRecipientHistory() {
 
 // ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
 
+let currentInventoryData = [];
+
 async function fetchInventory() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
+    // Inject extra fields into Add Stock modal if not already present
+    injectAddStockFields();
+
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
+    // Sort is handled in-memory now for grouped results
     const sortVal = document.getElementById('admin-inventory-sort')?.value || 'latest';
 
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}&sort=${sortVal}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1159,21 +1165,22 @@ async function fetchInventory() {
 
         tbody.innerHTML = '';
         if (!data.success || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
             const unitsEl = document.getElementById('admin-total-units');
             if (unitsEl) unitsEl.textContent = '0';
             return;
         }
 
+        currentInventoryData = data.data;
         let totalUnits = 0;
         let criticals = [];
         const groupLevels = {};
 
         data.data.forEach(item => {
-            totalUnits += item.units;
-            if (item.units < 5) criticals.push(item.bloodGroup + ' (' + item.units + ')');
-            const percentage = Math.min((item.units / 50) * 100, 100);
-            groupLevels[item.bloodGroup] = { units: item.units, percentage };
+            totalUnits += item.totalUnits;
+            if (item.totalUnits < 10) criticals.push(item.bloodGroup + ' (' + item.totalUnits + ')');
+            const percentage = Math.min((item.totalUnits / 100) * 100, 100);
+            groupLevels[item.bloodGroup] = { units: item.totalUnits, percentage };
         });
 
         // Update Supply Matrix
@@ -1185,9 +1192,9 @@ async function fetchInventory() {
                 const info = groupLevels[group] || { units: 0, percentage: 0 };
                 let status = 'Stable';
                 let levelClass = 'level-optimal';
-                if (info.units < 5) { status = 'Critical'; levelClass = 'level-low'; }
-                else if (info.units < 15) { status = 'Low Stock'; levelClass = 'level-low'; }
-                else if (info.units > 40) { status = 'Surplus'; levelClass = 'level-surplus'; }
+                if (info.units < 10) { status = 'Critical'; levelClass = 'level-low'; }
+                else if (info.units < 30) { status = 'Low Stock'; levelClass = 'level-low'; }
+                else if (info.units > 80) { status = 'Surplus'; levelClass = 'level-surplus'; }
                 const card = document.createElement('div');
                 card.className = 'matrix-card';
                 card.innerHTML = `
@@ -1195,7 +1202,7 @@ async function fetchInventory() {
                     <div class="matrix-level-outer">
                         <div class="matrix-level-inner ${levelClass}" style="width:${info.percentage}%;"></div>
                     </div>
-                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 15 ? '#ef4444' : (info.units > 40 ? '#2563eb' : '#16a34a')};">${status}</span>
+                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 30 ? '#ef4444' : (info.units > 80 ? '#2563eb' : '#16a34a')};">${status}</span>
                 `;
                 matrixContainer.appendChild(card);
             });
@@ -1218,15 +1225,32 @@ async function fetchInventory() {
             }
         }
 
-        data.data.forEach(item => {
+        data.data.forEach((item, index) => {
             const tr = document.createElement('tr');
-            let badgeClass = item.units < 5 ? 'admin-badge-danger' : 'admin-badge-success';
-            let stockLabel = item.units < 5 ? 'Low: ' + item.units + ' Total' : item.units + ' Total Stock';
-            const expDate = item.expirationDate ? new Date(item.expirationDate).toLocaleDateString() : 'N/A';
-            tr.innerHTML = '<td><div style="display:flex;align-items:center;gap:0.75rem;"><div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">' + escapeHtml(item.bloodGroup) + '</div><div style="font-weight:600;">' + escapeHtml(item.bloodGroup) + '</div></div></td>' +
-                '<td><span class="' + badgeClass + '">' + stockLabel + '</span></td>' +
-                '<td style="color:#64748b;">' + expDate + '</td>' +
-                '<td style="text-align:right;"><button class="admin-btn-icon delete" onclick="deleteStock(\'' + item.id + '\')" title="Delete"><i class="fas fa-trash"></i></button></td>';
+            let badgeClass = item.totalUnits < 10 ? 'admin-badge-danger' : 'admin-badge-success';
+            
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">${escapeHtml(item.bloodGroup)}</div>
+                        <div style="font-weight:600;">${escapeHtml(item.bloodGroup)}</div>
+                    </div>
+                </td>
+                <td>
+                    <div style="line-height:1.4;">
+                        <div class="${badgeClass}" style="display:inline-block; font-size:0.75rem; padding:2px 8px;">${item.totalUnits} Total Units</div>
+                        <div style="font-size:0.7rem; color:#64748b; font-weight:600; margin-top:2px;">${item.donorCount} Unique Donors</div>
+                    </div>
+                </td>
+                <td style="text-align:right; display:flex; justify-content:flex-end; gap:0.5rem;">
+                    <button class="admin-btn-icon" style="background:rgba(99,102,241,0.1); color:#6366f1; border-color:rgba(99,102,241,0.2);" onclick="showStockDetails(${index})" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="admin-btn-icon" style="background:rgba(16,185,129,0.1); color:#10b981; border-color:rgba(16,185,129,0.2);" onclick="openGroupEdit(${index})" title="Quick Edit">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                </td>
+            `;
             tbody.appendChild(tr);
         });
     } catch (error) {
@@ -1234,7 +1258,283 @@ async function fetchInventory() {
     }
 }
 
+// ─── STOCK DETAILS MODAL (Eye Icon) ─────────────────────
 
+function showStockDetails(groupIndex) {
+    const group = currentInventoryData[groupIndex];
+    if (!group) return;
+
+    // Create modal if not exists
+    let modal = document.getElementById('detailed-stock-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'detailed-stock-modal';
+        modal.className = 'modal-backdrop hidden';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:850px; padding:0; overflow:hidden;">
+                <div style="padding:1.5rem 2rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:between; items:center;">
+                    <div>
+                        <h3 id="detail-modal-title" style="font-size:1.25rem; font-weight:800; color:#1e293b;"></h3>
+                        <p id="detail-modal-subtitle" style="font-size:0.85rem; color:#64748b; font-weight:500;"></p>
+                    </div>
+                    <button onclick="document.getElementById('detailed-stock-modal').classList.add('hidden')" style="width:36px; height:36px; border-radius:50%; border:none; background:#fff; color:#64748b; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.05); transition:all 0.2s;" onmouseover="this.style.color='#ef4444'; this.style.transform='rotate(90deg)'" onmouseout="this.style.color='#64748b'; this.style.transform='rotate(0deg)'">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div style="padding:2rem; max-height:60vh; overflow-y:auto;">
+                    <table class="w-full text-left" style="border-collapse:separate; border-spacing:0 8px;">
+                        <thead>
+                            <tr style="text-transform:uppercase; font-size:0.7rem; font-weight:800; color:#94a3b8; letter-spacing:0.05em;">
+                                <th style="padding:0 1rem;">Donated By</th>
+                                <th style="padding:0 1rem;">Expiration</th>
+                                <th style="padding:0 1rem;">Stock Status</th>
+                                <th style="padding:0 1rem; text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-stock-tbody"></tbody>
+                    </table>
+                </div>
+                <div style="padding:1.5rem 2rem; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:right;">
+                    <button onclick="document.getElementById('detailed-stock-modal').classList.add('hidden')" style="padding:0.6rem 1.5rem; border-radius:10px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer; font-size:0.85rem;">Close Details</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('detail-modal-title').textContent = `${group.bloodGroup} Blood Group Inventory`;
+    document.getElementById('detail-modal-subtitle').textContent = `Tracking ${group.donations.length} individual batches`;
+
+    const tbody = document.getElementById('detail-stock-tbody');
+    tbody.innerHTML = '';
+
+    group.donations.forEach(don => {
+        const tr = document.createElement('tr');
+        tr.className = 'stock-detail-row';
+        tr.style.background = '#fff';
+        
+        tr.innerHTML = `
+            <td style="padding:1rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:12px; border-bottom-left-radius:12px;">
+                <div style="font-weight:700; color:#1e293b;">${escapeHtml(don.donorName)}</div>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Donated: ${new Date(don.donationDate).toLocaleDateString()}</div>
+            </td>
+            <td style="padding:1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                <div class="expiry-timer" data-expiry="${don.expiryDate}">Calculating...</div>
+            </td>
+            <td style="padding:1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                <div style="font-weight:800; color:#475569;">${don.units} Units</div>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">RBC: ${don.rbcCount || '--'} • Plas: ${don.plasmaCount || '--'}</div>
+            </td>
+            <td style="padding:1rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:12px; border-bottom-right-radius:12px; text-align:right;">
+                <button onclick="editDonation('${don.id}')" style="width:32px; height:32px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#6366f1; cursor:pointer;" title="Edit Record"><i class="fas fa-pencil-alt"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    updateAllTimers();
+    modal.classList.remove('hidden');
+}
+
+// ─── EDIT MODAL LOGIC (Pencil Icon) ─────────────────────
+
+function openGroupEdit(index) {
+    // For "Quick Edit" from main table, we just show the details so they can pick a record
+    showStockDetails(index);
+}
+
+async function editDonation(id) {
+    const token = localStorage.getItem('token');
+    // Find record in current data
+    let donation = null;
+    currentInventoryData.forEach(g => {
+        const found = g.donations.find(d => d.id === id);
+        if (found) {
+            donation = found;
+            donation.bloodGroup = g.bloodGroup;
+        }
+    });
+    
+    if (!donation) return;
+
+    let modal = document.getElementById('record-edit-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'record-edit-modal';
+        modal.className = 'modal-backdrop hidden';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:500px;">
+                <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; margin-bottom:1.5rem;">Edit Donation Record</h3>
+                <form id="record-edit-form" class="space-y-4">
+                    <input type="hidden" id="edit-id">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">Blood Group</label>
+                            <select id="edit-bg" required style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600;">
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">Units</label>
+                            <input type="number" id="edit-units" required style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600;">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">Donation Date</label>
+                        <input type="date" id="edit-date" required style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">Donor Name (Display Only)</label>
+                        <input type="text" id="edit-donor" disabled style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600; background:#f8fafc;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div>
+                            <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">RBC Count</label>
+                            <input type="number" step="0.1" id="edit-rbc" style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600;">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.5rem;">Plasma Count (mL)</label>
+                            <input type="number" id="edit-plasma" style="width:100%; padding:0.75rem; border-radius:10px; border:1px solid #e2e8f0; font-weight:600;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:1rem; padding-top:1rem;">
+                        <button type="button" onclick="document.getElementById('record-edit-modal').classList.add('hidden')" style="flex:1; padding:0.8rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                        <button type="submit" style="flex:1; padding:0.8rem; border-radius:12px; border:none; background:#10b981; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.2);">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        document.getElementById('record-edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const payload = {
+                bloodGroup: document.getElementById('edit-bg').value,
+                units: document.getElementById('edit-units').value,
+                donationDate: document.getElementById('edit-date').value,
+                rbcCount: document.getElementById('edit-rbc').value,
+                plasmaCount: document.getElementById('edit-plasma').value
+            };
+
+            try {
+                const res = await fetch(`http://localhost:5000/api/admin/stock/${editId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    addToActivityFeed(`Stock record for <strong>${payload.bloodGroup}</strong> updated`, 'success');
+                    modal.classList.add('hidden');
+                    document.getElementById('detailed-stock-modal')?.classList.add('hidden');
+                    fetchInventory();
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) { console.error(err); }
+        });
+    }
+
+    // Fill form
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-bg').value = donation.bloodGroup;
+    document.getElementById('edit-units').value = donation.units;
+    document.getElementById('edit-date').value = new Date(donation.donationDate).toISOString().split('T')[0];
+    document.getElementById('edit-donor').value = donation.donorName;
+    document.getElementById('edit-rbc').value = donation.rbcCount || '';
+    document.getElementById('edit-plasma').value = donation.plasmaCount || '';
+
+    modal.classList.remove('hidden');
+}
+
+// ─── COUNTDOWN TIMER LOGIC ──────────────────────────────
+
+function updateAllTimers() {
+    const timers = document.querySelectorAll('.expiry-timer');
+    const now = new Date();
+
+    timers.forEach(timer => {
+        const expiryDate = new Date(timer.dataset.expiry);
+        const diff = expiryDate - now;
+
+        if (diff <= 0) {
+            timer.textContent = 'EXPIRED';
+            timer.style.color = '#ef4444';
+            timer.style.fontWeight = '800';
+            return;
+        }
+
+        const { days, hours } = calculateRemainingTime(expiryDate);
+        
+        timer.textContent = `${days} days ${hours} hrs remaining`;
+        timer.style.fontWeight = '700';
+
+        // Color coding
+        if (days < 7) {
+            timer.style.color = '#ef4444'; // Red
+        } else if (days < 14) {
+            timer.style.color = '#f59e0b'; // Orange
+        } else {
+            timer.style.color = '#10b981'; // Green
+        }
+    });
+}
+
+function calculateRemainingTime(expiryDate) {
+    const diff = new Date(expiryDate) - new Date();
+    return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    };
+}
+
+// Run timers every minute
+setInterval(updateAllTimers, 60000);
+
+
+
+function injectAddStockFields() {
+    const form = document.getElementById('admin-add-stock-form');
+    if (!form || document.getElementById('add-stock-donor')) return; // Already injected or no form
+
+    const insertPoint = form.querySelector('div:last-of-type'); // Usually before 'Cancel/Add' buttons
+    if (!insertPoint) return;
+
+    const extraFields = document.createElement('div');
+    extraFields.style.display = 'contents';
+    extraFields.innerHTML = `
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donor Full Name</label>
+            <input type="text" id="add-stock-donor" required placeholder="John Doe" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donation Date</label>
+            <input type="date" id="add-stock-date" required style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">RBC Count</label>
+                <input type="number" step="0.1" id="add-stock-rbc" placeholder="4.5" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Plasma (mL)</label>
+                <input type="number" id="add-stock-plasma" placeholder="300" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+        </div>
+    `;
+    form.insertBefore(extraFields, insertPoint);
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('add-stock-date').value = today;
+}
 
 async function submitAddStock(e) {
     if (e) e.preventDefault();
@@ -1243,19 +1543,36 @@ async function submitAddStock(e) {
 
     const bg = document.getElementById('add-stock-group').value;
     const units = document.getElementById('add-stock-units').value;
+    const donorName = document.getElementById('add-stock-donor')?.value;
+    const donationDate = document.getElementById('add-stock-date')?.value;
+    const rbcCount = document.getElementById('add-stock-rbc')?.value;
+    const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stock', {
+        const response = await fetch('http://localhost:5000/api/admin/stock', {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ bloodGroup: bg, units: units })
+            body: JSON.stringify({ 
+                bloodGroup: bg, 
+                units: units,
+                donorName: donorName,
+                donationDate: donationDate,
+                rbcCount: rbcCount,
+                plasmaCount: plasmaCount
+            })
         });
         const data = await response.json();
-        if (data.success) { addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong>`, 'success');
+        if (data.success) { 
+            addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong> from ${donorName}`, 'success');
             document.getElementById('admin-add-stock-form').reset();
+            // Re-set today's date after reset
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('add-stock-date');
+            if (dateInput) dateInput.value = today;
+
             document.getElementById('add-stock-modal').classList.add('hidden');
             fetchInventory(); 
         } else {
@@ -1270,7 +1587,7 @@ async function deleteStock(id) {
     if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1287,7 +1604,7 @@ async function fetchAdminRequests() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/requests', {
+        const response = await fetch('http://localhost:5000/api/admin/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1332,7 +1649,7 @@ async function fetchAdminRequests() {
 async function updateReqStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -1361,7 +1678,7 @@ async function fetchAdminDonations() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/donations', {
+        const response = await fetch('http://localhost:5000/api/admin/donations', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1402,7 +1719,7 @@ async function fetchAdminDonations() {
 async function updateDonationStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1431,7 +1748,7 @@ async function fetchAdminStats() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        const response = await fetch('http://localhost:5000/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

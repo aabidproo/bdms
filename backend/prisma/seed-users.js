@@ -2,7 +2,7 @@ const prisma = require('../src/lib/prisma');
 const bcrypt = require('bcrypt');
 
 async function seedUsers() {
-  const password = await bcrypt.hash('Test@1234', 10);
+  const password = await bcrypt.hash('admin123', 10);
 
   // 1. Admin
   await prisma.user.create({
