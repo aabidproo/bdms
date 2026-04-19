@@ -491,6 +491,8 @@ function routeUserToDashboard(user) {
         if (nameDisplay) nameDisplay.textContent = user.name;
         if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('donor-dashboard');
+        // Fetch live data
+        setTimeout(() => fetchDonorHistory(), 300);
     } 
     else if (user.role === 'RECIPIENT') {
         const nameDisplay = document.getElementById('recipient-name-display');
@@ -498,11 +500,18 @@ function routeUserToDashboard(user) {
         if (nameDisplay) nameDisplay.textContent = user.name;
         if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('recipient-dashboard');
+        // Fetch live data
+        setTimeout(() => fetchRecipientHistory(), 300);
     }
     else if (user.role === 'ADMIN') {
         const sidebarName = document.getElementById('admin-sidebar-name');
         if (sidebarName) sidebarName.textContent = user.name;
         navigateTo('admin-dashboard');
+        // Fetch admin stats and initial data
+        setTimeout(() => {
+            fetchAdminStats();
+            fetchInventory();
+        }, 300);
     }
 }
 
@@ -826,6 +835,311 @@ async function handleResetPassword(e) {
 
 
 
+// ─── DONOR DASHBOARD FUNCTIONS ───────────────────────────
+
+async function scheduleDonation(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const location = document.getElementById('donation-location').value;
+    const scheduledDate = document.getElementById('donation-datetime').value;
+    const btn = document.getElementById('donation-submit-btn');
+    const successEl = document.getElementById('donor-schedule-success');
+    const errorEl = document.getElementById('donor-schedule-error');
+    const errorText = document.getElementById('donor-schedule-error-text');
+
+    // Hide previous messages
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!location || !scheduledDate) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
+
+    try {
+        const response = await fetch('http://localhost:5001/api/donations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ location, scheduledDate })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to schedule donation.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('donor-schedule-form-inner').reset();
+        // Refresh history after scheduling
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchDonorHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchDonorHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('donor-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/donations/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const totalEl = document.getElementById('donor-total-donations');
+            const livesEl = document.getElementById('donor-lives-saved');
+            const nextEl = document.getElementById('donor-next-eligible');
+            const bloodEl = document.getElementById('donor-blood-display');
+
+            if (totalEl) totalEl.textContent = data.stats.totalDonations || 0;
+            if (livesEl) livesEl.textContent = data.stats.livesSaved || 0;
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            if (nextEl) {
+                if (data.stats.nextEligible) {
+                    const d = new Date(data.stats.nextEligible);
+                    nextEl.textContent = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                } else {
+                    nextEl.textContent = 'Eligible Now';
+                }
+            }
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-calendar-plus" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No donations yet. Schedule your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(donation => {
+            const date = new Date(donation.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const isScheduled = donation.status === 'SCHEDULED';
+            const isCompleted = donation.status === 'COMPLETED';
+            const isCancelled = donation.status === 'CANCELLED';
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            let iconBg = 'bg-white border-red-50';
+
+            if (isScheduled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Scheduled</span>';
+                cardBg = 'bg-white shadow-sm';
+                iconBg = 'bg-amber-50 border-amber-100 text-amber-600';
+            } else if (isCompleted) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed</span>';
+            } else if (isCancelled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Cancelled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${isScheduled ? iconBg : 'bg-white border border-red-50 text-[#D32F2F]'} rounded-full flex items-center justify-center font-bold shadow-sm group-hover:scale-110 transition-transform">
+                        ${escapeHtml(donation.bloodType)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${escapeHtml(donation.location)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch donor history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
+
+// ─── RECIPIENT DASHBOARD FUNCTIONS ──────────────────────
+
+async function submitBloodRequest(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const bloodGroup = document.getElementById('request-blood-group').value;
+    const units = document.getElementById('request-units').value;
+    const urgency = document.getElementById('request-urgency').value;
+    const hospital = document.getElementById('request-hospital').value;
+    const btn = document.getElementById('request-submit-btn');
+    const successEl = document.getElementById('recipient-request-success');
+    const errorEl = document.getElementById('recipient-request-error');
+    const errorText = document.getElementById('recipient-request-error-text');
+
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!bloodGroup || !units || !urgency || !hospital) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+
+    try {
+        const response = await fetch('http://localhost:5001/api/requests', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ bloodGroup, units, urgency, hospital })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit request.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('recipient-request-form-inner').reset();
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchRecipientHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchRecipientHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('recipient-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/requests/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const bloodEl = document.getElementById('recipient-blood-display');
+            const fulfilledEl = document.getElementById('recipient-fulfilled-count');
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            if (fulfilledEl) fulfilledEl.textContent = (data.stats.fulfilled || 0) + ' Requests';
+        }
+
+        // Update active tracker
+        const activeReq = data.data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
+        const trackerInfo = document.getElementById('recipient-active-info');
+        const trackerStatus = document.getElementById('recipient-active-status');
+        const stepper = document.getElementById('recipient-stepper');
+
+        if (activeReq && trackerInfo) {
+            trackerInfo.textContent = `Request #${activeReq.id.substring(0,8).toUpperCase()} • ${activeReq.units} Units ${activeReq.bloodGroup}`;
+            if (trackerStatus) {
+                trackerStatus.classList.remove('hidden');
+                trackerStatus.querySelector('span:last-child') || null;
+                const statusText = activeReq.status === 'PENDING' ? 'Pending' : 'Approved';
+                trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ${statusText}`;
+            }
+            if (stepper) {
+                stepper.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        } else {
+            if (trackerInfo) trackerInfo.textContent = 'No active requests.';
+            if (trackerStatus) trackerStatus.classList.add('hidden');
+            if (stepper) stepper.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-clipboard-list" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No requests yet. Submit your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(req => {
+            const date = new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            if (req.status === 'PENDING') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending</span>';
+                cardBg = 'bg-white shadow-sm';
+            } else if (req.status === 'APPROVED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100/50"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Approved</span>';
+            } else if (req.status === 'REJECTED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Rejected</span>';
+            } else if (req.status === 'FULFILLED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fulfilled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
+                        ${escapeHtml(req.bloodGroup)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${req.units} Units • ${escapeHtml(req.hospital)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch recipient history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
+
 // ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
 
 async function fetchInventory() {
@@ -1026,9 +1340,109 @@ async function updateReqStatus(id, newStatus) {
             },
             body: JSON.stringify({ status: newStatus })
         });
-        if (response.ok) { addToActivityFeed(`Request for <strong>${id.substring(0,6)}...</strong> was <strong>${newStatus}</strong>`, 'info'); fetchAdminRequests(); }
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Request <strong>${id.substring(0,8)}...</strong> was <strong>${newStatus}</strong>`, newStatus === 'APPROVED' ? 'success' : 'info');
+            fetchAdminRequests();
+            fetchInventory(); // Refresh inventory since stock may have changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update request.');
+        }
     } catch(err) {
         console.error(err);
+    }
+}
+
+// ─── ADMIN DONATIONS MANAGEMENT ─────────────────────────
+
+async function fetchAdminDonations() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/donations', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const listDiv = document.getElementById('admin-donations-list');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#84758c;">No donations found.</div>';
+            return;
+        }
+
+        data.data.forEach(don => {
+            const donorName = don.donorProfile?.user?.name || 'Unknown Donor';
+            const date = new Date(don.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = 'admin-badge-primary';
+            if (don.status === 'COMPLETED') statusBadge = 'admin-badge-success';
+            else if (don.status === 'CANCELLED') statusBadge = 'admin-badge-danger';
+
+            const div = document.createElement('div');
+            div.className = 'admin-request-item';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
+                '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(don.bloodType) + '</div>' +
+                '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(donorName) + '</div>' +
+                '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + statusBadge + '">' + escapeHtml(don.status) + '</span> &middot; ' + don.units + ' Unit &middot; ' + date + ' &middot; ' + escapeHtml(don.location) + '</div></div></div>' +
+                (don.status === 'SCHEDULED' ? '<div style="display:flex;gap:0.5rem;">' +
+                '<button class="admin-btn-icon approve" onclick="updateDonationStatus(\'' + don.id + '\', \'COMPLETED\')" title="Complete"><i class="fas fa-check"></i></button>' +
+                '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                '</div>' : '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + don.status + '</div>');
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        console.error('Failed to fetch admin donations:', err);
+    }
+}
+
+async function updateDonationStatus(id, newStatus) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Donation <strong>${id.substring(0,8)}...</strong> marked as <strong>${newStatus}</strong>`, newStatus === 'COMPLETED' ? 'success' : 'info');
+            fetchAdminDonations();
+            fetchInventory(); // Refresh inventory since stock changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update donation.');
+        }
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// ─── ADMIN STATS ────────────────────────────────────────
+
+async function fetchAdminStats() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+            const totalUsersEl = document.getElementById('admin-total-users');
+            const pendingEl = document.getElementById('admin-pending-count');
+            if (totalUsersEl) totalUsersEl.textContent = data.data.totalUsers || 0;
+            if (pendingEl) pendingEl.textContent = data.data.pendingRequests || 0;
+        }
+    } catch(err) {
+        console.error('Failed to fetch admin stats:', err);
     }
 }
 
@@ -1067,13 +1481,7 @@ function navigateAdmin(viewId) {
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
-        // If it's the dashboard, we might need flex, but mostly block is fine for internal views
         targetView.style.display = 'block'; 
-        
-        // Specific handling for dashboard layout (which uses grids/flex internally)
-        if (viewId === 'admin-view-dashboard') {
-            targetView.style.display = 'block'; // Containers are block, internal elements are flex
-        }
     }
 
     // 3. Update Sidebar Links
@@ -1089,6 +1497,7 @@ function navigateAdmin(viewId) {
     const titleMap = {
         'admin-view-dashboard': 'Dashboard Overview',
         'admin-view-inventory': 'Inventory Management',
+        'admin-view-donations': 'Donation Approvals',
         'admin-view-requests': 'Blood Request Triage',
         'admin-view-users': 'User Directory'
     };
@@ -1097,8 +1506,10 @@ function navigateAdmin(viewId) {
         titleElem.textContent = titleMap[viewId] || 'Admin Panel';
     }
 
-    // 5. Trigger Data Refreshes if needed
+    // 5. Trigger Data Refreshes
+    if (viewId === 'admin-view-dashboard') { fetchAdminStats(); fetchInventory(); }
     if (viewId === 'admin-view-inventory') fetchInventory();
+    if (viewId === 'admin-view-donations') fetchAdminDonations();
     if (viewId === 'admin-view-requests') fetchAdminRequests();
     if (viewId === 'admin-view-users') fetchAdminUsers();
 }

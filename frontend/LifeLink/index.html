@@ -1169,7 +1169,7 @@
                         </div>
                     </div>
                     <div class="mt-1 text-left">
-                        <h3 class="text-4xl font-extrabold text-gray-900 tracking-tight">3</h3>
+                        <h3 id="donor-total-donations" class="text-4xl font-extrabold text-gray-900 tracking-tight">0</h3>
                         <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Total Donations</p>
                     </div>
                 </div>
@@ -1182,7 +1182,7 @@
                         <div class="w-16 h-16 absolute top-4 right-4 bg-red-400/20 blur-2xl rounded-full"></div>
                     </div>
                     <div class="mt-1 text-left relative z-10">
-                        <h3 class="text-4xl font-extrabold text-gray-900 tracking-tight">9</h3>
+                        <h3 id="donor-lives-saved" class="text-4xl font-extrabold text-gray-900 tracking-tight">0</h3>
                         <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Lives Saved</p>
                     </div>
                 </div>
@@ -1194,7 +1194,7 @@
                         </div>
                     </div>
                     <div class="mt-1 text-left">
-                        <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">June 2025</h3>
+                        <h3 id="donor-next-eligible" class="text-3xl font-extrabold text-gray-900 tracking-tight">—</h3>
                         <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Next Eligible</p>
                     </div>
                 </div>
@@ -1216,17 +1216,20 @@
                     <div id="donor-schedule-success" class="hidden bg-green-50 text-green-700 p-4 rounded-2xl border border-green-200 mb-6 font-bold text-sm">
                         <i class="fas fa-check-circle mr-2"></i>Donation scheduled successfully!
                     </div>
+                    <div id="donor-schedule-error" class="hidden bg-red-50 text-red-700 p-4 rounded-2xl border border-red-200 mb-6 font-bold text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i><span id="donor-schedule-error-text"></span>
+                    </div>
 
-                    <form onsubmit="event.preventDefault(); document.getElementById('donor-schedule-success').classList.remove('hidden'); setTimeout(()=>this.reset(), 1500);" class="space-y-6">
+                    <form id="donor-schedule-form-inner" onsubmit="scheduleDonation(event)" class="space-y-6">
                         <div class="space-y-2.5">
                             <label class="text-sm font-semibold text-gray-700">Location</label>
                             <div class="relative group">
                                 <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#D32F2F] transition-colors text-lg"></i>
-                                <select required class="w-full pl-12 pr-10 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-red-50 focus:border-[#D32F2F] focus:bg-white transition-all outline-none">
+                                <select id="donation-location" required class="w-full pl-12 pr-10 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-red-50 focus:border-[#D32F2F] focus:bg-white transition-all outline-none">
                                     <option value="" disabled selected>Choose a clinic...</option>
                                     <option value="City Central Hospital">City Central Hospital</option>
-                                    <option value="Westside Clinic">Westside Blood Center</option>
-                                    <option value="North Hills">North Hills Medical</option>
+                                    <option value="Westside Blood Center">Westside Blood Center</option>
+                                    <option value="North Hills Medical">North Hills Medical</option>
                                     <option value="Community Health Center">Community Health Center</option>
                                 </select>
                                 <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
@@ -1237,94 +1240,28 @@
                             <label class="text-sm font-semibold text-gray-700">Date & Time</label>
                             <div class="relative group">
                                 <i class="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#D32F2F] transition-colors text-lg"></i>
-                                <input type="datetime-local" required class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-red-50 focus:border-[#D32F2F] focus:bg-white transition-all outline-none" />
+                                <input type="datetime-local" id="donation-datetime" required class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-red-50 focus:border-[#D32F2F] focus:bg-white transition-all outline-none" />
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-[#D32F2F] hover:shadow-lg hover:shadow-red-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
+                        <button type="submit" id="donation-submit-btn" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-[#D32F2F] hover:shadow-lg hover:shadow-red-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
                             Book Appointment
                             <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                         </button>
                     </form>
                 </div>
 
-                <!-- Elegant History List -->
+                <!-- Dynamic History List -->
                 <div class="lg:col-span-7 bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 h-max">
                     <div class="flex items-center justify-between mb-8">
                         <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Donation History</h2>
-                        <button class="text-sm font-bold text-gray-400 hover:text-[#D32F2F] transition-colors flex items-center gap-1">
-                            View All <i class="fas fa-chevron-right text-xs"></i>
+                        <button onclick="fetchDonorHistory()" class="text-sm font-bold text-gray-400 hover:text-[#D32F2F] transition-colors flex items-center gap-1">
+                            <i class="fas fa-sync-alt text-xs"></i> Refresh
                         </button>
                     </div>
 
-                    <div class="space-y-4">
-                        <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-gray-50/30 hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4">
-                            <div class="flex items-center gap-5">
-                                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#D32F2F] font-bold shadow-sm border border-red-50 group-hover:scale-110 transition-transform">
-                                    O-
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 text-[1.05rem]">Mar 15, 2025</h4>
-                                    <p class="text-gray-500 font-medium text-sm mt-0.5">City General Hospital</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-gray-50/30 hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4">
-                            <div class="flex items-center gap-5">
-                                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#D32F2F] font-bold shadow-sm border border-red-50 group-hover:scale-110 transition-transform">
-                                    O-
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 text-[1.05rem]">Nov 10, 2024</h4>
-                                    <p class="text-gray-500 font-medium text-sm mt-0.5">Westside Blood Center</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-gray-50/30 hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4">
-                            <div class="flex items-center gap-5">
-                                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#D32F2F] font-bold shadow-sm border border-red-50 group-hover:scale-110 transition-transform">
-                                    O-
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 text-[1.05rem]">Jul 05, 2024</h4>
-                                    <p class="text-gray-500 font-medium text-sm mt-0.5">Community Drive</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-white hover:border-gray-200 shadow-sm transition-all duration-300 gap-4">
-                            <div class="flex items-center gap-5">
-                                <div class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 font-bold shadow-sm border border-amber-100 group-hover:scale-110 transition-transform">
-                                    O-
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 text-[1.05rem]">Jun 10, 2025</h4>
-                                    <p class="text-gray-500 font-medium text-sm mt-0.5">City General Hospital</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Scheduled
-                                </span>
-                            </div>
-                        </div>
+                    <div id="donor-history-list" class="space-y-4">
+                        <div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading history...</div>
                     </div>
                 </div>
 
@@ -1359,19 +1296,19 @@
             </header>
 
             <!-- Floating Active Tracker -->
-            <div class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white z-10">
+            <div id="recipient-tracker-container" class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white z-10">
                 <div class="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 tracking-tight">Active Request Tracker</h3>
-                        <p class="text-sm text-gray-500 font-medium">Request #REQ-8294 • 2 Units AB+</p>
+                        <p id="recipient-active-info" class="text-sm text-gray-500 font-medium">No active requests.</p>
                     </div>
-                    <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                    <span id="recipient-active-status" class="hidden px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> In Transit
                     </span>
                 </div>
                 
                 <!-- Visual Stepper -->
-                <div class="relative flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mx-auto pt-4 pb-2">
+                <div id="recipient-stepper" class="relative flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mx-auto pt-4 pb-2 opacity-50 pointer-events-none">
                     <!-- Line connections -->
                     <div class="absolute top-5 left-0 w-full h-1 bg-gray-100 -translate-y-1/2 hidden md:block rounded-full z-0"></div>
                     <!-- Partial progress line -->
@@ -1429,8 +1366,11 @@
                     <div id="recipient-request-success" class="hidden bg-green-50 text-green-700 p-4 rounded-2xl border border-green-200 mb-6 font-bold text-sm">
                         <i class="fas fa-check-circle mr-2"></i>Blood request submitted successfully!
                     </div>
+                    <div id="recipient-request-error" class="hidden bg-red-50 text-red-700 p-4 rounded-2xl border border-red-200 mb-6 font-bold text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i><span id="recipient-request-error-text"></span>
+                    </div>
 
-                    <form onsubmit="event.preventDefault(); document.getElementById('recipient-request-success').classList.remove('hidden'); setTimeout(()=>this.reset(), 2000);" class="space-y-6">
+                    <form id="recipient-request-form-inner" onsubmit="submitBloodRequest(event)" class="space-y-6">
                         
                         <div class="grid grid-cols-2 gap-4">
                             <!-- Blood Group -->
@@ -1438,7 +1378,7 @@
                                 <label class="text-sm font-semibold text-gray-700">Blood Group</label>
                                 <div class="relative group">
                                     <i class="fas fa-tint absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors"></i>
-                                    <select required class="w-full pl-10 pr-8 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none">
+                                    <select id="request-blood-group" required class="w-full pl-10 pr-8 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none">
                                         <option value="" disabled selected>Select</option>
                                         <option value="A+">A+</option>
                                         <option value="A-">A-</option>
@@ -1457,7 +1397,7 @@
                                 <label class="text-sm font-semibold text-gray-700">Units Needed</label>
                                 <div class="relative group">
                                     <i class="fas fa-layer-group absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors"></i>
-                                    <input type="number" min="1" max="10" placeholder="e.g. 2" required class="w-full pl-10 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none" />
+                                    <input type="number" id="request-units" min="1" max="10" placeholder="e.g. 2" required class="w-full pl-10 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none" />
                                 </div>
                             </div>
                         </div>
@@ -1467,7 +1407,7 @@
                             <label class="text-sm font-semibold text-gray-700">Urgency Level</label>
                             <div class="relative group">
                                 <i class="fas fa-exclamation-triangle absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors"></i>
-                                <select required class="w-full pl-12 pr-10 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none">
+                                <select id="request-urgency" required class="w-full pl-12 pr-10 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium appearance-none focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none">
                                     <option value="" disabled selected>Choose urgency...</option>
                                     <option value="Normal" class="text-emerald-600 font-semibold">Normal (Routine)</option>
                                     <option value="High" class="text-amber-600 font-semibold">High (Within 24h)</option>
@@ -1482,11 +1422,11 @@
                             <label class="text-sm font-semibold text-gray-700">Hospital / Location</label>
                             <div class="relative group">
                                 <i class="fas fa-hospital absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors"></i>
-                                <input type="text" placeholder="Enter delivery hospital..." required class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none" />
+                                <input type="text" id="request-hospital" placeholder="Enter delivery hospital..." required class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-gray-800 font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white transition-all outline-none" />
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
+                        <button type="submit" id="request-submit-btn" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
                             Submit Request
                             <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                         </button>
@@ -1509,7 +1449,7 @@
                             <div class="p-3 bg-indigo-50 text-indigo-500 rounded-xl shadow-sm"><i class="fas fa-check-double text-xl"></i></div>
                             <div>
                                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fulfilled</p>
-                                <p class="text-2xl font-black text-gray-900">2 Requests</p>
+                                <p id="recipient-fulfilled-count" class="text-2xl font-black text-gray-900">0 Requests</p>
                             </div>
                         </div>
                     </div>
@@ -1518,57 +1458,6 @@
                     <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50">
                         <div class="flex items-center justify-between mb-8">
                             <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Request History</h2>
-                            <button class="text-sm font-bold text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1">
-                                Sort by Date <i class="fas fa-sort-amount-down text-xs ml-1"></i>
-                            </button>
-                        </div>
-
-                        <div class="space-y-4">
-                            <!-- Pending Request -->
-                            <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-white hover:border-gray-200 shadow-sm transition-all duration-300 gap-4">
-                                <div class="flex items-center gap-5">
-                                    <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-bold shadow-sm border border-indigo-100 group-hover:scale-110 transition-transform">
-                                        AB+
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-900 text-[1.05rem]">Today (In Progress)</h4>
-                                        <p class="text-gray-500 font-medium text-sm mt-0.5">2 Units • Mercy Hospital Center</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Active
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Approved Request -->
-                            <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-gray-50/30 hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4">
-                                <div class="flex items-center gap-5">
-                                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-600 font-bold shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                                        AB+
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-900 text-[1.05rem]">Feb 12, 2025</h4>
-                                        <p class="text-gray-500 font-medium text-sm mt-0.5">4 Units • Downtown Clinic</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100/50">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Approved
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Fulfilled Request -->
-                            <div class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 bg-gray-50/30 hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4">
-                                <div class="flex items-center gap-5">
-                                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-600 font-bold shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                                        AB+
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-gray-900 text-[1.05rem]">Jan 08, 2025</h4>
-                                        <p class="text-gray-500 font-medium text-sm mt-0.5">1 Unit • Mercy Hospital Center</p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-3">
@@ -1607,6 +1496,9 @@
                 </a>
                 <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-inventory');" class="admin-sidebar-link" id="link-admin-view-inventory">
                     <i class="fas fa-boxes-stacked"></i> Inventory
+                </a>
+                <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-donations');" class="admin-sidebar-link" id="link-admin-view-donations">
+                    <i class="fas fa-hand-holding-heart"></i> Donations
                 </a>
                 <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-requests');" class="admin-sidebar-link" id="link-admin-view-requests">
                     <i class="fas fa-clipboard-list"></i> Requests
@@ -1781,13 +1673,24 @@
                     </table>
                 </div>
 
+                <!-- Donations Management -->
+                <div class="admin-view admin-table-container" id="admin-view-donations">
+                    <div class="admin-table-header">
+                        <h3><i class="fas fa-hand-holding-heart" style="color:#D32F2F;"></i> Donation Approvals</h3>
+                        <span style="background:rgba(22,163,74,0.08); color:#16a34a; padding:0.3rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700;">Manage Donations</span>
+                    </div>
+                    <div id="admin-donations-list" style="max-height:500px; overflow-y:auto;">
+                        <div style="text-align:center; padding:3rem; color:#84758c;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading donations...</div>
+                    </div>
+                </div>
+
                 <!-- Live Blood Requests -->
                 <div class="admin-view admin-table-container" id="admin-view-requests">
                     <div class="admin-table-header">
-                        <h3>Live Blood Requests</h3>
+                        <h3><i class="fas fa-clipboard-list" style="color:#6366f1;"></i> Blood Request Triage</h3>
                         <span style="background:rgba(211,47,47,0.08); color:#D32F2F; padding:0.3rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700;">Priority Triage</span>
                     </div>
-                    <div id="admin-requests-list" style="max-height:400px; overflow-y:auto;">
+                    <div id="admin-requests-list" style="max-height:500px; overflow-y:auto;">
                         <div style="text-align:center; padding:3rem; color:#84758c;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading requests...</div>
                     </div>
                 </div>
