@@ -513,11 +513,6 @@ function updateNav(user) {
     
     if (user && navUserContainer && navLoginBtn && navUserName) {
         navUserName.textContent = user.name;
-        navUserName.style.cursor = 'pointer';
-        navUserName.style.textDecoration = 'underline';
-        navUserName.style.textDecorationStyle = 'dotted';
-        navUserName.style.textUnderlineOffset = '4px';
-        navUserName.onclick = goToDashboard;
         navLoginBtn.classList.add('hidden');
         navUserContainer.classList.remove('hidden');
         navUserContainer.classList.add('flex');
@@ -1107,3 +1102,23 @@ function navigateAdmin(viewId) {
     if (viewId === 'admin-view-requests') fetchAdminRequests();
     if (viewId === 'admin-view-users') fetchAdminUsers();
 }
+
+// Nav Dropdown functionality
+function toggleDropdown(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('nav-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('nav-dropdown');
+    const container = document.getElementById('nav-user-container');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+        if (container && !container.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    }
+});
