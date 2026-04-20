@@ -1641,10 +1641,15 @@
                         <div class="admin-stat-label" style="color:#be123c;">Critical Alert</div>
                         <div class="admin-stat-value" style="color:#be123c;"><i class="fas fa-exclamation-triangle" style="font-size:0.6em;"></i> <span id="admin-critical-text">None</span></div>
                     </div>
-                </div>
+                </div> <!-- Close display:none wrapper -->
+
 
                 <!-- Inventory Table -->
                 <div class="admin-view admin-table-container" id="admin-view-inventory">
+                    <!-- KPI Summary Cards -->
+                    <div id="kpi-cards-container" class="kpi-cards-grid" style="padding:1.25rem 1.5rem; border-bottom:1px solid #eef0f2;">
+                        <!-- KPI cards rendered dynamically by fetchKPISummary() -->
+                    </div>
                     <div class="admin-filter-bar">
                         <div style="flex:2; min-width:220px; position:relative;">
                             <i class="fas fa-search" style="position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:0.85rem;"></i>
@@ -1665,6 +1670,7 @@
                             <th class="admin-th">Blood Group</th>
                             <th class="admin-th">Inventory Summary</th>
                             <th class="admin-th">Expiration</th>
+                            <th class="admin-th">Batches</th>
                             <th class="admin-th" style="text-align:right;">Actions</th>
                         </tr></thead>
                         <tbody id="admin-inventory-tbody">
@@ -1830,11 +1836,40 @@
             .admin-dashboard-container::-webkit-scrollbar-track { background: transparent; }
             .admin-dashboard-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
             .admin-dashboard-container::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+            /* ─── KPI Summary Cards ─────────────────────── */
+            .kpi-cards-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; }
+            .kpi-card { background:#fff; border:1px solid #eef0f2; border-radius:14px; padding:1.15rem 1.25rem; display:flex; align-items:center; gap:1rem; transition:all 0.25s; }
+            .kpi-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,0.06); }
+            .kpi-card.kpi-alert { border-color:#fecaca; background:#fff5f5; }
+            .kpi-card.kpi-warning { border-color:#fed7aa; background:#fffbeb; }
+            .kpi-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+            .kpi-data { flex:1; min-width:0; }
+            .kpi-value { font-size:1.65rem; font-weight:800; color:#1a1a2e; line-height:1.1; }
+            .kpi-value.kpi-time { font-size:1.15rem; }
+            .kpi-label { font-size:0.72rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-top:0.2rem; }
+            .kpi-sub { font-size:0.68rem; color:#94a3b8; font-weight:500; margin-top:1px; }
+
+            /* ─── Inventory Status Badges ──────────────── */
+            .inv-badge { display:inline-block; font-size:0.75rem; padding:3px 12px; border-radius:6px; font-weight:700; }
+            .inv-badge-fresh { background:#EAF3DE; color:#27500A; }
+            .inv-badge-low { background:#FAEEDA; color:#633806; }
+            .inv-badge-critical { background:#FCEBEB; color:#791F1F; }
+
+            /* ─── Expiry Text Colors ───────────────────── */
+            .expiry-text { font-size:0.8rem; font-weight:700; }
+            .expiry-green { color:#27500A; }
+            .expiry-amber { color:#633806; }
+            .expiry-red { color:#791F1F; }
+
+            /* ─── Toast Notifications ──────────────────── */
+            @keyframes toastIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+            @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
         </style>
     </section>
 
     <!-- JS Logic -->
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=4"></script>
 
     <!-- Scroll Reveal & Stat Counter Animations -->
     <script>
