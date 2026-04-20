@@ -1,6 +1,3 @@
-// LifeLink - Prisma Schema
-// Blood Donation Management System
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,34 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── User Model ─────────────────────────────────────────
-// Note: SQLite doesn't support native enums.
-// Role values (DONOR, RECIPIENT, ADMIN) are validated 
-// at the application level via Zod.
-
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   // DONOR | RECIPIENT | ADMIN
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  resetToken       String?  @unique
+  id               String            @id @default(cuid())
+  email            String            @unique
+  password         String
+  name             String
+  role             String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  resetToken       String?           @unique
   resetTokenExpiry DateTime?
-
-  // 1:1 Relations
   donorProfile     DonorProfile?
   recipientProfile RecipientProfile?
 }
 
-// ─── Donor Profile (1:1 with User) ──────────────────────
-
 model DonorProfile {
-  id               String    @id @default(cuid())
-  userId           String    @unique
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id               String     @id @default(cuid())
+  userId           String     @unique
   phone            String
   dateOfBirth      DateTime
   gender           String
@@ -46,23 +32,119 @@ model DonorProfile {
   weight           Float
   lastDonationDate DateTime?
   medicalCondition String?
-
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  donations        Donation[]
 }
 
-// ─── Recipient Profile (1:1 with User) ──────────────────
-
 model RecipientProfile {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id               String         @id @default(cuid())
+  userId           String         @unique
   phone            String
   address          String
   bloodType        String
   medicalCondition String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodRequests    BloodRequest[]
+}
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model BloodInventory {
+  id           String     @id @default(cuid())
+  bloodGroup   String
+  units        Int        @default(0)
+  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime   @default(now())
+  donationDate DateTime?
+  donorName    String?
+  plasmaCount  Float?
+  rbcCount     Float?
+  expiryDate   DateTime?
+  notes        String?
+  tested       Boolean    @default(false)
+  dispatches   Dispatch[]
+  alerts       InventoryAlert[]
+
+  @@map("blood_inventory")
+}
+
+model Hospital {
+  id        String     @id @default(cuid())
+  name      String
+  city      String
+  phone     String?
+  createdAt DateTime   @default(now())
+  dispatches Dispatch[]
+
+  @@map("hospitals")
+}
+
+model Dispatch {
+  id         String         @id @default(cuid())
+  batchId    String
+  hospitalId String
+  quantity   Int
+  notes      String?
+  createdAt  DateTime       @default(now())
+  batch      BloodInventory @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  hospital   Hospital       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([hospitalId])
+  @@map("dispatches")
+}
+
+model InventoryAlert {
+  id               String         @id @default(cuid())
+  batchId          String
+  bloodGroup       String
+  daysBeforeExpiry Int            @default(7)
+  notifyOnCritical Boolean        @default(false)
+  method           String         @default("in_app")
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  batch            BloodInventory @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@map("inventory_alerts")
+}
+
+model Donation {
+  id              String       @id @default(cuid())
+  donorProfileId  String
+  bloodType       String
+  units           Int          @default(1)
+  location        String
+  scheduledDate   DateTime
+  status          String       @default("SCHEDULED")
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  donationDate    DateTime?
+  healthIndicator String?      @default("Good")
+  plasmaCount     Float?
+  rbcCount        Float?
+  donorProfile    DonorProfile @relation(fields: [donorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([donorProfileId], map: "donations_donorProfileId_fkey")
+  @@map("donations")
+}
+
+model BloodRequest {
+  id                 String           @id @default(cuid())
+  recipientProfileId String
+  bloodGroup         String
+  units              Int
+  urgency            String           @default("Normal")
+  hospital           String
+  status             String           @default("PENDING")
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  recipientProfile   RecipientProfile @relation(fields: [recipientProfileId], references: [id], onDelete: Cascade)
+
+  @@index([recipientProfileId], map: "blood_requests_recipientProfileId_fkey")
+  @@map("blood_requests")
 }

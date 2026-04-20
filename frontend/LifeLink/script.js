@@ -481,28 +481,65 @@ async function handleLogin(e) {
 function routeUserToDashboard(user) {
     if (!user || !user.role) return;
     updateNav(user);
-    
-    // Default blood type for non-admins
-    const bloodTypeStr = user.donorProfile?.bloodType || user.recipientProfile?.bloodType || 'Unknown';
+    const token = localStorage.getItem('token');
     
     if (user.role === 'DONOR') {
-        const nameDisplay = document.getElementById('donor-name-display');
-        const bloodDisplay = document.getElementById('donor-blood-display');
-        if (nameDisplay) nameDisplay.textContent = user.name;
-        if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('donor-dashboard');
+        // Fetch and display real profile data
+        fetch(`http://localhost:5001/api/donor/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.donorProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('donor-name-display');
+                const bloodDisplay = document.getElementById('donor-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'donor');
+            }
+        }).catch(err => console.error('Error fetching donor profile:', err));
+
+        setTimeout(() => fetchDonorHistory(), 300);
     } 
     else if (user.role === 'RECIPIENT') {
-        const nameDisplay = document.getElementById('recipient-name-display');
-        const bloodDisplay = document.getElementById('recipient-blood-display');
-        if (nameDisplay) nameDisplay.textContent = user.name;
-        if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
         navigateTo('recipient-dashboard');
-    }
+        // Fetch and display real profile data
+        fetch(`http://localhost:5001/api/recipient/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.recipientProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('recipient-name-display');
+                const bloodDisplay = document.getElementById('recipient-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'recipient');
+            }
+        }).catch(err => console.error('Error fetching recipient profile:', err));
+
+        setTimeout(() => fetchRecipientHistory(), 300);
+    } 
     else if (user.role === 'ADMIN') {
         const sidebarName = document.getElementById('admin-sidebar-name');
         if (sidebarName) sidebarName.textContent = user.name;
         navigateTo('admin-dashboard');
+        // Fetch admin stats and initial data
+        setTimeout(() => {
+            fetchAdminStats();
+            fetchInventory();
+        }, 300);
     }
 }
 
@@ -826,17 +863,448 @@ async function handleResetPassword(e) {
 
 
 
+// ─── DONOR DASHBOARD FUNCTIONS ───────────────────────────
+
+async function scheduleDonation(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const location = document.getElementById('donation-location').value;
+    const scheduledDate = document.getElementById('donation-datetime').value;
+    const btn = document.getElementById('donation-submit-btn');
+    const successEl = document.getElementById('donor-schedule-success');
+    const errorEl = document.getElementById('donor-schedule-error');
+    const errorText = document.getElementById('donor-schedule-error-text');
+
+    // Hide previous messages
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!location || !scheduledDate) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
+
+    try {
+        const response = await fetch('http://localhost:5001/api/donations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ location, scheduledDate })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to schedule donation.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('donor-schedule-form-inner').reset();
+        // Refresh history after scheduling
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchDonorHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchDonorHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('donor-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/donations/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const totalEl = document.getElementById('donor-total-donations');
+            const livesEl = document.getElementById('donor-lives-saved');
+            const bloodEl = document.getElementById('donor-blood-display');
+
+            if (totalEl) totalEl.textContent = data.stats.totalDonations || 0;
+            if (livesEl) livesEl.textContent = data.stats.livesSaved || 0;
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            
+            // Fetch real clinical eligibility
+            fetchDonorEligibility();
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-calendar-plus" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No donations yet. Schedule your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(donation => {
+            const date = new Date(donation.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const isScheduled = donation.status === 'SCHEDULED';
+            const isCompleted = donation.status === 'COMPLETED';
+            const isCancelled = donation.status === 'CANCELLED';
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            let iconBg = 'bg-white border-red-50';
+
+            if (isScheduled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Scheduled</span>';
+                cardBg = 'bg-white shadow-sm';
+                iconBg = 'bg-amber-50 border-amber-100 text-amber-600';
+            } else if (isCompleted) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed</span>';
+            } else if (isCancelled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Cancelled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${isScheduled ? iconBg : 'bg-white border border-red-50 text-[#D32F2F]'} rounded-full flex items-center justify-center font-bold shadow-sm group-hover:scale-110 transition-transform">
+                        ${escapeHtml(donation.bloodType)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${escapeHtml(donation.location)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch donor history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
+
+// ─── RECIPIENT DASHBOARD FUNCTIONS ──────────────────────
+
+async function submitBloodRequest(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const bloodGroup = document.getElementById('request-blood-group').value;
+    const units = document.getElementById('request-units').value;
+    const urgency = document.getElementById('request-urgency').value;
+    const hospital = document.getElementById('request-hospital').value;
+    const btn = document.getElementById('request-submit-btn');
+    const successEl = document.getElementById('recipient-request-success');
+    const errorEl = document.getElementById('recipient-request-error');
+    const errorText = document.getElementById('recipient-request-error-text');
+
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!bloodGroup || !units || !urgency || !hospital) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+
+    try {
+        const response = await fetch('http://localhost:5001/api/requests', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ bloodGroup, units, urgency, hospital })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit request.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('recipient-request-form-inner').reset();
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchRecipientHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchRecipientHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('recipient-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/requests/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const bloodEl = document.getElementById('recipient-blood-display');
+            const fulfilledEl = document.getElementById('recipient-fulfilled-count');
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            if (fulfilledEl) fulfilledEl.textContent = (data.stats.fulfilled || 0) + ' Requests';
+        }
+
+        // Update active tracker
+        const activeReq = data.data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
+        const trackerInfo = document.getElementById('recipient-active-info');
+        const trackerStatus = document.getElementById('recipient-active-status');
+        const stepper = document.getElementById('recipient-stepper');
+
+        if (activeReq && trackerInfo) {
+            // Detailed banner info
+            const idShort = activeReq.id.substring(0,8).toUpperCase();
+            trackerInfo.innerHTML = `Active: <strong>#${idShort}</strong> &bull; ${activeReq.bloodGroup} &bull; ${activeReq.units} Units`;
+            
+            if (trackerStatus) {
+                trackerStatus.classList.remove('hidden');
+                let colorClass = 'bg-amber-50 text-amber-600 border-amber-100/50';
+                let dotClass = 'bg-amber-500';
+                let label = activeReq.status;
+
+                if (activeReq.status === 'APPROVED') {
+                    colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100/50';
+                    dotClass = 'bg-emerald-500';
+                }
+
+                trackerStatus.className = `px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${colorClass} border shadow-sm`;
+                trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotClass} ${activeReq.status === 'PENDING' ? 'animate-pulse' : ''}"></span> ${label}`;
+            }
+            if (stepper) {
+                stepper.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        } else {
+            if (trackerInfo) trackerInfo.textContent = 'No active requests.';
+            if (trackerStatus) trackerStatus.classList.add('hidden');
+            if (stepper) stepper.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-clipboard-list" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No requests yet. Submit your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(req => {
+            const date = new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            if (req.status === 'PENDING') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending</span>';
+                cardBg = 'bg-white shadow-sm';
+            } else if (req.status === 'APPROVED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100/50"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Approved</span>';
+            } else if (req.status === 'REJECTED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Rejected</span>';
+            } else if (req.status === 'FULFILLED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fulfilled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
+                        ${escapeHtml(req.bloodGroup)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${req.units} Units • ${escapeHtml(req.hospital)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch recipient history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
+
 // ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
+
+let currentInventoryData = [];
+
+// ─── TOAST NOTIFICATION SYSTEM ──────────────────────────
+function showToast(message, type = 'success') {
+    const existing = document.querySelectorAll('.lifelink-toast');
+    existing.forEach((t, i) => t.style.top = (16 + (i + 1) * 64) + 'px');
+
+    const toast = document.createElement('div');
+    toast.className = 'lifelink-toast';
+    const bgMap = { success: '#10b981', error: '#ef4444', info: '#6366f1', warning: '#f59e0b' };
+    const iconMap = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    toast.style.cssText = `position:fixed;top:16px;right:16px;z-index:9999;padding:0.85rem 1.25rem;border-radius:12px;background:${bgMap[type] || bgMap.success};color:#fff;font-weight:600;font-size:0.85rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.6rem;animation:toastIn 0.3s ease-out;max-width:380px;font-family:'Inter',sans-serif;`;
+    toast.innerHTML = `<i class="fas ${iconMap[type] || iconMap.success}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ─── KPI SUMMARY CARDS ─────────────────────────────────
+async function fetchKPISummary() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/inventory/summary', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!data.success) return;
+
+        const { totalUnits, criticalCount, expiringWeekCount, lastUpdated } = data.data;
+
+        const container = document.getElementById('kpi-cards-container');
+        if (!container) return;
+
+        // Format last updated as relative time
+        const ago = getTimeAgo(new Date(lastUpdated));
+
+        container.innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;"><i class="fas fa-layer-group"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${totalUnits}</div>
+                    <div class="kpi-label">Total Units in Stock</div>
+                    <div class="kpi-sub">All blood groups</div>
+                </div>
+            </div>
+            <div class="kpi-card ${criticalCount > 0 ? 'kpi-alert' : ''}">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${criticalCount}</div>
+                    <div class="kpi-label">Critical Stock</div>
+                    <div class="kpi-sub">Groups 0-2 units</div>
+                </div>
+            </div>
+            <div class="kpi-card ${expiringWeekCount > 0 ? 'kpi-warning' : ''}">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="fas fa-clock"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${expiringWeekCount}</div>
+                    <div class="kpi-label">Expiring This Week</div>
+                    <div class="kpi-sub">Next 7 days</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.1);color:#10b981;"><i class="fas fa-sync-alt"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value kpi-time">${ago}</div>
+                    <div class="kpi-label">Last Updated</div>
+                    <div class="kpi-sub">${new Date(lastUpdated).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('KPI fetch error:', err);
+    }
+}
+
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+// Auto-refresh KPI every 5 minutes
+setInterval(fetchKPISummary, 5 * 60 * 1000);
+
+// ─── STATUS BADGE HELPER ────────────────────────────────
+function getStatusBadge(units) {
+    const baseStyle = "padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; display: inline-block;";
+    if (units >= 6) {
+        return `<span style="${baseStyle} background-color: #EAF3DE; color: #27500A;">🟢 ${units} Fresh</span>`;
+    } else if (units >= 3) {
+        return `<span style="${baseStyle} background-color: #FAEEDA; color: #633806;">🟡 ${units} Low</span>`;
+    } else {
+        return `<span style="${baseStyle} background-color: #FCEBEB; color: #791F1F;">🔴 ${units} Critical</span>`;
+    }
+}
+
+// ─── EXPIRATION DISPLAY HELPER ──────────────────────────
+function getExpiryDisplay(daysRemaining, status) {
+    if (daysRemaining === null || daysRemaining === undefined) {
+        return '<span style="color:#94a3b8; font-weight: 500;">—</span>';
+    }
+    if (status === 'expired' || daysRemaining < 0) {
+        return '<span style="color: #791F1F; font-weight: 600;">🔴 EXPIRED 🔴</span>';
+    }
+    if (daysRemaining <= 6) {
+        return `<span style="color: #791F1F; font-weight: 600;">EXPIRES IN ${daysRemaining}d 🔴</span>`;
+    }
+    if (daysRemaining <= 29) {
+        return `<span style="color: #633806; font-weight: 500;">🟡 ${daysRemaining}d ⚠️</span>`;
+    }
+    return `<span style="color: #27500A; font-weight: 500;">🟢 ${daysRemaining}d remaining</span>`;
+}
 
 async function fetchInventory() {
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    const searchStr = document.getElementById('admin-inventory-search')?.value || '';
-    const sortVal = document.getElementById('admin-inventory-sort')?.value || 'latest';
+    // Inject extra fields into Add Stock modal if not already present
+    injectAddStockFields();
 
+    const searchStr = document.getElementById('admin-inventory-search')?.value || '';
+    
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}&sort=${sortVal}`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -845,21 +1313,22 @@ async function fetchInventory() {
 
         tbody.innerHTML = '';
         if (!data.success || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
             const unitsEl = document.getElementById('admin-total-units');
             if (unitsEl) unitsEl.textContent = '0';
             return;
         }
 
+        currentInventoryData = data.data;
         let totalUnits = 0;
         let criticals = [];
         const groupLevels = {};
 
         data.data.forEach(item => {
-            totalUnits += item.units;
-            if (item.units < 5) criticals.push(item.bloodGroup + ' (' + item.units + ')');
-            const percentage = Math.min((item.units / 50) * 100, 100);
-            groupLevels[item.bloodGroup] = { units: item.units, percentage };
+            totalUnits += item.totalUnits;
+            if (item.totalUnits < 10) criticals.push(item.bloodGroup + ' (' + item.totalUnits + ')');
+            const percentage = Math.min((item.totalUnits / 100) * 100, 100);
+            groupLevels[item.bloodGroup] = { units: item.totalUnits, percentage };
         });
 
         // Update Supply Matrix
@@ -871,9 +1340,9 @@ async function fetchInventory() {
                 const info = groupLevels[group] || { units: 0, percentage: 0 };
                 let status = 'Stable';
                 let levelClass = 'level-optimal';
-                if (info.units < 5) { status = 'Critical'; levelClass = 'level-low'; }
-                else if (info.units < 15) { status = 'Low Stock'; levelClass = 'level-low'; }
-                else if (info.units > 40) { status = 'Surplus'; levelClass = 'level-surplus'; }
+                if (info.units < 10) { status = 'Critical'; levelClass = 'level-low'; }
+                else if (info.units < 20) { status = 'Low Stock'; levelClass = 'level-low'; }
+                else if (info.units > 80) { status = 'Surplus'; levelClass = 'level-surplus'; }
                 const card = document.createElement('div');
                 card.className = 'matrix-card';
                 card.innerHTML = `
@@ -881,7 +1350,7 @@ async function fetchInventory() {
                     <div class="matrix-level-outer">
                         <div class="matrix-level-inner ${levelClass}" style="width:${info.percentage}%;"></div>
                     </div>
-                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 15 ? '#ef4444' : (info.units > 40 ? '#2563eb' : '#16a34a')};">${status}</span>
+                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 20 ? '#ef4444' : (info.units > 80 ? '#2563eb' : '#16a34a')};">${status}</span>
                 `;
                 matrixContainer.appendChild(card);
             });
@@ -904,23 +1373,642 @@ async function fetchInventory() {
             }
         }
 
-        data.data.forEach(item => {
+        // Render inventory rows with Status Badges + Expiration Column
+        data.data.forEach((item) => {
             const tr = document.createElement('tr');
-            let badgeClass = item.units < 5 ? 'admin-badge-danger' : 'admin-badge-success';
-            let stockLabel = item.units < 5 ? 'Low: ' + item.units + ' Total' : item.units + ' Total Stock';
-            const expDate = item.expirationDate ? new Date(item.expirationDate).toLocaleDateString() : 'N/A';
-            tr.innerHTML = '<td><div style="display:flex;align-items:center;gap:0.75rem;"><div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">' + escapeHtml(item.bloodGroup) + '</div><div style="font-weight:600;">' + escapeHtml(item.bloodGroup) + '</div></div></td>' +
-                '<td><span class="' + badgeClass + '">' + stockLabel + '</span></td>' +
-                '<td style="color:#64748b;">' + expDate + '</td>' +
-                '<td style="text-align:right;"><button class="admin-btn-icon delete" onclick="deleteStock(\'' + item.id + '\')" title="Delete"><i class="fas fa-trash"></i></button></td>';
+            
+            const activeBatchesCount = (item.donations || []).filter(d => d.units > 0 && d.expirationStatus !== 'expired').length;
+            const batchText = activeBatchesCount === 1 ? '1 active batch' : `${activeBatchesCount} active batches`;
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">${escapeHtml(item.bloodGroup)}</div>
+                        <div style="font-weight:600;color:#1a1a2e;">${escapeHtml(item.bloodGroup)}</div>
+                    </div>
+                </td>
+                <td>
+                    <div style="line-height:1.4;">
+                        ${getStatusBadge(item.totalUnits)}
+                        <div style="font-size:0.75rem; color:#84758c; font-weight:500; margin-top:3px;">${item.donorCount} Unique Donors</div>
+                    </div>
+                </td>
+                <td>
+                    ${getExpiryDisplay(item.groupDaysRemaining, item.groupExpirationStatus)}
+                </td>
+                <td>
+                    <div style="font-weight: 500; color: #475569; font-size: 0.85rem;">
+                        ${batchText}
+                    </div>
+                </td>
+                <td style="text-align:right;">
+                    <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}')" title="View Stock Breakdown">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
             tbody.appendChild(tr);
         });
+
+        // Also refresh KPI cards
+        fetchKPISummary();
     } catch (error) {
         console.error('Failed to fetch inventory', error);
     }
 }
 
+// ─── STOCK DETAILS MODAL (Eye Icon) — ENHANCED ──────────
 
+window.showStockDetails = async function(bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Remove existing if any
+    const existing = document.getElementById('detailed-stock-modal');
+    if (existing) existing.remove();
+
+    // Create modal shell immediately for fast perceived load
+    const modal = document.createElement('div');
+    modal.id = 'detailed-stock-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15); animation:adminModalIn 0.3s ease-out;">
+            <div style="padding:2rem; text-align:center; color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p style="margin-top:0.5rem; font-weight:600;">Loading batch details...</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch batch data from API
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+            modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Failed to load batch data.</div>';
+            return;
+        }
+
+        const { status, totalUnits, batchCount, batches } = result.data;
+
+        // Status badge for header
+        const badgeHtml = getStatusBadge(totalUnits);
+
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.innerHTML = `
+            <div style="padding:1.75rem 2rem; background:#fff; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="width:48px; height:48px; background:#fef2f2; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#D32F2F; font-size:1.2rem; font-weight:800;">${escapeHtml(bloodGroup)}</div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em; margin:0;">${escapeHtml(bloodGroup)} Inventory Details</h3>
+                            ${badgeHtml}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:4px;">
+                            <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
+                            <p style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em; margin:0;">TRACKING ${batchCount} ACTIVE BATCHES</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="font-size:0.7rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live updates active</div>
+                    <button onclick="document.getElementById('detailed-stock-modal').remove()" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div style="padding:1.5rem 2rem;">
+                <div style="margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+                    <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; margin:0;">Stock Breakdown</h4>
+                    <span style="font-size:0.8rem; font-weight:700; color:#1e293b;">${totalUnits} Units Total</span>
+                </div>
+                
+                <div style="max-height:400px; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
+                    ${batchCount === 0 ? '<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="fas fa-box-open" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>No active batches for this blood group.</div>' : `
+                    <table style="width:100%; border-collapse:separate; border-spacing:0 10px;">
+                        <thead>
+                            <tr style="text-align:left;">
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donated By</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donation Date</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Expiration</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Stock</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Tested</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem; text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-stock-tbody"></tbody>
+                    </table>`}
+                </div>
+            </div>
+
+            <div style="padding:1.25rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:8px;">
+                    <button onclick="if(window.modalOldestBatchId) window.editStock(window.modalOldestBatchId); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i> Edit</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openDispatchModal(window.modalOldestBatchId, window.modalOldestBatchUnits, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-arrow-right" style="margin-right:4px;"></i> Dispatch</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openAlertModal(window.modalOldestBatchId, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-bell" style="margin-right:4px;"></i> Set Alert</button>
+                </div>
+                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="padding:0.65rem 1.5rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close</button>
+            </div>
+        `;
+
+        if (batchCount > 0 && batches && batches.length > 0) {
+            window.modalOldestBatchId = batches[0].id;
+            window.modalOldestBatchUnits = batches[0].units;
+        } else {
+            window.modalOldestBatchId = null;
+            window.modalOldestBatchUnits = null;
+        }
+
+        // Populate batch rows
+        if (batchCount > 0) {
+            const tbody = document.getElementById('detail-stock-tbody');
+            batches.forEach(don => {
+                const tr = document.createElement('tr');
+                tr.style.background = '#fff';
+                
+                const donDate = new Date(don.donationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // Expiry display for modal
+                let expiryHtml = '';
+                if (don.daysRemaining < 0) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">EXPIRED 🔴</span>`;
+                } else if (don.daysRemaining <= 6) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h 🔴</span>`;
+                } else if (don.daysRemaining <= 29) {
+                    expiryHtml = `<span style="color:#633806; font-weight:700; background:#FAEEDA; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h ⚠️</span>`;
+                } else {
+                    expiryHtml = `<span style="color:#27500A; font-weight:700; background:#EAF3DE; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:14px; border-bottom-left-radius:14px;">
+                        <div style="font-weight:700; color:#1e293b; font-size:0.9rem;">${escapeHtml(don.donorName)}</div>
+                        <div style="font-size:0.68rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.shortId}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:700; color:#475569; font-size:0.85rem;">${donDate}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        ${expiryHtml}
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:800; color:#1e293b; font-size:0.95rem;">${don.units} Units</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:0.85rem;">${don.tested ? '✓' : '—'}</span>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:14px; border-bottom-right-radius:14px; text-align:right;">
+                        <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.editStock('${don.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.openDispatchModal('${don.id}', ${don.units}, '${escapeHtml(bloodGroup)}')" title="Dispatch"><i class="fas fa-share-square"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#ef4444; border:1px solid #e2e8f0;" onclick="deleteStock('${don.id}')" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error('Batch fetch error:', err);
+        modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Network error loading batch data.</div>';
+    }
+};
+
+// ─── EDIT STOCK MODAL (Enhanced with notes/tested) ──────
+
+window.editStock = async function(donationId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    let donation = null;
+    let bloodGroup = '';
+    currentInventoryData.forEach(g => {
+        const found = g.donations.find(d => d.id === donationId);
+        if (found) {
+            donation = found;
+            bloodGroup = g.bloodGroup;
+        }
+    });
+    
+    if (!donation) return;
+
+    const existing = document.getElementById('record-edit-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'record-edit-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:500px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation: adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <div>
+                    <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">Adjust Batch Details</h3>
+                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-top:2px;">ID: ${donationId.substring(donationId.length - 8).toUpperCase()}</p>
+                </div>
+                <button onclick="document.getElementById('record-edit-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="record-edit-form" class="space-y-5">
+                <input type="hidden" id="edit-id" value="${donationId}">
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Blood Group</label>
+                        <select id="edit-bg" disabled style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #f1f5f9; background:#f8fafc; font-weight:700; color:#1e293b; cursor:not-allowed;">
+                            <option value="${bloodGroup}" selected>${bloodGroup}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Units</label>
+                        <input type="number" id="edit-units" required min="1" value="${donation.units}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Donor Full Name</label>
+                    <input type="text" id="edit-donor" required value="${escapeHtml(donation.donorName)}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Collection Date</label>
+                    <input type="date" id="edit-date" required value="${new Date(donation.donationDate).toISOString().split('T')[0]}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">RBC Count</label>
+                        <input type="number" step="0.1" id="edit-rbc" value="${donation.rbcCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Plasma (mL)</label>
+                        <input type="number" id="edit-plasma" value="${donation.plasmaCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Notes</label>
+                    <textarea id="edit-notes" rows="2" placeholder="Optional notes..." style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;">${donation.notes || ''}</textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="edit-tested" ${donation.tested ? 'checked' : ''} style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="edit-tested" style="font-size:0.85rem; font-weight:600; color:#475569;">Tested & Verified</label>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:1rem;">
+                    <button type="button" onclick="document.getElementById('record-edit-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:#D32F2F; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(211,47,47,0.25);">Save Batch</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('record-edit-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            bloodGroup: bloodGroup,
+            units: document.getElementById('edit-units').value,
+            donorName: document.getElementById('edit-donor').value,
+            donationDate: document.getElementById('edit-date').value,
+            rbcCount: document.getElementById('edit-rbc').value,
+            plasmaCount: document.getElementById('edit-plasma').value,
+            notes: document.getElementById('edit-notes').value,
+            tested: document.getElementById('edit-tested').checked
+        };
+
+        try {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${donationId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast(`Batch ${payload.bloodGroup} updated successfully`, 'success');
+                addToActivityFeed(`Successfully refined batch: <strong>${payload.bloodGroup}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                showToast(result.message || 'Update failed', 'error');
+            }
+        } catch (err) { 
+            console.error(err);
+            showToast('Network error', 'error');
+        }
+    };
+};
+
+// ─── DISPATCH MODAL ─────────────────────────────────────
+
+window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('dispatch-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'dispatch-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:460px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Dispatch Blood Units</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} • ${availableUnits} Units Available</p>
+                </div>
+                <button onclick="document.getElementById('dispatch-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="dispatch-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Select Hospital</label>
+                    <select id="dispatch-hospital" required style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="">Loading hospitals...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Quantity (Max: ${availableUnits})</label>
+                    <input type="number" id="dispatch-quantity" required min="1" max="${availableUnits}" value="1" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notes (Optional)</label>
+                    <textarea id="dispatch-notes" rows="2" placeholder="e.g., Emergency transfusion" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('dispatch-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="dispatch-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#6366f1,#4f46e5); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(99,102,241,0.25);">
+                        <i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch hospitals
+    try {
+        const res = await fetch('http://localhost:5001/api/admin/hospitals', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const select = document.getElementById('dispatch-hospital');
+        if (data.success && data.data.length > 0) {
+            select.innerHTML = '<option value="">— Select Hospital —</option>' +
+                data.data.map(h => `<option value="${h.id}">${escapeHtml(h.name)} — ${escapeHtml(h.city)}</option>`).join('');
+        } else {
+            select.innerHTML = '<option value="">No hospitals available</option>';
+        }
+    } catch (err) {
+        console.error('Hospital fetch error:', err);
+    }
+
+    // Handle dispatch submission
+    document.getElementById('dispatch-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const hospitalId = document.getElementById('dispatch-hospital').value;
+        const quantity = parseInt(document.getElementById('dispatch-quantity').value);
+        const notes = document.getElementById('dispatch-notes').value;
+
+        if (!hospitalId) { showToast('Please select a hospital', 'warning'); return; }
+        if (quantity > availableUnits) { showToast('Quantity exceeds available units', 'error'); return; }
+
+        const btn = document.getElementById('dispatch-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
+
+        try {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${batchId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hospitalId, quantity, notes })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast(result.message, 'success');
+                addToActivityFeed(`Dispatched ${quantity} units of <strong>${bloodGroup}</strong> to <strong>${result.data.hospitalName}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                showToast(result.message || 'Dispatch failed', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error during dispatch', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+        }
+    };
+};
+
+// ─── ALERT CONFIGURATION MODAL ──────────────────────────
+
+window.openAlertModal = function(batchId, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('alert-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'alert-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:420px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Configure Alert</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} Batch</p>
+                </div>
+                <button onclick="document.getElementById('alert-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="alert-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notify before expiry</label>
+                    <select id="alert-days" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="3">3 days before expiry</option>
+                        <option value="5">5 days before expiry</option>
+                        <option value="7" selected>7 days before expiry</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="alert-critical" style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="alert-critical" style="font-size:0.85rem; font-weight:600; color:#475569;">Alert on critical stock (0-2 units)</label>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Alert Method</label>
+                    <div style="display:flex; gap:0.75rem;">
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="in_app" checked style="accent-color:#D32F2F;"> In-App
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="email" style="accent-color:#D32F2F;"> Email
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('alert-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="alert-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#f59e0b,#d97706); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(245,158,11,0.25);">
+                        <i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('alert-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('alert-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
+
+        try {
+            const res = await fetch(`http://localhost:5001/api/admin/alerts/batch/${batchId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    daysBeforeExpiry: parseInt(document.getElementById('alert-days').value),
+                    notifyOnCritical: document.getElementById('alert-critical').checked,
+                    method
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast('Alert configured successfully', 'success');
+                modal.remove();
+            } else {
+                showToast(result.message || 'Failed to set alert', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+        }
+    };
+};
+
+// ─── COUNTDOWN TIMER LOGIC ──────────────────────────────
+
+function updateAllTimers() {
+    const timers = document.querySelectorAll('.expiry-timer');
+    const now = new Date();
+
+    timers.forEach(timer => {
+        const expiryDate = new Date(timer.dataset.expiry);
+        const diff = expiryDate - now;
+
+        if (diff <= 0) {
+            timer.textContent = 'EXPIRED';
+            timer.style.color = '#ef4444';
+            timer.style.background = '#fef2f2';
+            timer.style.borderColor = '#fecaca';
+            timer.style.fontWeight = '800';
+            return;
+        }
+
+        const { days, hours } = calculateRemainingTime(expiryDate);
+        
+        timer.textContent = `${days}d ${hours}h remaining`;
+        timer.style.fontWeight = '700';
+
+        if (days < 7) {
+            timer.style.color = '#ef4444';
+            timer.style.background = '#fef2f2';
+            timer.style.borderColor = '#fecaca';
+        } else if (days < 14) {
+            timer.style.color = '#f59e0b';
+            timer.style.background = '#fffbeb';
+            timer.style.borderColor = '#fef3c7';
+        } else {
+            timer.style.color = '#10b981';
+            timer.style.background = '#f0fdf4';
+            timer.style.borderColor = '#bbf7d0';
+        }
+    });
+}
+
+function calculateRemainingTime(expiryDate) {
+    const diff = new Date(expiryDate) - new Date();
+    return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    };
+}
+
+// Run timers every minute
+setInterval(updateAllTimers, 60000);
+
+function injectAddStockFields() {
+    const form = document.getElementById('admin-add-stock-form');
+    if (!form || document.getElementById('add-stock-donor')) return; // Already injected or no form
+
+    const insertPoint = form.querySelector('div:last-of-type'); // Usually before 'Cancel/Add' buttons
+    if (!insertPoint) return;
+
+    const extraFields = document.createElement('div');
+    extraFields.style.display = 'contents';
+    extraFields.innerHTML = `
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donor Full Name</label>
+            <input type="text" id="add-stock-donor" required placeholder="John Doe" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donation Date</label>
+            <input type="date" id="add-stock-date" required style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">RBC Count</label>
+                <input type="number" step="0.1" id="add-stock-rbc" placeholder="4.5" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Plasma (mL)</label>
+                <input type="number" id="add-stock-plasma" placeholder="300" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+        </div>
+    `;
+    form.insertBefore(extraFields, insertPoint);
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('add-stock-date').value = today;
+}
 
 async function submitAddStock(e) {
     if (e) e.preventDefault();
@@ -929,6 +2017,10 @@ async function submitAddStock(e) {
 
     const bg = document.getElementById('add-stock-group').value;
     const units = document.getElementById('add-stock-units').value;
+    const donorName = document.getElementById('add-stock-donor')?.value;
+    const donationDate = document.getElementById('add-stock-date')?.value;
+    const rbcCount = document.getElementById('add-stock-rbc')?.value;
+    const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
         const response = await fetch('http://localhost:5001/api/admin/stock', {
@@ -937,11 +2029,24 @@ async function submitAddStock(e) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ bloodGroup: bg, units: units })
+            body: JSON.stringify({ 
+                bloodGroup: bg, 
+                units: units,
+                donorName: donorName,
+                donationDate: donationDate,
+                rbcCount: rbcCount,
+                plasmaCount: plasmaCount
+            })
         });
         const data = await response.json();
-        if (data.success) { addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong>`, 'success');
+        if (data.success) { 
+            addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong> from ${donorName}`, 'success');
             document.getElementById('admin-add-stock-form').reset();
+            // Re-set today's date after reset
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('add-stock-date');
+            if (dateInput) dateInput.value = today;
+
             document.getElementById('add-stock-modal').classList.add('hidden');
             fetchInventory(); 
         } else {
@@ -1026,9 +2131,109 @@ async function updateReqStatus(id, newStatus) {
             },
             body: JSON.stringify({ status: newStatus })
         });
-        if (response.ok) { addToActivityFeed(`Request for <strong>${id.substring(0,6)}...</strong> was <strong>${newStatus}</strong>`, 'info'); fetchAdminRequests(); }
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Request <strong>${id.substring(0,8)}...</strong> was <strong>${newStatus}</strong>`, newStatus === 'APPROVED' ? 'success' : 'info');
+            fetchAdminRequests();
+            fetchInventory(); // Refresh inventory since stock may have changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update request.');
+        }
     } catch(err) {
         console.error(err);
+    }
+}
+
+// ─── ADMIN DONATIONS MANAGEMENT ─────────────────────────
+
+async function fetchAdminDonations() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/donations', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const listDiv = document.getElementById('admin-donations-list');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#84758c;">No donations found.</div>';
+            return;
+        }
+
+        data.data.forEach(don => {
+            const donorName = don.donorProfile?.user?.name || 'Unknown Donor';
+            const date = new Date(don.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = 'admin-badge-primary';
+            if (don.status === 'COMPLETED') statusBadge = 'admin-badge-success';
+            else if (don.status === 'CANCELLED') statusBadge = 'admin-badge-danger';
+
+            const div = document.createElement('div');
+            div.className = 'admin-request-item';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
+                '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(don.bloodType) + '</div>' +
+                '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(donorName) + '</div>' +
+                '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + statusBadge + '">' + escapeHtml(don.status) + '</span> &middot; ' + don.units + ' Unit &middot; ' + date + ' &middot; ' + escapeHtml(don.location) + '</div></div></div>' +
+                (don.status === 'SCHEDULED' ? '<div style="display:flex;gap:0.5rem;">' +
+                '<button class="admin-btn-icon approve" onclick="updateDonationStatus(\'' + don.id + '\', \'COMPLETED\')" title="Complete"><i class="fas fa-check"></i></button>' +
+                '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                '</div>' : '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + don.status + '</div>');
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        console.error('Failed to fetch admin donations:', err);
+    }
+}
+
+async function updateDonationStatus(id, newStatus) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Donation <strong>${id.substring(0,8)}...</strong> marked as <strong>${newStatus}</strong>`, newStatus === 'COMPLETED' ? 'success' : 'info');
+            fetchAdminDonations();
+            fetchInventory(); // Refresh inventory since stock changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update donation.');
+        }
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// ─── ADMIN STATS ────────────────────────────────────────
+
+async function fetchAdminStats() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+            const totalUsersEl = document.getElementById('admin-total-users');
+            const pendingEl = document.getElementById('admin-pending-count');
+            if (totalUsersEl) totalUsersEl.textContent = data.data.totalUsers || 0;
+            if (pendingEl) pendingEl.textContent = data.data.pendingRequests || 0;
+        }
+    } catch(err) {
+        console.error('Failed to fetch admin stats:', err);
     }
 }
 
@@ -1067,13 +2272,7 @@ function navigateAdmin(viewId) {
     const targetView = document.getElementById(viewId);
     if (targetView) {
         targetView.classList.add('active');
-        // If it's the dashboard, we might need flex, but mostly block is fine for internal views
         targetView.style.display = 'block'; 
-        
-        // Specific handling for dashboard layout (which uses grids/flex internally)
-        if (viewId === 'admin-view-dashboard') {
-            targetView.style.display = 'block'; // Containers are block, internal elements are flex
-        }
     }
 
     // 3. Update Sidebar Links
@@ -1089,6 +2288,7 @@ function navigateAdmin(viewId) {
     const titleMap = {
         'admin-view-dashboard': 'Dashboard Overview',
         'admin-view-inventory': 'Inventory Management',
+        'admin-view-donations': 'Donation Approvals',
         'admin-view-requests': 'Blood Request Triage',
         'admin-view-users': 'User Directory'
     };
@@ -1097,8 +2297,10 @@ function navigateAdmin(viewId) {
         titleElem.textContent = titleMap[viewId] || 'Admin Panel';
     }
 
-    // 5. Trigger Data Refreshes if needed
+    // 5. Trigger Data Refreshes
+    if (viewId === 'admin-view-dashboard') { fetchAdminStats(); fetchInventory(); }
     if (viewId === 'admin-view-inventory') fetchInventory();
+    if (viewId === 'admin-view-donations') fetchAdminDonations();
     if (viewId === 'admin-view-requests') fetchAdminRequests();
     if (viewId === 'admin-view-users') fetchAdminUsers();
 }
@@ -1122,3 +2324,55 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+async function fetchDonorEligibility() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:5001/api/donor/eligibility', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        
+        const nextEl = document.getElementById('donor-next-eligible');
+        if (!nextEl) return;
+
+        if (result.success && result.data) {
+            const { eligible, nextEligibleDate } = result.data;
+            if (eligible) {
+                nextEl.textContent = '✅ Eligible Now';
+                nextEl.style.color = '#16a34a'; // Green
+            } else {
+                const d = new Date(nextEligibleDate);
+                const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                nextEl.textContent = `❌ ${formatted}`;
+                nextEl.style.color = '#ef4444'; // Red
+            }
+        }
+    } catch (err) { console.error('Eligibility fetch error:', err); }
+}
+
+function populateDetailedProfile(user, role) {
+    const profile = role === 'donor' ? user.donorProfile : user.recipientProfile;
+    if (!profile) return;
+
+    const fields = {
+        [`${role}-profile-phone`]: profile.phone,
+        [`${role}-profile-address`]: profile.address,
+    };
+
+    if (role === 'donor') {
+        fields['donor-profile-weight'] = profile.weight ? `${profile.weight} kg` : null;
+        if (profile.dateOfBirth) {
+            const birth = new Date(profile.dateOfBirth);
+            const age = new Date().getFullYear() - birth.getFullYear();
+            fields['donor-profile-age'] = `${age} Years`;
+        }
+    }
+
+    Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.textContent = val;
+    });
+}
