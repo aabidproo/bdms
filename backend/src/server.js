@@ -9,6 +9,8 @@ const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
 
+const prisma = require('./lib/prisma');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -17,9 +19,11 @@ const allowedOrigins = [
   'http://127.0.0.1:5500',
   'http://127.0.0.1:5501',
   'http://127.0.0.1:5050',
+  'http://127.0.0.1:3000',
   'http://localhost:5500',
   'http://localhost:5501',
-  'http://localhost:5050'
+  'http://localhost:5050',
+  'http://localhost:3000'
 ];
 app.use(cors({
   origin: allowedOrigins,

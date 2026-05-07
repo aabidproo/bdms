@@ -335,7 +335,7 @@ async function completeRegistration() {
             }
         }
         
-        const response = await fetch('http://localhost:5000/api/auth/register', {
+        const response = await fetch('http://localhost:5001/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -445,7 +445,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch('http://localhost:5001/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -486,7 +486,7 @@ function routeUserToDashboard(user) {
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5000/api/donor/profile`, {
+        fetch(`http://localhost:5001/api/donor/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -510,7 +510,7 @@ function routeUserToDashboard(user) {
     else if (user.role === 'RECIPIENT') {
         navigateTo('recipient-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5000/api/recipient/profile`, {
+        fetch(`http://localhost:5001/api/recipient/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -640,7 +640,7 @@ async function fetchAdminUsers() {
     }
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/users', {
+        const response = await fetch('http://localhost:5001/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -769,7 +769,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -835,7 +835,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -892,7 +892,7 @@ async function scheduleDonation(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
 
     try {
-        const response = await fetch('http://localhost:5000/api/donations', {
+        const response = await fetch('http://localhost:5001/api/donations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -931,7 +931,7 @@ async function fetchDonorHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/donations/my', {
+        const response = await fetch('http://localhost:5001/api/donations/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1036,7 +1036,7 @@ async function submitBloodRequest(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
 
     try {
-        const response = await fetch('http://localhost:5000/api/requests', {
+        const response = await fetch('http://localhost:5001/api/requests', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1074,7 +1074,7 @@ async function fetchRecipientHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/requests/my', {
+        const response = await fetch('http://localhost:5001/api/requests/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1177,6 +1177,123 @@ async function fetchRecipientHistory() {
 
 let currentInventoryData = [];
 
+// ─── TOAST NOTIFICATION SYSTEM ──────────────────────────
+function showToast(message, type = 'success') {
+    const existing = document.querySelectorAll('.lifelink-toast');
+    existing.forEach((t, i) => t.style.top = (16 + (i + 1) * 64) + 'px');
+
+    const toast = document.createElement('div');
+    toast.className = 'lifelink-toast';
+    const bgMap = { success: '#10b981', error: '#ef4444', info: '#6366f1', warning: '#f59e0b' };
+    const iconMap = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    toast.style.cssText = `position:fixed;top:16px;right:16px;z-index:9999;padding:0.85rem 1.25rem;border-radius:12px;background:${bgMap[type] || bgMap.success};color:#fff;font-weight:600;font-size:0.85rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.6rem;animation:toastIn 0.3s ease-out;max-width:380px;font-family:'Inter',sans-serif;`;
+    toast.innerHTML = `<i class="fas ${iconMap[type] || iconMap.success}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ─── KPI SUMMARY CARDS ─────────────────────────────────
+async function fetchKPISummary() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/admin/inventory/summary', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!data.success) return;
+
+        const { totalUnits, criticalCount, expiringWeekCount, lastUpdated } = data.data;
+
+        const container = document.getElementById('kpi-cards-container');
+        if (!container) return;
+
+        // Format last updated as relative time
+        const ago = getTimeAgo(new Date(lastUpdated));
+
+        container.innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;"><i class="fas fa-layer-group"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${totalUnits}</div>
+                    <div class="kpi-label">Total Units in Stock</div>
+                    <div class="kpi-sub">All blood groups</div>
+                </div>
+            </div>
+            <div class="kpi-card ${criticalCount > 0 ? 'kpi-alert' : ''}">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${criticalCount}</div>
+                    <div class="kpi-label">Critical Stock</div>
+                    <div class="kpi-sub">Groups 0-2 units</div>
+                </div>
+            </div>
+            <div class="kpi-card ${expiringWeekCount > 0 ? 'kpi-warning' : ''}">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="fas fa-clock"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${expiringWeekCount}</div>
+                    <div class="kpi-label">Expiring This Week</div>
+                    <div class="kpi-sub">Next 7 days</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.1);color:#10b981;"><i class="fas fa-sync-alt"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value kpi-time">${ago}</div>
+                    <div class="kpi-label">Last Updated</div>
+                    <div class="kpi-sub">${new Date(lastUpdated).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('KPI fetch error:', err);
+    }
+}
+
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+// Auto-refresh KPI every 5 minutes
+setInterval(fetchKPISummary, 5 * 60 * 1000);
+
+// ─── STATUS BADGE HELPER ────────────────────────────────
+function getStatusBadge(units) {
+    const baseStyle = "padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; display: inline-block;";
+    if (units >= 6) {
+        return `<span style="${baseStyle} background-color: #EAF3DE; color: #27500A;">🟢 ${units} Fresh</span>`;
+    } else if (units >= 3) {
+        return `<span style="${baseStyle} background-color: #FAEEDA; color: #633806;">🟡 ${units} Low</span>`;
+    } else {
+        return `<span style="${baseStyle} background-color: #FCEBEB; color: #791F1F;">🔴 ${units} Critical</span>`;
+    }
+}
+
+// ─── EXPIRATION DISPLAY HELPER ──────────────────────────
+function getExpiryDisplay(daysRemaining, status) {
+    if (daysRemaining === null || daysRemaining === undefined) {
+        return '<span style="color:#94a3b8; font-weight: 500;">—</span>';
+    }
+    if (status === 'expired' || daysRemaining < 0) {
+        return '<span style="color: #791F1F; font-weight: 600;">🔴 EXPIRED 🔴</span>';
+    }
+    if (daysRemaining <= 6) {
+        return `<span style="color: #791F1F; font-weight: 600;">EXPIRES IN ${daysRemaining}d 🔴</span>`;
+    }
+    if (daysRemaining <= 29) {
+        return `<span style="color: #633806; font-weight: 500;">🟡 ${daysRemaining}d ⚠️</span>`;
+    }
+    return `<span style="color: #27500A; font-weight: 500;">🟢 ${daysRemaining}d remaining</span>`;
+}
+
 async function fetchInventory() {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -1187,22 +1304,16 @@ async function fetchInventory() {
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
     
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
         const tbody = document.getElementById('admin-inventory-tbody');
         if (!tbody) return;
 
-        // --- Column Layout Fix ---
-        const tableHead = document.querySelector('#admin-view-inventory thead tr');
-        if (tableHead && tableHead.children.length === 4) {
-            tableHead.children[2].style.display = 'none'; 
-        }
-
         tbody.innerHTML = '';
         if (!data.success || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
             const unitsEl = document.getElementById('admin-total-units');
             if (unitsEl) unitsEl.textContent = '0';
             return;
@@ -1262,12 +1373,12 @@ async function fetchInventory() {
             }
         }
 
+        // Render inventory rows with Status Badges + Expiration Column
         data.data.forEach((item) => {
             const tr = document.createElement('tr');
-            let badgeClass = item.totalUnits < 10 ? 'admin-badge-danger' : 'admin-badge-success';
             
-            // To pass the donations array safely to showStockDetails:
-            const donationsJson = JSON.stringify(item.donations).replace(/"/g, '&quot;');
+            const activeBatchesCount = (item.donations || []).filter(d => d.units > 0 && d.expirationStatus !== 'expired').length;
+            const batchText = activeBatchesCount === 1 ? '1 active batch' : `${activeBatchesCount} active batches`;
 
             tr.innerHTML = `
                 <td>
@@ -1278,138 +1389,201 @@ async function fetchInventory() {
                 </td>
                 <td>
                     <div style="line-height:1.4;">
-                        <div class="${badgeClass}" style="display:inline-block; font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:700;">${item.totalUnits} Units Total</div>
+                        ${getStatusBadge(item.totalUnits)}
                         <div style="font-size:0.75rem; color:#84758c; font-weight:500; margin-top:3px;">${item.donorCount} Unique Donors</div>
+                    </div>
+                </td>
+                <td>
+                    ${getExpiryDisplay(item.groupDaysRemaining, item.groupExpirationStatus)}
+                </td>
+                <td>
+                    <div style="font-weight: 500; color: #475569; font-size: 0.85rem;">
+                        ${batchText}
                     </div>
                 </td>
                 <td style="text-align:right;">
                     <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
-                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}', ${donationsJson})" title="View Stock Breakdown">
+                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}')" title="View Stock Breakdown">
                             <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}', ${donationsJson})" title="Manage Record Updates">
-                            <i class="fas fa-pencil-alt"></i>
                         </button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+
+        // Also refresh KPI cards
+        fetchKPISummary();
     } catch (error) {
         console.error('Failed to fetch inventory', error);
     }
 }
 
-// ─── STOCK DETAILS MODAL (Eye Icon) ─────────────────────
+// ─── STOCK DETAILS MODAL (Eye Icon) — ENHANCED ──────────
 
-window.showStockDetails = function(bloodGroup, donations) {
-    if (!donations) return;
+window.showStockDetails = async function(bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
     // Remove existing if any
     const existing = document.getElementById('detailed-stock-modal');
     if (existing) existing.remove();
 
+    // Create modal shell immediately for fast perceived load
     const modal = document.createElement('div');
     modal.id = 'detailed-stock-modal';
-    modal.className = 'modal-backdrop'; 
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100vw';
-    modal.style.height = '100vh';
-    modal.style.background = 'rgba(15, 23, 42, 0.6)';
-    modal.style.backdropFilter = 'blur(8px)';
-    modal.style.zIndex = '3000';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '2rem';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 
     modal.innerHTML = `
-        <div class="modal-content" style="background:#fff; width:100%; max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15); animation: adminModalIn 0.3s ease-out;">
+        <div class="modal-content" style="background:#fff; width:100%; max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15); animation:adminModalIn 0.3s ease-out;">
+            <div style="padding:2rem; text-align:center; color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p style="margin-top:0.5rem; font-weight:600;">Loading batch details...</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch batch data from API
+    try {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+            modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Failed to load batch data.</div>';
+            return;
+        }
+
+        const { status, totalUnits, batchCount, batches } = result.data;
+
+        // Status badge for header
+        const badgeHtml = getStatusBadge(totalUnits);
+
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.innerHTML = `
             <div style="padding:1.75rem 2rem; background:#fff; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:1rem;">
                     <div style="width:48px; height:48px; background:#fef2f2; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#D32F2F; font-size:1.2rem; font-weight:800;">${escapeHtml(bloodGroup)}</div>
                     <div>
-                        <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">${escapeHtml(bloodGroup)} Inventory Details</h3>
-                        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:2px;">
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em; margin:0;">${escapeHtml(bloodGroup)} Inventory Details</h3>
+                            ${badgeHtml}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:4px;">
                             <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
-                            <p style="font-size:0.85rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em;">Tracking ${donations.length} Active Batches</p>
+                            <p style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em; margin:0;">TRACKING ${batchCount} ACTIVE BATCHES</p>
                         </div>
                     </div>
                 </div>
-                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="font-size:0.7rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live updates active</div>
+                    <button onclick="document.getElementById('detailed-stock-modal').remove()" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             
             <div style="padding:1.5rem 2rem;">
-                <div style="margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between;">
-                    <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em;">Stock Breakdown</h4>
-                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live Updates Active</div>
+                <div style="margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+                    <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; margin:0;">Stock Breakdown</h4>
+                    <span style="font-size:0.8rem; font-weight:700; color:#1e293b;">${totalUnits} Units Total</span>
                 </div>
                 
-                <div style="max-height:55vh; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
-                    <table style="width:100%; border-collapse:separate; border-spacing:0 12px;">
+                <div style="max-height:400px; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
+                    ${batchCount === 0 ? '<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="fas fa-box-open" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>No active batches for this blood group.</div>' : `
+                    <table style="width:100%; border-collapse:separate; border-spacing:0 10px;">
                         <thead>
                             <tr style="text-align:left;">
-                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donated By</th>
-                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Donation Date</th>
-                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Expiration</th>
-                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem;">Stock</th>
-                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 1rem; text-align:right;">Actions</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donated By</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donation Date</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Expiration</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Stock</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Tested</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem; text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="detail-stock-tbody"></tbody>
-                    </table>
+                    </table>`}
                 </div>
             </div>
 
-            <div style="padding:1.5rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; text-align:right; display:flex; justify-content:space-between; align-items:center;">
-                <p style="font-size:0.75rem; color:#94a3b8; font-weight:500;">Note: Shelf life is exactly 42 days from donation.</p>
-                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="padding:0.75rem 2rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close Matrix</button>
+            <div style="padding:1.25rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:8px;">
+                    <button onclick="if(window.modalOldestBatchId) window.editStock(window.modalOldestBatchId); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i> Edit</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openDispatchModal(window.modalOldestBatchId, window.modalOldestBatchUnits, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-arrow-right" style="margin-right:4px;"></i> Dispatch</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openAlertModal(window.modalOldestBatchId, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-bell" style="margin-right:4px;"></i> Set Alert</button>
+                </div>
+                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="padding:0.65rem 1.5rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close</button>
             </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    const tbody = document.getElementById('detail-stock-tbody');
-
-    donations.forEach(don => {
-        const tr = document.createElement('tr');
-        tr.style.background = '#fff';
-        
-        const donDate = new Date(don.donationDate).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
-        });
-
-        tr.innerHTML = `
-            <td style="padding:1.15rem 1rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:16px; border-bottom-left-radius:16px;">
-                <div style="font-weight:700; color:#1e293b; font-size:0.95rem;">${escapeHtml(don.donorName)}</div>
-                <div style="font-size:0.7rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.id.substring(don.id.length-8).toUpperCase()}</div>
-            </td>
-            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
-                <div style="font-weight:700; color:#475569; font-size:0.9rem;">${donDate}</div>
-            </td>
-            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
-                <div class="expiry-timer" data-expiry="${don.expiryDate}" style="font-size:0.85rem; padding:4px 12px; background:#f8fafc; border-radius:20px; display:inline-block; border:1px solid #f1f5f9; min-width:140px; text-align:center;">Calculating...</div>
-            </td>
-            <td style="padding:1.15rem 1rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
-                <div style="font-weight:800; color:#1e293b; font-size:1rem;">${don.units} Units</div>
-            </td>
-            <td style="padding:1.15rem 1rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:16px; border-bottom-right-radius:16px; text-align:right;">
-                <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.editStock('${don.id}')" title="Edit Batch">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
-            </td>
         `;
-        tbody.appendChild(tr);
-    });
 
-    updateAllTimers();
+        if (batchCount > 0 && batches && batches.length > 0) {
+            window.modalOldestBatchId = batches[0].id;
+            window.modalOldestBatchUnits = batches[0].units;
+        } else {
+            window.modalOldestBatchId = null;
+            window.modalOldestBatchUnits = null;
+        }
+
+        // Populate batch rows
+        if (batchCount > 0) {
+            const tbody = document.getElementById('detail-stock-tbody');
+            batches.forEach(don => {
+                const tr = document.createElement('tr');
+                tr.style.background = '#fff';
+                
+                const donDate = new Date(don.donationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // Expiry display for modal
+                let expiryHtml = '';
+                if (don.daysRemaining < 0) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">EXPIRED 🔴</span>`;
+                } else if (don.daysRemaining <= 6) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h 🔴</span>`;
+                } else if (don.daysRemaining <= 29) {
+                    expiryHtml = `<span style="color:#633806; font-weight:700; background:#FAEEDA; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h ⚠️</span>`;
+                } else {
+                    expiryHtml = `<span style="color:#27500A; font-weight:700; background:#EAF3DE; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:14px; border-bottom-left-radius:14px;">
+                        <div style="font-weight:700; color:#1e293b; font-size:0.9rem;">${escapeHtml(don.donorName)}</div>
+                        <div style="font-size:0.68rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.shortId}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:700; color:#475569; font-size:0.85rem;">${donDate}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        ${expiryHtml}
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:800; color:#1e293b; font-size:0.95rem;">${don.units} Units</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:0.85rem;">${don.tested ? '✓' : '—'}</span>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:14px; border-bottom-right-radius:14px; text-align:right;">
+                        <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.editStock('${don.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.openDispatchModal('${don.id}', ${don.units}, '${escapeHtml(bloodGroup)}')" title="Dispatch"><i class="fas fa-share-square"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#ef4444; border:1px solid #e2e8f0;" onclick="deleteStock('${don.id}')" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error('Batch fetch error:', err);
+        modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Network error loading batch data.</div>';
+    }
 };
+
+// ─── EDIT STOCK MODAL (Enhanced with notes/tested) ──────
 
 window.editStock = async function(donationId) {
     const token = localStorage.getItem('token');
@@ -1432,25 +1606,14 @@ window.editStock = async function(donationId) {
 
     const modal = document.createElement('div');
     modal.id = 'record-edit-modal';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100vw';
-    modal.style.height = '100vh';
-    modal.style.background = 'rgba(15, 23, 42, 0.6)';
-    modal.style.backdropFilter = 'blur(4px)';
-    modal.style.zIndex = '4000';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '2rem';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
 
     modal.innerHTML = `
         <div class="modal-content" style="background:#fff; width:100%; max-width:500px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation: adminModalIn 0.2s ease-out;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
                 <div>
                     <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">Adjust Batch Details</h3>
-                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-top:2px;">ID: ${donationId.toUpperCase()}</p>
+                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-top:2px;">ID: ${donationId.substring(donationId.length - 8).toUpperCase()}</p>
                 </div>
                 <button onclick="document.getElementById('record-edit-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
             </div>
@@ -1492,7 +1655,17 @@ window.editStock = async function(donationId) {
                     </div>
                 </div>
 
-                <div style="display:flex; gap:1rem; padding-top:1.5rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Notes</label>
+                    <textarea id="edit-notes" rows="2" placeholder="Optional notes..." style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;">${donation.notes || ''}</textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="edit-tested" ${donation.tested ? 'checked' : ''} style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="edit-tested" style="font-size:0.85rem; font-weight:600; color:#475569;">Tested & Verified</label>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:1rem;">
                     <button type="button" onclick="document.getElementById('record-edit-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
                     <button type="submit" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:#D32F2F; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(211,47,47,0.25);">Save Batch</button>
                 </div>
@@ -1510,11 +1683,13 @@ window.editStock = async function(donationId) {
             donorName: document.getElementById('edit-donor').value,
             donationDate: document.getElementById('edit-date').value,
             rbcCount: document.getElementById('edit-rbc').value,
-            plasmaCount: document.getElementById('edit-plasma').value
+            plasmaCount: document.getElementById('edit-plasma').value,
+            notes: document.getElementById('edit-notes').value,
+            tested: document.getElementById('edit-tested').checked
         };
 
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${donationId}`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -1524,15 +1699,227 @@ window.editStock = async function(donationId) {
             });
             const result = await res.json();
             if (result.success) {
+                showToast(`Batch ${payload.bloodGroup} updated successfully`, 'success');
                 addToActivityFeed(`Successfully refined batch: <strong>${payload.bloodGroup}</strong>`, 'success');
                 modal.remove();
                 const detailsModal = document.getElementById('detailed-stock-modal');
                 if (detailsModal) detailsModal.remove();
                 fetchInventory();
             } else {
-                alert(result.message);
+                showToast(result.message || 'Update failed', 'error');
             }
-        } catch (err) { console.error(err); }
+        } catch (err) { 
+            console.error(err);
+            showToast('Network error', 'error');
+        }
+    };
+};
+
+// ─── DISPATCH MODAL ─────────────────────────────────────
+
+window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('dispatch-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'dispatch-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:460px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Dispatch Blood Units</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} • ${availableUnits} Units Available</p>
+                </div>
+                <button onclick="document.getElementById('dispatch-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="dispatch-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Select Hospital</label>
+                    <select id="dispatch-hospital" required style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="">Loading hospitals...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Quantity (Max: ${availableUnits})</label>
+                    <input type="number" id="dispatch-quantity" required min="1" max="${availableUnits}" value="1" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notes (Optional)</label>
+                    <textarea id="dispatch-notes" rows="2" placeholder="e.g., Emergency transfusion" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('dispatch-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="dispatch-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#6366f1,#4f46e5); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(99,102,241,0.25);">
+                        <i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch hospitals
+    try {
+        const res = await fetch('http://localhost:5001/api/admin/hospitals', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const select = document.getElementById('dispatch-hospital');
+        if (data.success && data.data.length > 0) {
+            select.innerHTML = '<option value="">— Select Hospital —</option>' +
+                data.data.map(h => `<option value="${h.id}">${escapeHtml(h.name)} — ${escapeHtml(h.city)}</option>`).join('');
+        } else {
+            select.innerHTML = '<option value="">No hospitals available</option>';
+        }
+    } catch (err) {
+        console.error('Hospital fetch error:', err);
+    }
+
+    // Handle dispatch submission
+    document.getElementById('dispatch-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const hospitalId = document.getElementById('dispatch-hospital').value;
+        const quantity = parseInt(document.getElementById('dispatch-quantity').value);
+        const notes = document.getElementById('dispatch-notes').value;
+
+        if (!hospitalId) { showToast('Please select a hospital', 'warning'); return; }
+        if (quantity > availableUnits) { showToast('Quantity exceeds available units', 'error'); return; }
+
+        const btn = document.getElementById('dispatch-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
+
+        try {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${batchId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hospitalId, quantity, notes })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast(result.message, 'success');
+                addToActivityFeed(`Dispatched ${quantity} units of <strong>${bloodGroup}</strong> to <strong>${result.data.hospitalName}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                showToast(result.message || 'Dispatch failed', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error during dispatch', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+        }
+    };
+};
+
+// ─── ALERT CONFIGURATION MODAL ──────────────────────────
+
+window.openAlertModal = function(batchId, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('alert-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'alert-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:420px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Configure Alert</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} Batch</p>
+                </div>
+                <button onclick="document.getElementById('alert-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="alert-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notify before expiry</label>
+                    <select id="alert-days" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="3">3 days before expiry</option>
+                        <option value="5">5 days before expiry</option>
+                        <option value="7" selected>7 days before expiry</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="alert-critical" style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="alert-critical" style="font-size:0.85rem; font-weight:600; color:#475569;">Alert on critical stock (0-2 units)</label>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Alert Method</label>
+                    <div style="display:flex; gap:0.75rem;">
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="in_app" checked style="accent-color:#D32F2F;"> In-App
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="email" style="accent-color:#D32F2F;"> Email
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('alert-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="alert-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#f59e0b,#d97706); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(245,158,11,0.25);">
+                        <i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('alert-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('alert-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
+
+        try {
+            const res = await fetch(`http://localhost:5001/api/admin/alerts/batch/${batchId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    daysBeforeExpiry: parseInt(document.getElementById('alert-days').value),
+                    notifyOnCritical: document.getElementById('alert-critical').checked,
+                    method
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast('Alert configured successfully', 'success');
+                modal.remove();
+            } else {
+                showToast(result.message || 'Failed to set alert', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+        }
     };
 };
 
@@ -1560,17 +1947,16 @@ function updateAllTimers() {
         timer.textContent = `${days}d ${hours}h remaining`;
         timer.style.fontWeight = '700';
 
-        // Color coding
         if (days < 7) {
-            timer.style.color = '#ef4444'; // Red
+            timer.style.color = '#ef4444';
             timer.style.background = '#fef2f2';
             timer.style.borderColor = '#fecaca';
         } else if (days < 14) {
-            timer.style.color = '#f59e0b'; // Orange
+            timer.style.color = '#f59e0b';
             timer.style.background = '#fffbeb';
             timer.style.borderColor = '#fef3c7';
         } else {
-            timer.style.color = '#10b981'; // Green
+            timer.style.color = '#10b981';
             timer.style.background = '#f0fdf4';
             timer.style.borderColor = '#bbf7d0';
         }
@@ -1587,8 +1973,6 @@ function calculateRemainingTime(expiryDate) {
 
 // Run timers every minute
 setInterval(updateAllTimers, 60000);
-
-
 
 function injectAddStockFields() {
     const form = document.getElementById('admin-add-stock-form');
@@ -1639,7 +2023,7 @@ async function submitAddStock(e) {
     const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/stock', {
+        const response = await fetch('http://localhost:5001/api/admin/stock', {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -1677,7 +2061,7 @@ async function deleteStock(id) {
     if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1694,7 +2078,7 @@ async function fetchAdminRequests() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/requests', {
+        const response = await fetch('http://localhost:5001/api/admin/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1739,7 +2123,7 @@ async function fetchAdminRequests() {
 async function updateReqStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
+        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -1768,7 +2152,7 @@ async function fetchAdminDonations() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/donations', {
+        const response = await fetch('http://localhost:5001/api/admin/donations', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1809,7 +2193,7 @@ async function fetchAdminDonations() {
 async function updateDonationStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
+        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1838,7 +2222,7 @@ async function fetchAdminStats() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/stats', {
+        const response = await fetch('http://localhost:5001/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1946,7 +2330,7 @@ async function fetchDonorEligibility() {
     if (!token) return;
 
     try {
-        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
+        const res = await fetch('http://localhost:5001/api/donor/eligibility', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
