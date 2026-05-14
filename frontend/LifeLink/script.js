@@ -1,160 +1,139 @@
+const GEMINI_API_KEY = 'AIzaSyB3zZ804zCCZCyHIRBsI1H-H42z_qnHXFg';
+
 /**
  * LifeLink - Single Page Application Router & Registration Logic
  */
 
+
 // === Admin Dashboard Enhancements ===
 function toggleAdminSidebar() {
-  const sidebar = document.getElementById("admin-sidebar");
-  if (sidebar) {
-    sidebar.classList.toggle("sidebar-collapsed");
-    // Change icon based on state
-    const icon = document.querySelector("header button i");
-    if (icon) {
-      icon.className = sidebar.classList.contains("sidebar-collapsed")
-        ? "fas fa-arrow-right"
-        : "fas fa-bars";
+    const sidebar = document.getElementById('admin-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('sidebar-collapsed');
+        // Change icon based on state
+        const icon = document.querySelector('header button i');
+        if (icon) {
+            icon.className = sidebar.classList.contains('sidebar-collapsed') ? 'fas fa-arrow-right' : 'fas fa-bars';
+        }
     }
-  }
 }
 
-function addToActivityFeed(eventText, type = "info") {
-  const feed = document.getElementById("admin-activity-feed");
-  if (!feed) return;
-
-  const item = document.createElement("div");
-  item.className = "activity-item";
-
-  let iconClass = "info-circle";
-  let bgColor = "rgba(99,102,241,0.1)";
-  let color = "#6366f1";
-
-  if (type === "success") {
-    iconClass = "plus";
-    bgColor = "rgba(22,163,74,0.1)";
-    color = "#16a34a";
-  } else if (type === "alert") {
-    iconClass = "heartbeat";
-    bgColor = "rgba(211,47,47,0.1)";
-    color = "#D32F2F";
-  }
-
-  item.innerHTML = `
+function addToActivityFeed(eventText, type = 'info') {
+    const feed = document.getElementById('admin-activity-feed');
+    if (!feed) return;
+    
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    
+    let iconClass = 'info-circle';
+    let bgColor = 'rgba(99,102,241,0.1)';
+    let color = '#6366f1';
+    
+    if (type === 'success') {
+        iconClass = 'plus';
+        bgColor = 'rgba(22,163,74,0.1)';
+        color = '#16a34a';
+    } else if (type === 'alert') {
+        iconClass = 'heartbeat';
+        bgColor = 'rgba(211,47,47,0.1)';
+        color = '#D32F2F';
+    }
+    
+    item.innerHTML = `
         <div class="activity-icon" style="background:${bgColor}; color:${color};"><i class="fas fa-${iconClass}"></i></div>
         <div class="activity-content">
             <div>${eventText}</div>
             <div class="activity-time">Just now</div>
         </div>
     `;
-
-  feed.prepend(item);
-  // Keep only last 10
-  if (feed.children.length > 10) {
-    feed.removeChild(feed.lastChild);
-  }
+    
+    feed.prepend(item);
+    // Keep only last 10
+    if (feed.children.length > 10) {
+        feed.removeChild(feed.lastChild);
+    }
 }
 
 // === DOM Element Queries ===
-const navLinks = document.querySelectorAll(".nav-link, .nav-login, .logo");
-const pageSections = document.querySelectorAll(".page-section");
+const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
+const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
-const DASHBOARD_ROUTES = [
-  "donor-dashboard",
-  "recipient-dashboard",
-  "admin-dashboard",
-];
+const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
 
 function navigateTo(targetId) {
-  const token = localStorage.getItem("token");
-  const userStr = localStorage.getItem("user");
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
 
-  if (
-    token &&
-    userStr &&
-    !DASHBOARD_ROUTES.includes(targetId) &&
-    targetId !== "login"
-  ) {
-    try {
-      const user = JSON.parse(userStr);
-      if (user.role === "DONOR") targetId = "donor-dashboard";
-      else if (user.role === "RECIPIENT") targetId = "recipient-dashboard";
-      else if (user.role === "ADMIN") targetId = "admin-dashboard";
-    } catch (e) {
-      logout();
-      return;
+    if (token && userStr && !DASHBOARD_ROUTES.includes(targetId) && targetId !== 'login') {
+        try {
+            const user = JSON.parse(userStr);
+            if (user.role === 'DONOR') targetId = 'donor-dashboard';
+            else if (user.role === 'RECIPIENT') targetId = 'recipient-dashboard';
+            else if (user.role === 'ADMIN') targetId = 'admin-dashboard';
+        } catch (e) {
+            logout();
+            return;
+        }
     }
-  }
 
-  if (DASHBOARD_ROUTES.includes(targetId)) {
-    if (!token || !userStr) {
-      targetId = "login";
-    } else {
-      try {
-        const user = JSON.parse(userStr);
-        let expectedDash = "";
-        if (user.role === "DONOR") expectedDash = "donor-dashboard";
-        else if (user.role === "RECIPIENT")
-          expectedDash = "recipient-dashboard";
-        else if (user.role === "ADMIN") expectedDash = "admin-dashboard";
-
-        if (targetId !== expectedDash && expectedDash !== "")
-          targetId = expectedDash;
-      } catch (e) {
-        logout();
-        return;
-      }
+    if (DASHBOARD_ROUTES.includes(targetId)) {
+        if (!token || !userStr) {
+            targetId = 'login';
+        } else {
+            try {
+                const user = JSON.parse(userStr);
+                let expectedDash = '';
+                if (user.role === 'DONOR') expectedDash = 'donor-dashboard';
+                else if (user.role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
+                else if (user.role === 'ADMIN') expectedDash = 'admin-dashboard';
+                
+                if (targetId !== expectedDash && expectedDash !== '') targetId = expectedDash;
+            } catch (e) {
+                logout();
+                return;
+            }
+        }
     }
-  }
 
-  if (targetId === "admin-dashboard" && token) {
-    navigateAdmin("admin-view-dashboard");
-    fetchAdminSummary(); // Fetch counts
-    fetchAdminUsers();
-    fetchInventory();
-    fetchAdminRequests();
-  } else if (targetId === "donor-dashboard" && token) {
-    fetchDonorProfile();
-  } else if (targetId === "recipient-dashboard" && token) {
-    fetchRecipientProfile();
-  }
-
-  // Handle "Coming Soon" sections
-  if (["find-blood", "about-us", "donors-list"].includes(targetId)) {
-    alert("This feature is Coming Soon!");
-    return; // Stop navigation
-  }
-
-  // Explicitly hide all sections and show only the target
-  pageSections.forEach((section) => {
-    section.classList.remove("active");
-    section.style.display = "none"; // HARD HIDE
-  });
-
-  const targetSection = document.getElementById(targetId);
-  if (targetSection) {
-    targetSection.classList.add("active");
-    // Admin dashboard needs flex, others block
-    if (targetId === "admin-dashboard") {
-      targetSection.style.display = "flex";
-    } else {
-      targetSection.style.display = "block";
+    if (targetId === 'admin-dashboard' && token) {
+        navigateAdmin('admin-view-dashboard');
+        fetchAdminUsers();
+        fetchInventory();
+        fetchAdminRequests();
     }
-  }
+
+    // Explicitly hide all sections and show only the target
+    pageSections.forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none'; // HARD HIDE
+    });
+
+    const targetSection = document.getElementById(targetId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        // Admin dashboard needs flex, others block
+        if (targetId === 'admin-dashboard') {
+            targetSection.style.display = 'flex';
+        } else {
+            targetSection.style.display = 'block';
+        }
+    }
 }
 
-navLinks.forEach((link) => {
-  link.addEventListener("click", (e) => {
-    const target = link.getAttribute("data-target");
-    e.preventDefault();
-    if (target) {
-      navigateTo(target);
-      if (target === "login") {
-        // reset slider if returning to login naturally
-        document.getElementById("login").classList.remove("sign-up-active");
-        resetAuthWizard();
-      }
-    }
-  });
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        const target = link.getAttribute('data-target');
+        e.preventDefault(); 
+        if (target) {
+            navigateTo(target);
+            if (target === 'login') {
+                // reset slider if returning to login naturally
+                document.getElementById('login').classList.remove('sign-up-active');
+                resetAuthWizard();
+            }
+        }
+    });
 });
 
 // === Auth Panel Logic (Sliding & Validation) ===
@@ -162,692 +141,584 @@ let authStep = 1;
 let authRole = null;
 
 function toggleAuthMode() {
-  const authSection = document.getElementById("login");
-  if (authSection) {
-    authSection.classList.toggle("sign-up-active");
-    if (!authSection.classList.contains("sign-up-active")) {
-      // Reset when going back to sign-in view
-      resetAuthWizard();
+    const authSection = document.getElementById('login');
+    if (authSection) {
+        authSection.classList.toggle('sign-up-active');
+        if (!authSection.classList.contains('sign-up-active')) {
+            // Reset when going back to sign-in view
+            resetAuthWizard();
+        }
     }
-  }
 }
 
 function selectAuthRole(role) {
-  authRole = role;
-  const cards = document.querySelectorAll(".auth-role-card");
-  cards.forEach((card) => {
-    card.classList.remove(
-      "border-indigo-500",
-      "bg-indigo-50",
-      "ring-2",
-      "ring-indigo-300",
-    );
-    card.classList.add("border-gray-100");
-  });
-
-  const selectedCard = document.querySelector(
-    `.auth-role-card[data-role="${role}"]`,
-  );
-  if (selectedCard) {
-    selectedCard.classList.remove("border-gray-100");
-    selectedCard.classList.add(
-      "border-indigo-500",
-      "bg-indigo-50",
-      "ring-2",
-      "ring-indigo-300",
-    );
-  }
+    authRole = role;
+    const cards = document.querySelectorAll('.auth-role-card');
+    cards.forEach(card => {
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+        card.classList.add('border-gray-100');
+    });
+    
+    const selectedCard = document.querySelector(`.auth-role-card[data-role="${role}"]`);
+    if (selectedCard) {
+        selectedCard.classList.remove('border-gray-100');
+        selectedCard.classList.add('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+    }
 }
 
 function showError(msg) {
-  const errorBox = document.getElementById("auth-error-box");
-  const errorText = document.getElementById("auth-error-text");
-  errorText.textContent = msg;
-  errorBox.classList.remove("hidden");
+    const errorBox = document.getElementById('auth-error-box');
+    const errorText = document.getElementById('auth-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
 }
 
 function hideError() {
-  document.getElementById("auth-error-box").classList.add("hidden");
+    document.getElementById('auth-error-box').classList.add('hidden');
 }
 
-function nextAuthStep() {
-  hideError();
-  if (authStep === 1) {
-    const email = document.getElementById("reg-email").value;
-    const pass = document.getElementById("reg-password").value;
-    const conf = document.getElementById("reg-confirm").value;
+// --- Auto-tick helpers for DOB and Weight ---
+function autoTickAge() {
+    const dobInput = document.getElementById('reg-dob');
+    const chkAge = document.getElementById('chk-age');
+    if (!dobInput || !chkAge || !dobInput.value) return;
 
-    if (!email || !pass) {
-      return showError("Please provide an email and password.");
+    const dob = new Date(dobInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
     }
-    if (pass.length < 6) {
-      return showError("Password must be at least 6 characters.");
-    }
-    if (pass !== conf) {
-      return showError("Passwords do not match.");
-    }
-    if (!authRole) {
-      return showError(
-        "Please select whether you are joining as a Donor or Recipient.",
-      );
-    }
+    chkAge.checked = (age >= 18 && age <= 65);
+    checkEligibility();
+}
 
-    document.getElementById("auth-step-1").classList.add("hidden");
-    document.getElementById("auth-step-1").classList.remove("block");
-    document.getElementById("auth-step-2").classList.remove("hidden");
-    document.getElementById("auth-step-2").classList.add("block");
+function autoTickWeight() {
+    const weightInput = document.getElementById('reg-weight');
+    const chkWeight = document.getElementById('chk-weight');
+    const weightError = document.getElementById('weight-error');
+    if (!weightInput || !chkWeight) return;
 
-    const isRecipient = authRole === "recipient";
-    document.getElementById("auth-total-steps").textContent = isRecipient
-      ? "2"
-      : "3";
-    document.getElementById("auth-current-step").textContent = "2";
+    const val = parseFloat(weightInput.value);
 
-    // Setup Step 2 next button based on role
-    const step2Btn = document.getElementById("step-2-next-btn");
-    if (isRecipient) {
-      step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
-      step2Btn.onclick = completeRegistration;
-      step2Btn.classList.remove(
-        "opacity-50",
-        "cursor-not-allowed",
-        "bg-indigo-600",
-      );
-      step2Btn.classList.add("bg-green-600", "hover:bg-green-700");
+    // Show error for invalid weight
+    if (weightInput.value !== '' && (isNaN(val) || val <= 0)) {
+        if (weightError) weightError.classList.remove('hidden');
+        chkWeight.checked = false;
     } else {
-      step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
-      step2Btn.onclick = nextAuthStep;
-      step2Btn.classList.remove("bg-green-600", "hover:bg-green-700");
-      step2Btn.classList.add("bg-indigo-600");
+        if (weightError) weightError.classList.add('hidden');
+        chkWeight.checked = (val >= 50 && val > 0);
     }
+    checkEligibility();
+}
 
-    authStep = 2;
-  } else if (authStep === 2) {
-    const name = document.getElementById("reg-name").value;
-    const phone = document.getElementById("reg-phone").value;
-    const address = document.getElementById("reg-address").value;
-    const blood = document.getElementById("reg-blood").value;
+// Attach auto-tick event listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const dobField = document.getElementById('reg-dob');
+    const weightField = document.getElementById('reg-weight');
+    if (dobField) dobField.addEventListener('change', autoTickAge);
+    if (weightField) weightField.addEventListener('input', autoTickWeight);
+});
 
-    if (!name || name.length < 2)
-      return showError("Name must be at least 2 characters.");
-    if (!phone || phone.length < 7)
-      return showError("Phone number must be at least 7 characters.");
-    if (!address) return showError("Address is required.");
-    if (!blood) return showError("Please select a blood type.");
+function nextAuthStep() {
+    hideError();
+    // Step 1: Name, Phone, Role
+    if (authStep === 1) {
+        const name = document.getElementById('reg-name').value;
+        const phone = document.getElementById('reg-phone').value;
 
-    if (authRole === "donor") {
-      document.getElementById("auth-step-2").classList.add("hidden");
-      document.getElementById("auth-step-2").classList.remove("block");
-      document.getElementById("auth-step-3").classList.remove("hidden");
-      document.getElementById("auth-step-3").classList.add("block");
-      document.getElementById("auth-current-step").textContent = "3";
-      authStep = 3;
-      checkEligibility();
+        if (!name || name.length < 2) {
+            return showError('Name must be at least 2 characters.');
+        }
+        if (!phone || phone.length < 7) {
+            return showError('Phone number must be at least 7 characters.');
+        }
+        if (!authRole) {
+            return showError('Please select whether you are joining as a Donor or Recipient.');
+        }
+
+        document.getElementById('auth-step-1').classList.add('hidden');
+        document.getElementById('auth-step-1').classList.remove('block');
+        document.getElementById('auth-step-2').classList.remove('hidden');
+        document.getElementById('auth-step-2').classList.add('block');
+        
+        const isRecipient = authRole === 'recipient';
+        document.getElementById('auth-total-steps').textContent = isRecipient ? '2' : '3';
+        document.getElementById('auth-current-step').textContent = '2';
+        
+        // Setup Step 2 next button based on role
+        const step2Btn = document.getElementById('step-2-next-btn');
+        if (isRecipient) {
+            step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
+            step2Btn.onclick = completeRegistration;
+        } else {
+            step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
+            step2Btn.onclick = nextAuthStep;
+        }
+
+        authStep = 2;
     }
-  }
+    // Step 2: Email, Password, Blood, Address
+    else if (authStep === 2) {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        const conf = document.getElementById('reg-confirm').value;
+        const blood = document.getElementById('reg-blood').value;
+        const address = document.getElementById('reg-address').value;
+
+        if (!email) return showError('Email is required.');
+        if (!pass) return showError('Password is required.');
+        if (pass.length < 6) return showError('Password must be at least 6 characters.');
+        if (pass !== conf) return showError('Passwords do not match.');
+        if (!blood) return showError('Please select a blood type.');
+        if (!address) return showError('Address is required.');
+
+        if (authRole === 'donor') {
+            document.getElementById('auth-step-2').classList.add('hidden');
+            document.getElementById('auth-step-2').classList.remove('block');
+            document.getElementById('auth-step-3').classList.remove('hidden');
+            document.getElementById('auth-step-3').classList.add('block');
+            document.getElementById('auth-current-step').textContent = '3';
+            authStep = 3;
+            checkEligibility();
+        }
+    }
 }
 
 function prevAuthStep() {
-  hideError();
-  if (authStep === 2) {
-    document.getElementById("auth-step-2").classList.add("hidden");
-    document.getElementById("auth-step-2").classList.remove("block");
-    document.getElementById("auth-step-1").classList.remove("hidden");
-    document.getElementById("auth-step-1").classList.add("block");
-    document.getElementById("auth-current-step").textContent = "1";
-    document.getElementById("auth-total-steps").textContent = "3";
-    authStep = 1;
-  } else if (authStep === 3) {
-    document.getElementById("auth-step-3").classList.add("hidden");
-    document.getElementById("auth-step-3").classList.remove("block");
-    document.getElementById("auth-step-2").classList.remove("hidden");
-    document.getElementById("auth-step-2").classList.add("block");
-    document.getElementById("auth-current-step").textContent = "2";
-    authStep = 2;
-  }
+    hideError();
+    if (authStep === 2) {
+        document.getElementById('auth-step-2').classList.add('hidden');
+        document.getElementById('auth-step-2').classList.remove('block');
+        document.getElementById('auth-step-1').classList.remove('hidden');
+        document.getElementById('auth-step-1').classList.add('block');
+        document.getElementById('auth-current-step').textContent = '1';
+        document.getElementById('auth-total-steps').textContent = '3';
+        authStep = 1;
+    } else if (authStep === 3) {
+        document.getElementById('auth-step-3').classList.add('hidden');
+        document.getElementById('auth-step-3').classList.remove('block');
+        document.getElementById('auth-step-2').classList.remove('hidden');
+        document.getElementById('auth-step-2').classList.add('block');
+        document.getElementById('auth-current-step').textContent = '2';
+        authStep = 2;
+    }
 }
 
 function checkEligibility() {
-  const checks = document.querySelectorAll(".eligibility-check");
-  let allChecked = true;
-  checks.forEach((check) => {
-    if (!check.checked) allChecked = false;
-  });
+    const checks = document.querySelectorAll('.eligibility-check');
+    let allChecked = true;
+    checks.forEach(check => {
+        if (!check.checked) allChecked = false;
+    });
 
-  const regBtn = document.getElementById("final-register-btn");
-  if (allChecked) {
-    regBtn.removeAttribute("disabled");
-    regBtn.classList.remove(
-      "opacity-50",
-      "cursor-not-allowed",
-      "bg-indigo-600",
-    );
-    regBtn.classList.add(
-      "hover:bg-green-700",
-      "hover:shadow-lg",
-      "active:scale-95",
-      "bg-green-600",
-    );
-  } else {
-    regBtn.setAttribute("disabled", "true");
-    regBtn.classList.add("opacity-50", "cursor-not-allowed", "bg-indigo-600");
-    regBtn.classList.remove(
-      "hover:bg-green-700",
-      "hover:shadow-lg",
-      "active:scale-95",
-      "bg-green-600",
-    );
-  }
+    const regBtn = document.getElementById('final-register-btn');
+    if (allChecked) {
+        regBtn.removeAttribute('disabled');
+        regBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.add('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
+    } else {
+        regBtn.setAttribute('disabled', 'true');
+        regBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.remove('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
+    }
 }
 
 async function completeRegistration() {
-  hideError();
-  let btn;
-  if (authRole === "recipient") {
-    const name = document.getElementById("reg-name").value;
-    const phone = document.getElementById("reg-phone").value;
-    const address = document.getElementById("reg-address").value;
-    const blood = document.getElementById("reg-blood").value;
+    hideError();
+    let btn;
 
-    if (!name || name.length < 2)
-      return showError("Name must be at least 2 characters.");
-    if (!phone || phone.length < 7)
-      return showError("Phone number must be at least 7 characters.");
-    if (!address) return showError("Address is required.");
-    if (!blood) return showError("Please select a blood type.");
+    // Common validation for both roles (fields from Steps 1 & 2)
+    const name = document.getElementById('reg-name').value;
+    const phone = document.getElementById('reg-phone').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    const blood = document.getElementById('reg-blood').value;
+    const address = document.getElementById('reg-address').value;
 
-    btn = document.getElementById("step-2-next-btn");
-  } else {
-    const dob = document.getElementById("reg-dob").value;
-    const gender = document.getElementById("reg-gender").value;
-    const weight = document.getElementById("reg-weight").value;
+    if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
+    if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
+    if (!email) return showError('Email is required.');
+    if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
+    if (!blood) return showError('Please select a blood type.');
+    if (!address) return showError('Address is required.');
 
-    if (!dob) return showError("Date of Birth is required.");
-    if (!gender) return showError("Gender is required.");
-    if (!weight || parseFloat(weight) < 50)
-      return showError("Weight must be at least 50kg.");
-
-    btn = document.getElementById("final-register-btn");
-  }
-
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
-
-  try {
-    const payload = {
-      email: document.getElementById("reg-email").value,
-      password: document.getElementById("reg-password").value,
-      confirmPassword: document.getElementById("reg-confirm").value,
-      name: document.getElementById("reg-name").value,
-      role: authRole.toUpperCase(),
-      phone: document.getElementById("reg-phone").value,
-      address: document.getElementById("reg-address").value,
-      bloodType: document.getElementById("reg-blood").value,
-      medicalCondition: document.getElementById("reg-medical").value || null,
-    };
-
-    if (authRole === "donor") {
-      payload.dateOfBirth = new Date(
-        document.getElementById("reg-dob").value,
-      ).toISOString();
-      payload.gender = document.getElementById("reg-gender").value;
-      payload.weight = parseFloat(document.getElementById("reg-weight").value);
-      const lastDonation = document.getElementById("reg-last-donation").value;
-      if (lastDonation) {
-        payload.lastDonationDate = new Date(lastDonation).toISOString();
-      }
+    if (authRole === 'recipient') {
+        btn = document.getElementById('step-2-next-btn');
+    } else {
+        const dob = document.getElementById('reg-dob').value;
+        const gender = document.getElementById('reg-gender').value;
+        const weight = document.getElementById('reg-weight').value;
+        
+        if (!dob) return showError('Date of Birth is required.');
+        if (!gender) return showError('Gender is required.');
+        if (!weight || parseFloat(weight) <= 0) return showError('Weight must be a positive number.');
+        if (parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
+        
+        btn = document.getElementById('final-register-btn');
     }
 
-    const response = await fetch("http://localhost:5000/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+    
+    try {
+        const payload = {
+            email: document.getElementById('reg-email').value,
+            password: document.getElementById('reg-password').value,
+            confirmPassword: document.getElementById('reg-confirm').value,
+            name: document.getElementById('reg-name').value,
+            role: authRole.toUpperCase(),
+            phone: document.getElementById('reg-phone').value,
+            address: document.getElementById('reg-address').value,
+            bloodType: document.getElementById('reg-blood').value,
+            medicalCondition: document.getElementById('reg-medical').value || null
+        };
 
-    const data = await response.json();
+        if (authRole === 'donor') {
+            payload.dateOfBirth = new Date(document.getElementById('reg-dob').value).toISOString();
+            payload.gender = document.getElementById('reg-gender').value;
+            payload.weight = parseFloat(document.getElementById('reg-weight').value);
+        }
+        
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            let errorMsg = data.message || 'Registration failed';
+            if (data.error && Array.isArray(data.error.issues)) {
+                 errorMsg = data.error.issues[0].message;
+            } else if (data.error && typeof data.error === 'string') {
+                 errorMsg = data.error;
+            }
+            throw new Error(errorMsg);
+        }
 
-    if (!response.ok) {
-      let errorMsg = data.message || "Registration failed";
-      if (data.error && Array.isArray(data.error.issues)) {
-        errorMsg = data.error.issues[0].message;
-      } else if (data.error && typeof data.error === "string") {
-        errorMsg = data.error;
-      }
-      throw new Error(errorMsg);
+        // Hide Step 2/3 & Footer, show Success screen
+        document.getElementById(`auth-step-${authRole === 'donor' ? 3 : 2}`).classList.add('hidden');
+        document.getElementById(`auth-step-${authRole === 'donor' ? 3 : 2}`).classList.remove('block');
+        document.getElementById('auth-footer-toggle').classList.add('hidden');
+        document.getElementById('auth-footer-toggle').classList.remove('block');
+        
+        document.getElementById('auth-success').classList.remove('hidden');
+        document.getElementById('auth-current-step').parentElement.classList.add('hidden');
+        document.getElementById('auth-error-box').classList.add('hidden');
+    } catch (error) {
+        showError(error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
-
-    // Hide Step 2/3 & Footer, show Success screen
-    document
-      .getElementById(`auth-step-${authRole === "donor" ? 3 : 2}`)
-      .classList.add("hidden");
-    document
-      .getElementById(`auth-step-${authRole === "donor" ? 3 : 2}`)
-      .classList.remove("block");
-    document.getElementById("auth-footer-toggle").classList.add("hidden");
-    document.getElementById("auth-footer-toggle").classList.remove("block");
-
-    document.getElementById("auth-success").classList.remove("hidden");
-    document
-      .getElementById("auth-current-step")
-      .parentElement.classList.add("hidden");
-    document.getElementById("auth-error-box").classList.add("hidden");
-  } catch (error) {
-    showError(error.message);
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
 }
 
 function resetAuthWizard() {
-  hideError();
-  authStep = 1;
-  authRole = null;
+    hideError();
+    authStep = 1;
+    authRole = null;
+    
+    // Reset view visibility
+    document.getElementById('auth-step-1').classList.remove('hidden');
+    document.getElementById('auth-step-1').classList.add('block');
+    document.getElementById('auth-step-2').classList.add('hidden');
+    document.getElementById('auth-step-2').classList.remove('block');
+    document.getElementById('auth-step-3').classList.add('hidden');
+    document.getElementById('auth-step-3').classList.remove('block');
+    
+    const successScreen = document.getElementById('auth-success');
+    if(successScreen) successScreen.classList.add('hidden');
+    
+    document.getElementById('auth-footer-toggle').classList.remove('hidden');
+    document.getElementById('auth-footer-toggle').classList.add('block');
+    document.getElementById('auth-current-step').parentElement.classList.remove('hidden');
+    document.getElementById('auth-current-step').textContent = '1';
+    document.getElementById('auth-total-steps').textContent = '3';
 
-  // Reset view visibility
-  document.getElementById("auth-step-1").classList.remove("hidden");
-  document.getElementById("auth-step-1").classList.add("block");
-  document.getElementById("auth-step-2").classList.add("hidden");
-  document.getElementById("auth-step-2").classList.remove("block");
-  document.getElementById("auth-step-3").classList.add("hidden");
-  document.getElementById("auth-step-3").classList.remove("block");
+    // Reset Forms
+    document.querySelectorAll('#auth-step-1 input').forEach(input => input.value = '');
+    document.querySelectorAll('#auth-step-2 input').forEach(input => input.value = '');
+    document.querySelectorAll('#auth-step-3 input:not([type="checkbox"])').forEach(input => input.value = '');
+    document.querySelectorAll('#auth-step-2 select, #auth-step-3 select').forEach(select => select.selectedIndex = 0);
+    document.querySelectorAll('.eligibility-check').forEach(input => input.checked = false);
 
-  const successScreen = document.getElementById("auth-success");
-  if (successScreen) successScreen.classList.add("hidden");
+    // Hide weight error
+    const weightError = document.getElementById('weight-error');
+    if (weightError) weightError.classList.add('hidden');
+    
+    // Reset Step 2 button
+    const step2Btn = document.getElementById('step-2-next-btn');
+    if(step2Btn) {
+        step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
+        step2Btn.onclick = nextAuthStep;
+    }
 
-  document.getElementById("auth-footer-toggle").classList.remove("hidden");
-  document.getElementById("auth-footer-toggle").classList.add("block");
-  document
-    .getElementById("auth-current-step")
-    .parentElement.classList.remove("hidden");
-  document.getElementById("auth-current-step").textContent = "1";
-  document.getElementById("auth-total-steps").textContent = "3";
+    // Reset Cards
+    const cards = document.querySelectorAll('.auth-role-card');
+    cards.forEach(card => {
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+        card.classList.add('border-gray-100');
+    });
 
-  // Reset Forms
-  document
-    .querySelectorAll("#auth-step-1 input")
-    .forEach((input) => (input.value = ""));
-  document
-    .querySelectorAll("#auth-step-2 input")
-    .forEach((input) => (input.value = ""));
-  document
-    .querySelectorAll('#auth-step-3 input:not([type="checkbox"])')
-    .forEach((input) => (input.value = ""));
-  document
-    .querySelectorAll("#auth-step-2 select, #auth-step-3 select")
-    .forEach((select) => (select.selectedIndex = 0));
-  document
-    .querySelectorAll(".eligibility-check")
-    .forEach((input) => (input.checked = false));
-
-  // Reset Step 2 button
-  const step2Btn = document.getElementById("step-2-next-btn");
-  if (step2Btn) {
-    step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
-    step2Btn.onclick = nextAuthStep;
-    step2Btn.classList.remove("bg-green-600", "hover:bg-green-700");
-    step2Btn.classList.add("bg-indigo-600");
-  }
-
-  // Reset Cards
-  const cards = document.querySelectorAll(".auth-role-card");
-  cards.forEach((card) => {
-    card.classList.remove(
-      "border-indigo-500",
-      "bg-indigo-50",
-      "ring-2",
-      "ring-indigo-300",
-    );
-    card.classList.add("border-gray-100");
-  });
-
-  checkEligibility();
+    checkEligibility();
 }
 
 // === Session & Login Logic ===
 function showLoginError(msg) {
-  const errorBox = document.getElementById("login-error-box");
-  const errorText = document.getElementById("login-error-text");
-  if (errorText && errorBox) {
-    errorText.textContent = msg;
-    errorBox.classList.remove("hidden");
-  }
+    const errorBox = document.getElementById('login-error-box');
+    const errorText = document.getElementById('login-error-text');
+    if(errorText && errorBox) {
+        errorText.textContent = msg;
+        errorBox.classList.remove('hidden');
+    }
 }
 
 function hideLoginError() {
-  const errorBox = document.getElementById("login-error-box");
-  if (errorBox) errorBox.classList.add("hidden");
+    const errorBox = document.getElementById('login-error-box');
+    if(errorBox) errorBox.classList.add('hidden');
 }
 
 async function handleLogin(e) {
-  e.preventDefault();
-  hideLoginError();
-
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-  const btn = document.getElementById("login-btn");
-
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
-
-  try {
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.message || "Login failed. Please check your credentials.",
-      );
+    e.preventDefault();
+    hideLoginError();
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed. Please check your credentials.');
+        }
+        
+        // Save to LocalStorage
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+        // Hide auth slide panel side effect if it's there
+        const loginSec = document.getElementById('login');
+        if (loginSec) loginSec.classList.remove('sign-up-active');
+        
+        // Route to Dashboard
+        routeUserToDashboard(data.data.user);
+        
+        // Reset Login Form
+        document.getElementById('login-form-inner').reset();
+    } catch (error) {
+        showLoginError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
-
-    // Save to LocalStorage
-    localStorage.setItem("token", data.data.token);
-    localStorage.setItem("user", JSON.stringify(data.data.user));
-
-    // Hide auth slide panel side effect if it's there
-    const loginSec = document.getElementById("login");
-    if (loginSec) loginSec.classList.remove("sign-up-active");
-
-    // Route to Dashboard
-    routeUserToDashboard(data.data.user);
-
-    // Reset Login Form
-    document.getElementById("login-form-inner").reset();
-  } catch (error) {
-    showLoginError(error.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
 }
 
 function routeUserToDashboard(user) {
-  if (!user || !user.role) return;
-  updateNav(user);
+    if (!user || !user.role) return;
+    updateNav(user);
+    const token = localStorage.getItem('token');
+    
+    if (user.role === 'DONOR') {
+        navigateTo('donor-dashboard');
+        // Fetch and display real profile data
+        fetch(`http://localhost:5000/api/donor/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.donorProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('donor-name-display');
+                const bloodDisplay = document.getElementById('donor-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'donor');
+            }
+        }).catch(err => console.error('Error fetching donor profile:', err));
 
-  const bloodTypeStr =
-    user.donorProfile?.bloodType ||
-    user.recipientProfile?.bloodType ||
-    "Unknown";
+        setTimeout(() => fetchDonorHistory(), 300);
+    } 
+    else if (user.role === 'RECIPIENT') {
+        navigateTo('recipient-dashboard');
+        // Fetch and display real profile data
+        fetch(`http://localhost:5000/api/recipient/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.recipientProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('recipient-name-display');
+                const bloodDisplay = document.getElementById('recipient-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'recipient');
+            }
+        }).catch(err => console.error('Error fetching recipient profile:', err));
 
-  if (user.role === "DONOR") {
-    const nameDisplay = document.getElementById("donor-name-display");
-    const bloodDisplay = document.getElementById("donor-blood-display");
-    if (nameDisplay) nameDisplay.textContent = user.name;
-    if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
-    navigateTo("donor-dashboard");
-    fetchDonorEligibility(); // Fetch real eligibility
-  } else if (user.role === "RECIPIENT") {
-    const nameDisplay = document.getElementById("recipient-name-display");
-    const bloodDisplay = document.getElementById("recipient-blood-display");
-    if (nameDisplay) nameDisplay.textContent = user.name;
-    if (bloodDisplay) bloodDisplay.textContent = bloodTypeStr;
-    navigateTo("recipient-dashboard");
-    fetchRecipientRequests(); // Fetch real requests
-  } else if (user.role === "ADMIN") {
-    const sidebarName = document.getElementById("admin-sidebar-name");
-    if (sidebarName) sidebarName.textContent = user.name;
-    navigateTo("admin-dashboard");
-    fetchAdminSummary(); // Fetch summary stats
-  }
-}
-
-// === NEW: Profile Fetching Logic ===
-async function fetchDonorProfile() {
-  const token = localStorage.getItem("token");
-  try {
-    const response = await fetch("http://localhost:5000/api/donor/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await handleApiResponse(response);
-    if (data && data.success) {
-      const u = data.data;
-      const profile = u.donorProfile || {};
-      
-      if (document.getElementById("donor-name-display")) document.getElementById("donor-name-display").textContent = u.name;
-      if (document.getElementById("donor-blood-display")) document.getElementById("donor-blood-display").textContent = profile.bloodType || "N/A";
-      
-      // Update info cards if they exist
-      const phoneEl = document.querySelector("#donor-dashboard [data-info='phone']");
-      const addressEl = document.querySelector("#donor-dashboard [data-info='address']");
-      if (phoneEl) phoneEl.textContent = profile.phone || "Not set";
-      if (addressEl) addressEl.textContent = profile.address || "Not set";
-      
-      console.log("Donor profile loaded");
-      
-      // Update donation history with placeholder
-      const historyList = document.querySelector("#donor-dashboard .space-y-4");
-      if (historyList) {
-        historyList.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;font-weight:500;border:2px dashed #f1f5f9;border-radius:1.5rem;">No donation history yet.</div>';
-      }
-      
-      // Disable the schedule form with "Coming Soon" overlay or message
-      const scheduleForm = document.getElementById("donor-schedule-form");
-      if (scheduleForm) {
-        const overlay = document.createElement("div");
-        overlay.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:20;border-radius:2rem;";
-        overlay.innerHTML = '<div style="background:white;padding:1rem 2rem;border-radius:1rem;box-shadow:0 10px 25px rgba(0,0,0,0.05);font-weight:800;color:#D32F2F;border:1px solid #fee2e2;">SCHEDULE: COMING SOON</div>';
-        scheduleForm.style.position = "relative";
-        scheduleForm.appendChild(overlay);
-      }
+        setTimeout(() => fetchRecipientHistory(), 300);
+    } 
+    else if (user.role === 'ADMIN') {
+        const sidebarName = document.getElementById('admin-sidebar-name');
+        if (sidebarName) sidebarName.textContent = user.name;
+        navigateTo('admin-dashboard');
+        // Fetch admin stats and initial data
+        setTimeout(() => {
+            fetchAdminStats();
+            fetchInventory();
+        }, 300);
     }
-  } catch (err) {
-    console.error("Donor profile fetch failed", err);
-  }
-}
-
-async function fetchRecipientProfile() {
-  const token = localStorage.getItem("token");
-  try {
-    const response = await fetch("http://localhost:5000/api/recipient/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await handleApiResponse(response);
-    if (data && data.success) {
-      const u = data.data;
-      const profile = u.recipientProfile || {};
-      
-      if (document.getElementById("recipient-name-display")) document.getElementById("recipient-name-display").textContent = u.name;
-      if (document.getElementById("recipient-blood-display")) document.getElementById("recipient-blood-display").textContent = profile.bloodType || "N/A";
-      
-      console.log("Recipient profile loaded");
-      
-      // Handle the request form with Coming Soon
-      const requestForm = document.getElementById("recipient-request-form");
-      if (requestForm) {
-        const overlay = document.createElement("div");
-        overlay.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.7);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:20;border-radius:2rem;";
-        overlay.innerHTML = '<div style="background:white;padding:1rem 2rem;border-radius:1rem;box-shadow:0 10px 25px rgba(0,0,0,0.05);font-weight:800;color:#4f46e5;border:1px solid #e0e7ff;">REQUESTS: COMING SOON</div>';
-        requestForm.style.position = "relative";
-        requestForm.appendChild(overlay);
-      }
-      
-      // Handle tracker visibility
-      const tracker = document.querySelector("#recipient-dashboard .bg-white\\/80.backdrop-blur-xl.p-8.rounded-\\[2rem\\]");
-      if (tracker) {
-        tracker.innerHTML = '<div style="text-align:center;padding:1rem;color:#94a3b8;font-weight:600;">No active requests yet. Tracking will appear here once you request blood.</div>';
-      }
-    }
-  } catch (err) {
-    console.error("Recipient profile fetch failed", err);
-  }
-}
-
-async function fetchAdminSummary() {
-  const token = localStorage.getItem("token");
-  try {
-    const response = await fetch("http://localhost:5000/api/admin/summary", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await handleApiResponse(response);
-    if (data && data.success) {
-      const stats = data.data;
-      if (document.getElementById("admin-total-users")) document.getElementById("admin-total-users").textContent = stats.totalUsers;
-      // Pending and Units are 0 for now as tables don't exist
-      if (document.getElementById("admin-pending-count")) document.getElementById("admin-pending-count").textContent = "0";
-      if (document.getElementById("admin-total-units")) document.getElementById("admin-total-units").textContent = "0";
-    }
-  } catch (err) {}
-}
-
-async function handleApiResponse(response) {
-  if (response.status === 401) {
-    logout();
-    showLoginError("Session expired. Please login again.");
-    throw new Error("Unauthorized");
-  }
-  return response.json();
-}
-
-// Global "Coming Soon" for unimplemented buttons
-function showComingSoon() {
-  alert("Feature Coming Soon: This functionality requires additional backend tables.");
 }
 
 function updateNav(user) {
-  const navUserContainer = document.getElementById("nav-user-container");
-  const navLoginBtn = document.getElementById("nav-login-btn");
-  const navUserName = document.getElementById("nav-user-name");
-
-  if (user && navUserContainer && navLoginBtn && navUserName) {
-    navUserName.textContent = user.name;
-    navUserName.style.cursor = "pointer";
-    navUserName.style.textDecoration = "underline";
-    navUserName.style.textDecorationStyle = "dotted";
-    navUserName.style.textUnderlineOffset = "4px";
-    navUserName.onclick = goToDashboard;
-    navLoginBtn.classList.add("hidden");
-    navUserContainer.classList.remove("hidden");
-    navUserContainer.classList.add("flex");
-    // Hide public nav links when logged in
-    document.querySelectorAll(".nav-link[data-target]").forEach((link) => {
-      link.style.display = "none";
-    });
-  } else if (navUserContainer && navLoginBtn) {
-    navLoginBtn.classList.remove("hidden");
-    navUserContainer.classList.add("hidden");
-    navUserContainer.classList.remove("flex");
-    // Show public nav links when logged out
-    document.querySelectorAll(".nav-link[data-target]").forEach((link) => {
-      link.style.display = "";
-    });
-  }
+    const navUserContainer = document.getElementById('nav-user-container');
+    const navLoginBtn = document.getElementById('nav-login-btn');
+    const navUserName = document.getElementById('nav-user-name');
+    
+    if (user && navUserContainer && navLoginBtn && navUserName) {
+        navUserName.textContent = user.name;
+        navLoginBtn.classList.add('hidden');
+        navUserContainer.classList.remove('hidden');
+        navUserContainer.classList.add('flex');
+        // Hide public nav links when logged in
+        document.querySelectorAll('.nav-link[data-target]').forEach(link => {
+            link.style.display = 'none';
+        });
+    } else if (navUserContainer && navLoginBtn) {
+        navLoginBtn.classList.remove('hidden');
+        navUserContainer.classList.add('hidden');
+        navUserContainer.classList.remove('flex');
+        // Show public nav links when logged out
+        document.querySelectorAll('.nav-link[data-target]').forEach(link => {
+            link.style.display = '';
+        });
+    }
 }
 
 function goToDashboard() {
-  const userStr = localStorage.getItem("user");
-  if (!userStr) {
-    navigateTo("login");
-    return;
-  }
-  try {
-    const user = JSON.parse(userStr);
-    
-    // Update "My Dashboard" links specifically if they exist in a dynamic way
-    // But since the nav is mostly static, navigateTo will handle the routing logic anyway.
-    
-    if (user.role === "ADMIN") navigateTo("admin-dashboard");
-    else if (user.role === "RECIPIENT") navigateTo("recipient-dashboard");
-    else navigateTo("donor-dashboard");
-  } catch (e) {
-    navigateTo("login");
-  }
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        navigateTo('login');
+        return;
+    }
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'ADMIN') navigateTo('admin-dashboard');
+        else if (user.role === 'RECIPIENT') navigateTo('recipient-dashboard');
+        else navigateTo('donor-dashboard');
+    } catch (e) {
+        navigateTo('login');
+    }
 }
 
 function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  updateNav(null);
-  navigateTo("login");
-  const loginSec = document.getElementById("login");
-  if (loginSec) loginSec.classList.remove("sign-up-active");
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    updateNav(null);
+    navigateTo('login');
+    const loginSec = document.getElementById('login');
+    if (loginSec) loginSec.classList.remove('sign-up-active');
 }
 
 function checkAuthOnLoad() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const resetToken = urlParams.get("token");
-  if (resetToken) {
-    navigateTo("login");
-    showResetBlock();
-    return;
-  }
-
-  const token = localStorage.getItem("token");
-  const userStr = localStorage.getItem("user");
-
-  if (token && userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      routeUserToDashboard(user);
-    } catch (e) {
-      logout();
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('token');
+    if (resetToken) {
+        navigateTo('login');
+        showResetBlock();
+        return;
     }
-  } else {
-    updateNav(null);
-  }
+
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            routeUserToDashboard(user);
+        } catch (e) {
+            logout();
+        }
+    } else {
+        updateNav(null);
+    }
 }
 
 // Run initialization on load
-document.addEventListener("DOMContentLoaded", () => {
-  checkAuthOnLoad();
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuthOnLoad();
 });
 
+
 async function fetchAdminUsers() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+    fetchInventory();
+    fetchAdminRequests();
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  // Update sidebar name
-  const userStr = localStorage.getItem("user");
-  if (userStr) {
-    try {
-      const u = JSON.parse(userStr);
-      const sidebarName = document.getElementById("admin-sidebar-name");
-      if (sidebarName) sidebarName.textContent = u.name;
-    } catch (e) {}
-  }
-
-  try {
-    const response = await fetch("http://localhost:5000/api/admin/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 401) {
-      logout();
-      showLoginError("Session expired. Please login again.");
-      return;
+    // Update sidebar name
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        try {
+            const u = JSON.parse(userStr);
+            const sidebarName = document.getElementById('admin-sidebar-name');
+            if (sidebarName) sidebarName.textContent = u.name;
+        } catch(e) {}
     }
 
-    const data = await response.json();
-    const tbody = document.getElementById("admin-users-tbody");
-    const counter = document.getElementById("admin-total-users");
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-    if (data.success && tbody) {
-      const users = data.data;
-      if (counter) counter.textContent = users.length;
+        if (response.status === 401) {
+            logout();
+            showLoginError('Session expired. Please login again.');
+            return;
+        }
 
-      tbody.innerHTML = "";
-      if (users.length === 0) {
-        tbody.innerHTML =
-          '<tr><td colspan="3" style="text-align:center;padding:3rem;color:#84758c;">No users found.</td></tr>';
-        return;
-      }
+        const data = await response.json();
+        const tbody = document.getElementById('admin-users-tbody');
+        const counter = document.getElementById('admin-total-users');
+        
+        if (data.success && tbody) {
+            const users = data.data;
+            if (counter) counter.textContent = users.length;
+            
+            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:3rem;color:#84758c;">No users found.</td></tr>';
+                return;
+            }
 
-      users.forEach((u) => {
-        const initial = (u.name || "?").charAt(0).toUpperCase();
-        const roleBadge =
-          u.role === "ADMIN"
-            ? "admin-badge-danger"
-            : u.role === "DONOR"
-              ? "admin-badge-success"
-              : "admin-badge-primary";
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+            users.forEach(u => {
+                const initial = (u.name || '?').charAt(0).toUpperCase();
+                const roleBadge = u.role === 'ADMIN' ? 'admin-badge-danger' :
+                                  u.role === 'DONOR' ? 'admin-badge-success' : 'admin-badge-primary';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td>
                         <div style="display:flex;align-items:center;gap:0.75rem;">
                             <div style="width:36px;height:36px;background:rgba(211,47,47,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:700;font-size:0.9rem;">${initial}</div>
@@ -857,613 +728,1579 @@ async function fetchAdminUsers() {
                     <td style="color:#64748b;">${escapeHtml(u.email)}</td>
                     <td><span class="${roleBadge}">${escapeHtml(u.role)}</span></td>
                 `;
-        tbody.appendChild(tr);
-      });
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error('Failed to fetch users:', e);
     }
-  } catch (e) {
-    console.error("Failed to fetch users:", e);
-  }
 }
 
 function filterUserTable(query) {
-  const rows = document.querySelectorAll("#admin-users-tbody tr");
-  const q = query.toLowerCase();
-  rows.forEach((row) => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(q) ? "" : "none";
-  });
+    const rows = document.querySelectorAll('#admin-users-tbody tr');
+    const q = query.toLowerCase();
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
 }
 
 function escapeHtml(unsafe) {
-  return (unsafe || "")
-    .toString()
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    return (unsafe || '').toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
 }
 
 // === Forgot & Reset Password Logic ===
 function showForgotBlock(e) {
-  if (e) e.preventDefault();
-  document.getElementById("auth-signin-card").classList.add("hidden");
-  document.getElementById("auth-signup-card").classList.add("hidden");
-  document.getElementById("auth-reset-card").classList.add("hidden");
-  document.getElementById("auth-forgot-card").classList.remove("hidden");
-  hideForgotError();
-  hideForgotSuccess();
+    if (e) e.preventDefault();
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.remove('hidden');
+    hideForgotError();
+    hideForgotSuccess();
 }
 
 function showSignInBlock() {
-  document.getElementById("auth-signin-card").classList.remove("hidden");
-  document.getElementById("auth-signup-card").classList.remove("hidden");
-  document.getElementById("auth-forgot-card").classList.add("hidden");
-  document.getElementById("auth-reset-card").classList.add("hidden");
-  document.getElementById("login").classList.remove("sign-up-active");
+    document.getElementById('auth-signin-card').classList.remove('hidden');
+    document.getElementById('auth-signup-card').classList.remove('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.add('hidden');
+    document.getElementById('login').classList.remove('sign-up-active');
 }
 
 function showResetBlock() {
-  document.getElementById("auth-signin-card").classList.add("hidden");
-  document.getElementById("auth-signup-card").classList.add("hidden");
-  document.getElementById("auth-forgot-card").classList.add("hidden");
-  document.getElementById("auth-reset-card").classList.remove("hidden");
-  hideResetError();
-  hideResetSuccess();
+    document.getElementById('auth-signin-card').classList.add('hidden');
+    document.getElementById('auth-signup-card').classList.add('hidden');
+    document.getElementById('auth-forgot-card').classList.add('hidden');
+    document.getElementById('auth-reset-card').classList.remove('hidden');
+    hideResetError();
+    hideResetSuccess();
 }
 
 function showForgotError(msg) {
-  const errorBox = document.getElementById("forgot-error-box");
-  const errorText = document.getElementById("forgot-error-text");
-  errorText.textContent = msg;
-  errorBox.classList.remove("hidden");
-  document.getElementById("forgot-success-box").classList.add("hidden");
+    const errorBox = document.getElementById('forgot-error-box');
+    const errorText = document.getElementById('forgot-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('forgot-success-box').classList.add('hidden');
 }
 
 function hideForgotError() {
-  document.getElementById("forgot-error-box").classList.add("hidden");
+    document.getElementById('forgot-error-box').classList.add('hidden');
 }
 
 function showForgotSuccess(msg) {
-  const successBox = document.getElementById("forgot-success-box");
-  const successText = document.getElementById("forgot-success-text");
-  successText.textContent = msg;
-  successBox.classList.remove("hidden");
-  document.getElementById("forgot-error-box").classList.add("hidden");
+    const successBox = document.getElementById('forgot-success-box');
+    const successText = document.getElementById('forgot-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('forgot-error-box').classList.add('hidden');
 }
 
 function hideForgotSuccess() {
-  document.getElementById("forgot-success-box").classList.add("hidden");
+    document.getElementById('forgot-success-box').classList.add('hidden');
 }
 
 async function handleForgotPassword(e) {
-  e.preventDefault();
-  hideForgotError();
-  hideForgotSuccess();
-
-  const email = document.getElementById("forgot-email").value;
-  const btn = document.getElementById("forgot-btn");
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/auth/forgot-password",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      },
-    );
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "An error occurred.");
-
-    showForgotSuccess(data.message);
-    document.getElementById("forgot-form").reset();
-  } catch (error) {
-    showForgotError(error.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
+    e.preventDefault();
+    hideForgotError();
+    hideForgotSuccess();
+    
+    const email = document.getElementById('forgot-email').value;
+    const btn = document.getElementById('forgot-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showForgotSuccess(data.message);
+        document.getElementById('forgot-form').reset();
+    } catch (error) {
+        showForgotError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 }
 
 function showResetError(msg) {
-  const errorBox = document.getElementById("reset-error-box");
-  const errorText = document.getElementById("reset-error-text");
-  errorText.textContent = msg;
-  errorBox.classList.remove("hidden");
-  document.getElementById("reset-success-box").classList.add("hidden");
+    const errorBox = document.getElementById('reset-error-box');
+    const errorText = document.getElementById('reset-error-text');
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+    document.getElementById('reset-success-box').classList.add('hidden');
 }
 
 function hideResetError() {
-  document.getElementById("reset-error-box").classList.add("hidden");
+    document.getElementById('reset-error-box').classList.add('hidden');
 }
 
 function showResetSuccess(msg) {
-  const successBox = document.getElementById("reset-success-box");
-  const successText = document.getElementById("reset-success-text");
-  successText.textContent = msg;
-  successBox.classList.remove("hidden");
-  document.getElementById("reset-error-box").classList.add("hidden");
+    const successBox = document.getElementById('reset-success-box');
+    const successText = document.getElementById('reset-success-text');
+    successText.textContent = msg;
+    successBox.classList.remove('hidden');
+    document.getElementById('reset-error-box').classList.add('hidden');
 }
 
 function hideResetSuccess() {
-  document.getElementById("reset-success-box").classList.add("hidden");
+    document.getElementById('reset-success-box').classList.add('hidden');
 }
 
 async function handleResetPassword(e) {
-  e.preventDefault();
-  hideResetError();
-  hideResetSuccess();
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const token = urlParams.get("token");
-
-  if (!token) return showResetError("No reset token found in URL.");
-
-  const newPassword = document.getElementById("reset-password").value;
-  const confirmPassword = document.getElementById("reset-confirm").value;
-
-  if (newPassword !== confirmPassword) {
-    return showResetError("Passwords do not match.");
-  }
-
-  const btn = document.getElementById("reset-btn");
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/auth/reset-password",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
-      },
-    );
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "An error occurred.");
-
-    showResetSuccess(data.message);
-    document.getElementById("reset-form").reset();
-
-    // Remove token from URL and redirect to login after 2 seconds
-    setTimeout(() => {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      showSignInBlock();
-    }, 2000);
-  } catch (error) {
-    showResetError(error.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-  }
+    e.preventDefault();
+    hideResetError();
+    hideResetSuccess();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (!token) return showResetError('No reset token found in URL.');
+    
+    const newPassword = document.getElementById('reset-password').value;
+    const confirmPassword = document.getElementById('reset-confirm').value;
+    
+    if (newPassword !== confirmPassword) {
+        return showResetError('Passwords do not match.');
+    }
+    
+    const btn = document.getElementById('reset-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'An error occurred.');
+        
+        showResetSuccess(data.message);
+        document.getElementById('reset-form').reset();
+        
+        // Remove token from URL and redirect to login after 2 seconds
+        setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            showSignInBlock();
+        }, 2000);
+        
+    } catch (error) {
+        showResetError(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 }
+
+
+
+// ─── DONOR DASHBOARD FUNCTIONS ───────────────────────────
+
+async function scheduleDonation(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const location = document.getElementById('donation-location').value;
+    const scheduledDate = document.getElementById('donation-datetime').value;
+    const btn = document.getElementById('donation-submit-btn');
+    const successEl = document.getElementById('donor-schedule-success');
+    const errorEl = document.getElementById('donor-schedule-error');
+    const errorText = document.getElementById('donor-schedule-error-text');
+
+    // Hide previous messages
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!location || !scheduledDate) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
+
+    try {
+        const response = await fetch('http://localhost:5000/api/donations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ location, scheduledDate })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to schedule donation.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('donor-schedule-form-inner').reset();
+        // Refresh history after scheduling
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchDonorHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchDonorHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('donor-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/donations/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const totalEl = document.getElementById('donor-total-donations');
+            const livesEl = document.getElementById('donor-lives-saved');
+            const bloodEl = document.getElementById('donor-blood-display');
+
+            if (totalEl) totalEl.textContent = data.stats.totalDonations || 0;
+            if (livesEl) livesEl.textContent = data.stats.livesSaved || 0;
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            
+            // Fetch real clinical eligibility
+            fetchDonorEligibility();
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-calendar-plus" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No donations yet. Schedule your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(donation => {
+            const date = new Date(donation.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const isScheduled = donation.status === 'SCHEDULED';
+            const isCompleted = donation.status === 'COMPLETED';
+            const isCancelled = donation.status === 'CANCELLED';
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            let iconBg = 'bg-white border-red-50';
+
+            if (isScheduled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Scheduled</span>';
+                cardBg = 'bg-white shadow-sm';
+                iconBg = 'bg-amber-50 border-amber-100 text-amber-600';
+            } else if (isCompleted) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Completed</span>';
+            } else if (isCancelled) {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Cancelled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${isScheduled ? iconBg : 'bg-white border border-red-50 text-[#D32F2F]'} rounded-full flex items-center justify-center font-bold shadow-sm group-hover:scale-110 transition-transform">
+                        ${escapeHtml(donation.bloodType)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${escapeHtml(donation.location)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch donor history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
+
+// ─── RECIPIENT DASHBOARD FUNCTIONS ──────────────────────
+
+async function submitBloodRequest(e) {
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const bloodGroup = document.getElementById('request-blood-group').value;
+    const units = document.getElementById('request-units').value;
+    const urgency = document.getElementById('request-urgency').value;
+    const hospital = document.getElementById('request-hospital').value;
+    const btn = document.getElementById('request-submit-btn');
+    const successEl = document.getElementById('recipient-request-success');
+    const errorEl = document.getElementById('recipient-request-error');
+    const errorText = document.getElementById('recipient-request-error-text');
+
+    successEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    if (!bloodGroup || !units || !urgency || !hospital) {
+        errorText.textContent = 'Please fill in all fields.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+
+    try {
+        const response = await fetch('http://localhost:5000/api/requests', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ bloodGroup, units, urgency, hospital })
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit request.');
+        }
+
+        successEl.classList.remove('hidden');
+        document.getElementById('recipient-request-form-inner').reset();
+        setTimeout(() => {
+            successEl.classList.add('hidden');
+            fetchRecipientHistory();
+        }, 2000);
+
+    } catch (error) {
+        errorText.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+async function fetchRecipientHistory() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const historyList = document.getElementById('recipient-history-list');
+    if (!historyList) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/requests/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Could not load history.</div>';
+            return;
+        }
+
+        // Update stats
+        if (data.stats) {
+            const bloodEl = document.getElementById('recipient-blood-display');
+            const fulfilledEl = document.getElementById('recipient-fulfilled-count');
+            if (bloodEl && data.stats.bloodType) bloodEl.textContent = data.stats.bloodType;
+            if (fulfilledEl) fulfilledEl.textContent = (data.stats.fulfilled || 0) + ' Requests';
+        }
+
+        // Update active tracker
+        const activeReq = data.data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
+        const trackerInfo = document.getElementById('recipient-active-info');
+        const trackerStatus = document.getElementById('recipient-active-status');
+        const stepper = document.getElementById('recipient-stepper');
+
+        if (activeReq && trackerInfo) {
+            // Detailed banner info
+            const idShort = activeReq.id.substring(0,8).toUpperCase();
+            trackerInfo.innerHTML = `Active: <strong>#${idShort}</strong> &bull; ${activeReq.bloodGroup} &bull; ${activeReq.units} Units`;
+            
+            if (trackerStatus) {
+                trackerStatus.classList.remove('hidden');
+                let colorClass = 'bg-amber-50 text-amber-600 border-amber-100/50';
+                let dotClass = 'bg-amber-500';
+                let label = activeReq.status;
+
+                if (activeReq.status === 'APPROVED') {
+                    colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100/50';
+                    dotClass = 'bg-emerald-500';
+                }
+
+                trackerStatus.className = `px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${colorClass} border shadow-sm`;
+                trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotClass} ${activeReq.status === 'PENDING' ? 'animate-pulse' : ''}"></span> ${label}`;
+            }
+            if (stepper) {
+                stepper.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        } else {
+            if (trackerInfo) trackerInfo.textContent = 'No active requests.';
+            if (trackerStatus) trackerStatus.classList.add('hidden');
+            if (stepper) stepper.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        // Render history
+        if (data.data.length === 0) {
+            historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-clipboard-list" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No requests yet. Submit your first one!</div>';
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.data.forEach(req => {
+            const date = new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = '';
+            let cardBg = 'bg-gray-50/30';
+            if (req.status === 'PENDING') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending</span>';
+                cardBg = 'bg-white shadow-sm';
+            } else if (req.status === 'APPROVED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100/50"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Approved</span>';
+            } else if (req.status === 'REJECTED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Rejected</span>';
+            } else if (req.status === 'FULFILLED') {
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fulfilled</span>';
+            }
+
+            const div = document.createElement('div');
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.innerHTML = `
+                <div class="flex items-center gap-5">
+                    <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
+                        ${escapeHtml(req.bloodGroup)}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-[1.05rem]">${date}</h4>
+                        <p class="text-gray-500 font-medium text-sm mt-0.5">${req.units} Units • ${escapeHtml(req.hospital)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">${statusBadge}</div>
+            `;
+            historyList.appendChild(div);
+        });
+
+    } catch (error) {
+        console.error('Failed to fetch recipient history:', error);
+        historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
+    }
+}
+
 
 // ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
 
-let currentStockData = []; // Store for edit lookups
+let currentInventoryData = [];
 
-function initAdminModals() {
-  const stockForm = document.getElementById("admin-add-stock-form");
-  if (!stockForm) return;
+// ─── TOAST NOTIFICATION SYSTEM ──────────────────────────
+function showToast(message, type = 'success') {
+    const existing = document.querySelectorAll('.lifelink-toast');
+    existing.forEach((t, i) => t.style.top = (16 + (i + 1) * 64) + 'px');
 
-  // Check if fields already injected
-  if (document.getElementById("add-stock-date")) return;
-
-  // Add hidden ID field for Editing
-  const idInput = document.createElement("input");
-  idInput.type = "hidden";
-  idInput.id = "add-stock-id";
-  stockForm.appendChild(idInput);
-
-  // Inject Donation Date
-  const dateDiv = document.createElement("div");
-  dateDiv.innerHTML = `
-    <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donation Date</label>
-    <input type="date" id="add-stock-date" required style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
-  `;
-  
-  // Inject Donor Identifier (Email)
-  const donorDiv = document.createElement("div");
-  donorDiv.innerHTML = `
-    <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donor Email (Optional - for linking)</label>
-    <input type="email" id="add-stock-donor-email" placeholder="donor@example.com" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
-  `;
-
-  // NEW: RBC and Plasma components
-  const componentsDiv = document.createElement("div");
-  componentsDiv.style.display = "grid";
-  componentsDiv.style.gridTemplateColumns = "1fr 1fr";
-  componentsDiv.style.gap = "0.75rem";
-  componentsDiv.innerHTML = `
-    <div>
-      <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">RBC Count (M/µL)</label>
-      <input type="number" step="0.1" id="add-stock-rbc" placeholder="e.g. 5.1" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
-    </div>
-    <div>
-      <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Plasma (mL)</label>
-      <input type="number" id="add-stock-plasma" placeholder="e.g. 450" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
-    </div>
-  `;
-
-  // Insert before the buttons grid
-  const buttonsDiv = stockForm.querySelector("div[style*='display:flex; gap:0.75rem']");
-  stockForm.insertBefore(dateDiv, buttonsDiv);
-  stockForm.insertBefore(donorDiv, buttonsDiv);
-  stockForm.insertBefore(componentsDiv, buttonsDiv);
-
-  // Set default date to today
-  document.getElementById("add-stock-date").valueAsDate = new Date();
-
-  // Reset modal state on close button click (if found) or manually through class list
+    const toast = document.createElement('div');
+    toast.className = 'lifelink-toast';
+    const bgMap = { success: '#10b981', error: '#ef4444', info: '#6366f1', warning: '#f59e0b' };
+    const iconMap = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    toast.style.cssText = `position:fixed;top:16px;right:16px;z-index:9999;padding:0.85rem 1.25rem;border-radius:12px;background:${bgMap[type] || bgMap.success};color:#fff;font-weight:600;font-size:0.85rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:0.6rem;animation:toastIn 0.3s ease-out;max-width:380px;font-family:'Inter',sans-serif;`;
+    toast.innerHTML = `<i class="fas ${iconMap[type] || iconMap.success}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'toastOut 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 3500);
 }
 
-function resetStockModal() {
-  document.getElementById("admin-add-stock-form").reset();
-  document.getElementById("add-stock-id").value = "";
-  document.getElementById("add-stock-date").valueAsDate = new Date();
-  
-  const modal = document.getElementById("add-stock-modal");
-  const title = modal.querySelector("h3");
-  const btn = modal.querySelector("button[type='submit']");
-  if (title) title.textContent = "Register New Stock";
-  if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Save Inventory';
+// ─── KPI SUMMARY CARDS ─────────────────────────────────
+async function fetchKPISummary() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/inventory/summary', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!data.success) return;
+
+        const { totalUnits, criticalCount, expiringWeekCount, lastUpdated } = data.data;
+
+        const container = document.getElementById('kpi-cards-container');
+        if (!container) return;
+
+        // Format last updated as relative time
+        const ago = getTimeAgo(new Date(lastUpdated));
+
+        container.innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;"><i class="fas fa-layer-group"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${totalUnits}</div>
+                    <div class="kpi-label">Total Units in Stock</div>
+                    <div class="kpi-sub">All blood groups</div>
+                </div>
+            </div>
+            <div class="kpi-card ${criticalCount > 0 ? 'kpi-alert' : ''}">
+                <div class="kpi-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${criticalCount}</div>
+                    <div class="kpi-label">Critical Stock</div>
+                    <div class="kpi-sub">Groups 0-2 units</div>
+                </div>
+            </div>
+            <div class="kpi-card ${expiringWeekCount > 0 ? 'kpi-warning' : ''}">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="fas fa-clock"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value">${expiringWeekCount}</div>
+                    <div class="kpi-label">Expiring This Week</div>
+                    <div class="kpi-sub">Next 7 days</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.1);color:#10b981;"><i class="fas fa-sync-alt"></i></div>
+                <div class="kpi-data">
+                    <div class="kpi-value kpi-time">${ago}</div>
+                    <div class="kpi-label">Last Updated</div>
+                    <div class="kpi-sub">${new Date(lastUpdated).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('KPI fetch error:', err);
+    }
+}
+
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+
+// Auto-refresh KPI every 5 minutes
+setInterval(fetchKPISummary, 5 * 60 * 1000);
+
+// ─── STATUS BADGE HELPER ────────────────────────────────
+function getStatusBadge(units) {
+    const baseStyle = "padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; display: inline-block;";
+    if (units >= 6) {
+        return `<span style="${baseStyle} background-color: #EAF3DE; color: #27500A;">🟢 ${units} Fresh</span>`;
+    } else if (units >= 3) {
+        return `<span style="${baseStyle} background-color: #FAEEDA; color: #633806;">🟡 ${units} Low</span>`;
+    } else {
+        return `<span style="${baseStyle} background-color: #FCEBEB; color: #791F1F;">🔴 ${units} Critical</span>`;
+    }
+}
+
+// ─── EXPIRATION DISPLAY HELPER ──────────────────────────
+function getExpiryDisplay(daysRemaining, status) {
+    if (daysRemaining === null || daysRemaining === undefined) {
+        return '<span style="color:#94a3b8; font-weight: 500;">—</span>';
+    }
+    if (status === 'expired' || daysRemaining < 0) {
+        return '<span style="color: #791F1F; font-weight: 600;">🔴 EXPIRED 🔴</span>';
+    }
+    if (daysRemaining <= 6) {
+        return `<span style="color: #791F1F; font-weight: 600;">EXPIRES IN ${daysRemaining}d 🔴</span>`;
+    }
+    if (daysRemaining <= 29) {
+        return `<span style="color: #633806; font-weight: 500;">🟡 ${daysRemaining}d ⚠️</span>`;
+    }
+    return `<span style="color: #27500A; font-weight: 500;">🟢 ${daysRemaining}d remaining</span>`;
 }
 
 async function fetchInventory() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  const searchStr = document.getElementById("admin-inventory-search")?.value || "";
-  const sortVal = document.getElementById("admin-inventory-sort")?.value || "latest";
+    // Inject extra fields into Add Stock modal if not already present
+    injectAddStockFields();
 
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}&sort=${sortVal}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const { data } = await handleApiResponse(response);
-    currentStockData = data; // Store globally for editing
+    const searchStr = document.getElementById('admin-inventory-search')?.value || '';
+    
+    try {
+        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const tbody = document.getElementById('admin-inventory-tbody');
+        if (!tbody) return;
 
-    const tbody = document.getElementById("admin-inventory-tbody");
-    const thead = document.querySelector("#admin-view-inventory thead");
-    if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
+            const unitsEl = document.getElementById('admin-total-units');
+            if (unitsEl) unitsEl.textContent = '0';
+            return;
+        }
 
-    // Update Table Headers dynamically
-    if (thead) {
-      thead.innerHTML = `<tr>
-        <th class="admin-th">Donor / Group</th>
-        <th class="admin-th">Units / Health</th>
-        <th class="admin-th">Components</th>
-        <th class="admin-th">Expiration</th>
-        <th class="admin-th" style="text-align:right;">Actions</th>
-      </tr>`;
+        currentInventoryData = data.data;
+        let totalUnits = 0;
+        let criticals = [];
+        const groupLevels = {};
+
+        data.data.forEach(item => {
+            totalUnits += item.totalUnits;
+            if (item.totalUnits < 10) criticals.push(item.bloodGroup + ' (' + item.totalUnits + ')');
+            const percentage = Math.min((item.totalUnits / 100) * 100, 100);
+            groupLevels[item.bloodGroup] = { units: item.totalUnits, percentage };
+        });
+
+        // Update Supply Matrix
+        const matrixContainer = document.getElementById('supply-matrix-container');
+        if (matrixContainer) {
+            matrixContainer.innerHTML = '';
+            const allGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+            allGroups.forEach(group => {
+                const info = groupLevels[group] || { units: 0, percentage: 0 };
+                let status = 'Stable';
+                let levelClass = 'level-optimal';
+                if (info.units < 10) { status = 'Critical'; levelClass = 'level-low'; }
+                else if (info.units < 20) { status = 'Low Stock'; levelClass = 'level-low'; }
+                else if (info.units > 80) { status = 'Surplus'; levelClass = 'level-surplus'; }
+                const card = document.createElement('div');
+                card.className = 'matrix-card';
+                card.innerHTML = `
+                    <div class="matrix-group">${group}</div>
+                    <div class="matrix-level-outer">
+                        <div class="matrix-level-inner ${levelClass}" style="width:${info.percentage}%;"></div>
+                    </div>
+                    <span style="font-size:0.7rem; font-weight:700; color:${info.units < 20 ? '#ef4444' : (info.units > 80 ? '#2563eb' : '#16a34a')};">${status}</span>
+                `;
+                matrixContainer.appendChild(card);
+            });
+        }
+
+        const unitsEl = document.getElementById('admin-total-units');
+        if (unitsEl) unitsEl.textContent = totalUnits;
+
+        const critCard = document.getElementById('admin-critical-card');
+        const critText = document.getElementById('admin-critical-text');
+        if (critCard && critText) {
+            if (criticals.length > 0) {
+                critCard.style.borderLeftColor = '#be123c';
+                critText.textContent = criticals.join(', ');
+                critText.style.color = '#be123c';
+            } else {
+                critCard.style.borderLeftColor = '#16a34a';
+                critText.textContent = 'All stable';
+                critText.style.color = '#16a34a';
+            }
+        }
+
+        // Render inventory rows with Status Badges + Expiration Column
+        data.data.forEach((item) => {
+            const tr = document.createElement('tr');
+            
+            const activeBatchesCount = (item.donations || []).filter(d => d.units > 0 && d.expirationStatus !== 'expired').length;
+            const batchText = activeBatchesCount === 1 ? '1 active batch' : `${activeBatchesCount} active batches`;
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.85rem;">${escapeHtml(item.bloodGroup)}</div>
+                        <div style="font-weight:600;color:#1a1a2e;">${escapeHtml(item.bloodGroup)}</div>
+                    </div>
+                </td>
+                <td>
+                    <div style="line-height:1.4;">
+                        ${getStatusBadge(item.totalUnits)}
+                        <div style="font-size:0.75rem; color:#84758c; font-weight:500; margin-top:3px;">${item.donorCount} Unique Donors</div>
+                    </div>
+                </td>
+                <td>
+                    ${getExpiryDisplay(item.groupDaysRemaining, item.groupExpirationStatus)}
+                </td>
+                <td>
+                    <div style="font-weight: 500; color: #475569; font-size: 0.85rem;">
+                        ${batchText}
+                    </div>
+                </td>
+                <td style="text-align:right;">
+                    <div style="display:flex; justify-content:flex-end; gap:0.6rem;">
+                        <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.showStockDetails('${item.bloodGroup}')" title="View Stock Breakdown">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Also refresh KPI cards
+        fetchKPISummary();
+    } catch (error) {
+        console.error('Failed to fetch inventory', error);
     }
-
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#94a3b8;">No inventory records found.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = data.map(item => {
-      const healthColor = item.healthIndicator === 'Excellent' ? '#16a34a' :
-                        item.healthIndicator === 'Good' ? '#2563eb' :
-                        item.healthIndicator === 'Fair' ? '#d97706' : '#be123c';
-      
-      const healthBg = item.healthIndicator === 'Excellent' ? '#f0fdf4' :
-                     item.healthIndicator === 'Good' ? '#eff6ff' :
-                     item.healthIndicator === 'Fair' ? '#fffbeb' : '#fff1f2';
-
-      return `
-      <tr>
-        <td>
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <div style="width:36px; height:36px; background:rgba(211,47,47,0.1); color:#D32F2F; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem;">${item.bloodGroup}</div>
-            <div>
-              <div style="font-weight:600; color:#1a1a2e;">${item.bloodGroup} Group</div>
-              <div style="font-size:0.75rem; color:#94a3b8;">Ref: ${item.donorName || 'System Batch'}</div>
-            </div>
-          </div>
-        </td>
-        <td>
-          <div style="font-weight:700; color:#1a1a2e; margin-bottom:0.25rem;">${item.units} Units</div>
-          <span class="admin-badge-success" style="background:${healthBg}; color:${healthColor}; border:1px solid ${healthColor}20;">
-            <i class="fas fa-heartbeat" style="font-size:0.7rem; margin-right:0.2rem;"></i> ${item.healthIndicator}
-          </span>
-        </td>
-        <td>
-          <div style="font-size:0.85rem; font-weight:600;">RBC: ${item.rbcCount || '--'} <span style="font-size:0.7rem; color:#94a3b8;">M/µL</span></div>
-          <div style="font-size:0.85rem; font-weight:600;">Plasma: ${item.plasmaCount || '--'} <span style="font-size:0.7rem; color:#94a3b8;">mL</span></div>
-        </td>
-        <td>
-          <div style="font-weight:500; font-size:0.85rem; color:${item.status === 'Critical' ? '#be123c' : '#1a1a2e'};">Exp: ${new Date(item.expiryDate).toLocaleDateString()}</div>
-          <div style="font-size:0.7rem; color:#94a3b8;">Added: ${new Date(item.donationDate).toLocaleDateString()}</div>
-        </td>
-        <td style="text-align:right;">
-          <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
-            <button onclick="openEditStockModal('${item.id}')" class="admin-btn-icon approve" title="Edit record"><i class="fas fa-edit"></i></button>
-            <button onclick="deleteStock('${item.id}')" class="admin-btn-icon delete" title="Delete record"><i class="fas fa-trash-alt"></i></button>
-          </div>
-        </td>
-      </tr>
-    `}).join('');
-  } catch (error) {
-    console.error("Failed to fetch inventory", error);
-  }
 }
 
-function openEditStockModal(id) {
-  const item = currentStockData.find(s => s.id === id);
-  if (!item) return;
+// ─── STOCK DETAILS MODAL (Eye Icon) — ENHANCED ──────────
 
-  const modal = document.getElementById("add-stock-modal");
-  const title = modal.querySelector("h3");
-  const btn = modal.querySelector("button[type='submit']");
-  
-  if (title) title.textContent = "Edit Stock Quality & Levels";
-  if (btn) btn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Record';
+window.showStockDetails = async function(bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  // Populate fields
-  document.getElementById("add-stock-id").value = item.id;
-  document.getElementById("add-stock-group").value = item.bloodGroup;
-  document.getElementById("add-stock-units").value = item.units;
-  document.getElementById("add-stock-date").value = new Date(item.donationDate).toISOString().split('T')[0];
-  document.getElementById("add-stock-donor-email").value = item.donorName && item.donorName.includes('@') ? item.donorName : "";
-  document.getElementById("add-stock-rbc").value = item.rbcCount || "";
-  document.getElementById("add-stock-plasma").value = item.plasmaCount || "";
+    // Remove existing if any
+    const existing = document.getElementById('detailed-stock-modal');
+    if (existing) existing.remove();
 
-  modal.classList.remove("hidden");
+    // Create modal shell immediately for fast perceived load
+    const modal = document.createElement('div');
+    modal.id = 'detailed-stock-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+    modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:850px; padding:0; overflow:hidden; border-radius:24px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.15); animation:adminModalIn 0.3s ease-out;">
+            <div style="padding:2rem; text-align:center; color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p style="margin-top:0.5rem; font-weight:600;">Loading batch details...</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch batch data from API
+    try {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+            modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Failed to load batch data.</div>';
+            return;
+        }
+
+        const { status, totalUnits, batchCount, batches } = result.data;
+
+        // Status badge for header
+        const badgeHtml = getStatusBadge(totalUnits);
+
+        const modalContent = modal.querySelector('.modal-content');
+        modalContent.innerHTML = `
+            <div style="padding:1.75rem 2rem; background:#fff; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="width:48px; height:48px; background:#fef2f2; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#D32F2F; font-size:1.2rem; font-weight:800;">${escapeHtml(bloodGroup)}</div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:0.6rem;">
+                            <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em; margin:0;">${escapeHtml(bloodGroup)} Inventory Details</h3>
+                            ${badgeHtml}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:4px;">
+                            <span style="width:6px; height:6px; background:#10b981; border-radius:50%;"></span>
+                            <p style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.025em; margin:0;">TRACKING ${batchCount} ACTIVE BATCHES</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="font-size:0.7rem; font-weight:700; color:#64748b; background:#f8fafc; padding:4px 12px; border-radius:20px; border:1px solid #f1f5f9;">Live updates active</div>
+                    <button onclick="document.getElementById('detailed-stock-modal').remove()" style="width:40px; height:40px; border-radius:12px; border:1px solid #f1f5f9; background:#fff; color:#94a3b8; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div style="padding:1.5rem 2rem;">
+                <div style="margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between;">
+                    <h4 style="font-size:0.75rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; margin:0;">Stock Breakdown</h4>
+                    <span style="font-size:0.8rem; font-weight:700; color:#1e293b;">${totalUnits} Units Total</span>
+                </div>
+                
+                <div style="max-height:400px; overflow-y:auto; margin:0 -2rem; padding:0 2rem;">
+                    ${batchCount === 0 ? '<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="fas fa-box-open" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i>No active batches for this blood group.</div>' : `
+                    <table style="width:100%; border-collapse:separate; border-spacing:0 10px;">
+                        <thead>
+                            <tr style="text-align:left;">
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donated By</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Donation Date</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Expiration</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Stock</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem;">Tested</th>
+                                <th style="font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; padding:0 0.75rem; text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-stock-tbody"></tbody>
+                    </table>`}
+                </div>
+            </div>
+
+            <div style="padding:1.25rem 2rem; background:#f8fafc; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:8px;">
+                    <button onclick="if(window.modalOldestBatchId) window.editStock(window.modalOldestBatchId); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-pencil-alt" style="margin-right:4px;"></i> Edit</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openDispatchModal(window.modalOldestBatchId, window.modalOldestBatchUnits, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-arrow-right" style="margin-right:4px;"></i> Dispatch</button>
+                    <button onclick="if(window.modalOldestBatchId) window.openAlertModal(window.modalOldestBatchId, '${escapeHtml(bloodGroup)}'); else alert('No batches available.');" style="padding:6px 12px; border-radius:4px; border:0.5px solid #d1d5db; background:transparent; font-weight:500; color:#475569; cursor:pointer; font-size:12px;"><i class="fas fa-bell" style="margin-right:4px;"></i> Set Alert</button>
+                </div>
+                <button onclick="document.getElementById('detailed-stock-modal').remove()" style="padding:0.65rem 1.5rem; border-radius:12px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#475569; cursor:pointer; font-size:0.85rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">Close</button>
+            </div>
+        `;
+
+        if (batchCount > 0 && batches && batches.length > 0) {
+            window.modalOldestBatchId = batches[0].id;
+            window.modalOldestBatchUnits = batches[0].units;
+        } else {
+            window.modalOldestBatchId = null;
+            window.modalOldestBatchUnits = null;
+        }
+
+        // Populate batch rows
+        if (batchCount > 0) {
+            const tbody = document.getElementById('detail-stock-tbody');
+            batches.forEach(don => {
+                const tr = document.createElement('tr');
+                tr.style.background = '#fff';
+                
+                const donDate = new Date(don.donationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // Expiry display for modal
+                let expiryHtml = '';
+                if (don.daysRemaining < 0) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">EXPIRED 🔴</span>`;
+                } else if (don.daysRemaining <= 6) {
+                    expiryHtml = `<span style="color:#791F1F; font-weight:700; background:#FCEBEB; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h 🔴</span>`;
+                } else if (don.daysRemaining <= 29) {
+                    expiryHtml = `<span style="color:#633806; font-weight:700; background:#FAEEDA; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h ⚠️</span>`;
+                } else {
+                    expiryHtml = `<span style="color:#27500A; font-weight:700; background:#EAF3DE; padding:3px 10px; border-radius:20px; font-size:0.8rem;">${don.daysRemaining}d ${don.hoursRemaining}h</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-right:none; border-top-left-radius:14px; border-bottom-left-radius:14px;">
+                        <div style="font-weight:700; color:#1e293b; font-size:0.9rem;">${escapeHtml(don.donorName)}</div>
+                        <div style="font-size:0.68rem; color:#94a3b8; font-weight:500; margin-top:2px;">ID: ${don.shortId}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:700; color:#475569; font-size:0.85rem;">${donDate}</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        ${expiryHtml}
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:800; color:#1e293b; font-size:0.95rem;">${don.units} Units</div>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border-top:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:0.85rem;">${don.tested ? '✓' : '—'}</span>
+                    </td>
+                    <td style="padding:1rem 0.75rem; border:1px solid #f1f5f9; border-left:none; border-top-right-radius:14px; border-bottom-right-radius:14px; text-align:right;">
+                        <div style="display:flex; justify-content:flex-end; gap:0.4rem;">
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#6366f1; border:1px solid #e2e8f0;" onclick="window.editStock('${don.id}')" title="Edit"><i class="fas fa-pencil-alt"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#10b981; border:1px solid #e2e8f0;" onclick="window.openDispatchModal('${don.id}', ${don.units}, '${escapeHtml(bloodGroup)}')" title="Dispatch"><i class="fas fa-share-square"></i></button>
+                            <button class="admin-btn-icon" style="background:#f8fafc; color:#ef4444; border:1px solid #e2e8f0;" onclick="deleteStock('${don.id}')" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error('Batch fetch error:', err);
+        modal.querySelector('.modal-content').innerHTML = '<div style="padding:2rem;text-align:center;color:#ef4444;">Network error loading batch data.</div>';
+    }
+};
+
+// ─── EDIT STOCK MODAL (Enhanced with notes/tested) ──────
+
+window.editStock = async function(donationId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    let donation = null;
+    let bloodGroup = '';
+    currentInventoryData.forEach(g => {
+        const found = g.donations.find(d => d.id === donationId);
+        if (found) {
+            donation = found;
+            bloodGroup = g.bloodGroup;
+        }
+    });
+    
+    if (!donation) return;
+
+    const existing = document.getElementById('record-edit-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'record-edit-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:500px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation: adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                <div>
+                    <h3 style="font-size:1.25rem; font-weight:800; color:#1e293b; letter-spacing:-0.02em;">Adjust Batch Details</h3>
+                    <p style="font-size:0.75rem; color:#94a3b8; font-weight:600; text-transform:uppercase; margin-top:2px;">ID: ${donationId.substring(donationId.length - 8).toUpperCase()}</p>
+                </div>
+                <button onclick="document.getElementById('record-edit-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="record-edit-form" class="space-y-5">
+                <input type="hidden" id="edit-id" value="${donationId}">
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Blood Group</label>
+                        <select id="edit-bg" disabled style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #f1f5f9; background:#f8fafc; font-weight:700; color:#1e293b; cursor:not-allowed;">
+                            <option value="${bloodGroup}" selected>${bloodGroup}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Units</label>
+                        <input type="number" id="edit-units" required min="1" value="${donation.units}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Donor Full Name</label>
+                    <input type="text" id="edit-donor" required value="${escapeHtml(donation.donorName)}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Collection Date</label>
+                    <input type="date" id="edit-date" required value="${new Date(donation.donationDate).toISOString().split('T')[0]}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">RBC Count</label>
+                        <input type="number" step="0.1" id="edit-rbc" value="${donation.rbcCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Plasma (mL)</label>
+                        <input type="number" id="edit-plasma" value="${donation.plasmaCount || ''}" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem; letter-spacing:0.05em;">Notes</label>
+                    <textarea id="edit-notes" rows="2" placeholder="Optional notes..." style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;">${donation.notes || ''}</textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="edit-tested" ${donation.tested ? 'checked' : ''} style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="edit-tested" style="font-size:0.85rem; font-weight:600; color:#475569;">Tested & Verified</label>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:1rem;">
+                    <button type="button" onclick="document.getElementById('record-edit-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:#D32F2F; font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(211,47,47,0.25);">Save Batch</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('record-edit-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            bloodGroup: bloodGroup,
+            units: document.getElementById('edit-units').value,
+            donorName: document.getElementById('edit-donor').value,
+            donationDate: document.getElementById('edit-date').value,
+            rbcCount: document.getElementById('edit-rbc').value,
+            plasmaCount: document.getElementById('edit-plasma').value,
+            notes: document.getElementById('edit-notes').value,
+            tested: document.getElementById('edit-tested').checked
+        };
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast(`Batch ${payload.bloodGroup} updated successfully`, 'success');
+                addToActivityFeed(`Successfully refined batch: <strong>${payload.bloodGroup}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                showToast(result.message || 'Update failed', 'error');
+            }
+        } catch (err) { 
+            console.error(err);
+            showToast('Network error', 'error');
+        }
+    };
+};
+
+// ─── DISPATCH MODAL ─────────────────────────────────────
+
+window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('dispatch-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'dispatch-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:460px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Dispatch Blood Units</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} • ${availableUnits} Units Available</p>
+                </div>
+                <button onclick="document.getElementById('dispatch-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="dispatch-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Select Hospital</label>
+                    <select id="dispatch-hospital" required style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="">Loading hospitals...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Quantity (Max: ${availableUnits})</label>
+                    <input type="number" id="dispatch-quantity" required min="1" max="${availableUnits}" value="1" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:700; outline:none;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notes (Optional)</label>
+                    <textarea id="dispatch-notes" rows="2" placeholder="e.g., Emergency transfusion" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; resize:none; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('dispatch-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="dispatch-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#6366f1,#4f46e5); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(99,102,241,0.25);">
+                        <i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Fetch hospitals
+    try {
+        const res = await fetch('http://localhost:5000/api/admin/hospitals', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const select = document.getElementById('dispatch-hospital');
+        if (data.success && data.data.length > 0) {
+            select.innerHTML = '<option value="">— Select Hospital —</option>' +
+                data.data.map(h => `<option value="${h.id}">${escapeHtml(h.name)} — ${escapeHtml(h.city)}</option>`).join('');
+        } else {
+            select.innerHTML = '<option value="">No hospitals available</option>';
+        }
+    } catch (err) {
+        console.error('Hospital fetch error:', err);
+    }
+
+    // Handle dispatch submission
+    document.getElementById('dispatch-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const hospitalId = document.getElementById('dispatch-hospital').value;
+        const quantity = parseInt(document.getElementById('dispatch-quantity').value);
+        const notes = document.getElementById('dispatch-notes').value;
+
+        if (!hospitalId) { showToast('Please select a hospital', 'warning'); return; }
+        if (quantity > availableUnits) { showToast('Quantity exceeds available units', 'error'); return; }
+
+        const btn = document.getElementById('dispatch-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${batchId}/dispatch`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hospitalId, quantity, notes })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast(result.message, 'success');
+                addToActivityFeed(`Dispatched ${quantity} units of <strong>${bloodGroup}</strong> to <strong>${result.data.hospitalName}</strong>`, 'success');
+                modal.remove();
+                const detailsModal = document.getElementById('detailed-stock-modal');
+                if (detailsModal) detailsModal.remove();
+                fetchInventory();
+            } else {
+                showToast(result.message || 'Dispatch failed', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error during dispatch', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-share-square" style="margin-right:0.4rem;"></i>Dispatch';
+        }
+    };
+};
+
+// ─── ALERT CONFIGURATION MODAL ──────────────────────────
+
+window.openAlertModal = function(batchId, bloodGroup) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const existing = document.getElementById('alert-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'alert-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:2rem;';
+
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; width:100%; max-width:420px; padding:2rem; border-radius:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); animation:adminModalIn 0.2s ease-out;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <div>
+                    <h3 style="font-size:1.2rem; font-weight:800; color:#1e293b;">Configure Alert</h3>
+                    <p style="font-size:0.8rem; color:#64748b; font-weight:600; margin-top:2px;">${bloodGroup} Batch</p>
+                </div>
+                <button onclick="document.getElementById('alert-modal').remove()" style="color:#94a3b8; background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+
+            <form id="alert-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Notify before expiry</label>
+                    <select id="alert-days" style="width:100%; padding:0.85rem; border-radius:14px; border:1px solid #e2e8f0; font-weight:600; outline:none; font-family:inherit;">
+                        <option value="3">3 days before expiry</option>
+                        <option value="5">5 days before expiry</option>
+                        <option value="7" selected>7 days before expiry</option>
+                    </select>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <input type="checkbox" id="alert-critical" style="width:18px; height:18px; accent-color:#D32F2F;">
+                    <label for="alert-critical" style="font-size:0.85rem; font-weight:600; color:#475569;">Alert on critical stock (0-2 units)</label>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.7rem; font-weight:800; color:#94a3b8; text-transform:uppercase; margin-bottom:0.6rem;">Alert Method</label>
+                    <div style="display:flex; gap:0.75rem;">
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="in_app" checked style="accent-color:#D32F2F;"> In-App
+                        </label>
+                        <label style="display:flex; align-items:center; gap:0.4rem; padding:0.7rem 1rem; border:1px solid #e2e8f0; border-radius:12px; cursor:pointer; flex:1; font-size:0.85rem; font-weight:600;">
+                            <input type="radio" name="alert-method" value="email" style="accent-color:#D32F2F;"> Email
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:1rem; padding-top:0.5rem;">
+                    <button type="button" onclick="document.getElementById('alert-modal').remove()" style="flex:1; padding:0.9rem; border-radius:16px; border:1px solid #e2e8f0; background:#fff; font-weight:700; color:#64748b; cursor:pointer;">Cancel</button>
+                    <button type="submit" id="alert-submit-btn" style="flex:1; padding:0.9rem; border-radius:16px; border:none; background:linear-gradient(135deg,#f59e0b,#d97706); font-weight:700; color:#fff; cursor:pointer; box-shadow:0 8px 16px rgba(245,158,11,0.25);">
+                        <i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('alert-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('alert-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/admin/alerts/batch/${batchId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    daysBeforeExpiry: parseInt(document.getElementById('alert-days').value),
+                    notifyOnCritical: document.getElementById('alert-critical').checked,
+                    method
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                showToast('Alert configured successfully', 'success');
+                modal.remove();
+            } else {
+                showToast(result.message || 'Failed to set alert', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Network error', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-bell" style="margin-right:0.4rem;"></i>Set Alert';
+        }
+    };
+};
+
+// ─── COUNTDOWN TIMER LOGIC ──────────────────────────────
+
+function updateAllTimers() {
+    const timers = document.querySelectorAll('.expiry-timer');
+    const now = new Date();
+
+    timers.forEach(timer => {
+        const expiryDate = new Date(timer.dataset.expiry);
+        const diff = expiryDate - now;
+
+        if (diff <= 0) {
+            timer.textContent = 'EXPIRED';
+            timer.style.color = '#ef4444';
+            timer.style.background = '#fef2f2';
+            timer.style.borderColor = '#fecaca';
+            timer.style.fontWeight = '800';
+            return;
+        }
+
+        const { days, hours } = calculateRemainingTime(expiryDate);
+        
+        timer.textContent = `${days}d ${hours}h remaining`;
+        timer.style.fontWeight = '700';
+
+        if (days < 7) {
+            timer.style.color = '#ef4444';
+            timer.style.background = '#fef2f2';
+            timer.style.borderColor = '#fecaca';
+        } else if (days < 14) {
+            timer.style.color = '#f59e0b';
+            timer.style.background = '#fffbeb';
+            timer.style.borderColor = '#fef3c7';
+        } else {
+            timer.style.color = '#10b981';
+            timer.style.background = '#f0fdf4';
+            timer.style.borderColor = '#bbf7d0';
+        }
+    });
+}
+
+function calculateRemainingTime(expiryDate) {
+    const diff = new Date(expiryDate) - new Date();
+    return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    };
+}
+
+// Run timers every minute
+setInterval(updateAllTimers, 60000);
+
+function injectAddStockFields() {
+    const form = document.getElementById('admin-add-stock-form');
+    if (!form || document.getElementById('add-stock-donor')) return; // Already injected or no form
+
+    const insertPoint = form.querySelector('div:last-of-type'); // Usually before 'Cancel/Add' buttons
+    if (!insertPoint) return;
+
+    const extraFields = document.createElement('div');
+    extraFields.style.display = 'contents';
+    extraFields.innerHTML = `
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donor Full Name</label>
+            <input type="text" id="add-stock-donor" required placeholder="John Doe" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div>
+            <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Donation Date</label>
+            <input type="date" id="add-stock-date" required style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">RBC Count</label>
+                <input type="number" step="0.1" id="add-stock-rbc" placeholder="4.5" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+            <div>
+                <label style="font-size:0.8rem; font-weight:600; color:#475569; margin-bottom:0.35rem; display:block;">Plasma (mL)</label>
+                <input type="number" id="add-stock-plasma" placeholder="300" style="width:100%; padding:0.7rem 1rem; border:1px solid #e6e0d6; border-radius:0.5rem; font-size:0.95rem; outline:none; font-family:inherit;">
+            </div>
+        </div>
+    `;
+    form.insertBefore(extraFields, insertPoint);
+
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('add-stock-date').value = today;
 }
 
 async function submitAddStock(e) {
-  if (e) e.preventDefault();
-  const token = localStorage.getItem("token");
-  
-  const id = document.getElementById("add-stock-id").value;
-  const bloodGroup = document.getElementById("add-stock-group").value;
-  const units = document.getElementById("add-stock-units").value;
-  const donationDate = document.getElementById("add-stock-date").value;
-  const donorEmail = document.getElementById("add-stock-donor-email").value;
-  const rbcCount = document.getElementById("add-stock-rbc").value;
-  const plasmaCount = document.getElementById("add-stock-plasma").value;
+    if (e) e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  const method = id ? "PUT" : "POST";
-  const url = id ? `http://localhost:5000/api/admin/stock/${id}` : "http://localhost:5000/api/admin/stock";
+    const bg = document.getElementById('add-stock-group').value;
+    const units = document.getElementById('add-stock-units').value;
+    const donorName = document.getElementById('add-stock-donor')?.value;
+    const donationDate = document.getElementById('add-stock-date')?.value;
+    const rbcCount = document.getElementById('add-stock-rbc')?.value;
+    const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
-  try {
-    const response = await fetch(url, {
-      method: method,
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify({ bloodGroup, units, donationDate, donorEmail, rbcCount, plasmaCount }),
-    });
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/stock', {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                bloodGroup: bg, 
+                units: units,
+                donorName: donorName,
+                donationDate: donationDate,
+                rbcCount: rbcCount,
+                plasmaCount: plasmaCount
+            })
+        });
+        const data = await response.json();
+        if (data.success) { 
+            addToActivityFeed(`Admin replenished ${units} units of <strong>${bg}</strong> from ${donorName}`, 'success');
+            document.getElementById('admin-add-stock-form').reset();
+            // Re-set today's date after reset
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('add-stock-date');
+            if (dateInput) dateInput.value = today;
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Operation failed");
-
-    resetStockModal();
-    document.getElementById("add-stock-modal").classList.add("hidden");
-    fetchInventory();
-    fetchAdminSummary();
-    
-    // Smooth alert
-    const msg = id ? "Medical records updated successfully." : "New stock registered successfully.";
-    alert(msg);
-  } catch (error) {
-    alert(error.message);
-  }
+            document.getElementById('add-stock-modal').classList.add('hidden');
+            fetchInventory(); 
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 async function deleteStock(id) {
-  if (!confirm("Are you sure you want to delete this medical record?")) return;
-  const token = localStorage.getItem("token");
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error("Failed to delete record");
-    fetchInventory();
-    fetchAdminSummary();
-  } catch (error) {
-    alert(error.message);
-  }
+    if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) fetchInventory();
+    } catch(err) {
+        console.error(err);
+    }
 }
 
 // ─── ADMIN REQUESTS MANAGEMENT ───────────────────────────
 
 async function fetchAdminRequests() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-  try {
-    const response = await fetch("http://localhost:5000/api/admin/requests", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const { data } = await handleApiResponse(response);
-    const listDiv = document.getElementById("admin-requests-list");
-    if (!listDiv) return;
-
-    if (data.length === 0) {
-      listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">No requests currently active.</div>';
-      return;
-    }
-
-    listDiv.innerHTML = data.map(req => `
-      <div class="admin-request-item">
-        <div style="display:flex; align-items:center; gap:1rem;">
-          <div style="width:42px; height:42px; background:rgba(211,47,47,0.1); color:#D32F2F; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem;">${req.bloodGroup}</div>
-          <div>
-            <div style="font-weight:700; color:#1a1a2e;">${req.units} Units Needed</div>
-            <div style="font-size:0.8rem; color:#64748b;">For: ${req.user.name} • ${req.hospital}</div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:1.5rem;">
-          <div style="text-align:right;">
-            <span class="admin-badge-primary" style="background:${req.urgency === 'Critical' ? '#fee2e2' : req.urgency === 'High' ? '#fef3c7' : '#f1f5f9'}; color:${req.urgency === 'Critical' ? '#be123c' : req.urgency === 'High' ? '#d97706' : '#64748b'};">
-              ${req.urgency}
-            </span>
-            <div style="font-size:0.7rem; color:#94a3b8; font-weight:600; margin-top:0.25rem;">Status: ${req.status}</div>
-          </div>
-          <div style="display:flex; gap:0.4rem;">
-            ${req.status === 'PENDING' ? `
-              <button onclick="updateReqStatus('${req.id}', 'APPROVED')" class="admin-btn-icon approve" title="Approve Request"><i class="fas fa-check"></i></button>
-              <button onclick="updateReqStatus('${req.id}', 'REJECTED')" class="admin-btn-icon reject" title="Reject Request"><i class="fas fa-times"></i></button>
-            ` : req.status === 'APPROVED' ? `
-              <button onclick="updateReqStatus('${req.id}', 'FULFILLED')" class="admin-btn-icon approve" title="Mark as Fulfilled"><i class="fas fa-check-double"></i></button>
-            ` : `<i class="fas fa-check-circle" style="color:#16a34a;"></i>`}
-          </div>
-        </div>
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function updateReqStatus(id, status) {
-  const token = localStorage.getItem("token");
-  try {
-    const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
-      method: "PUT",
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify({ status })
-    });
-    if (!response.ok) throw new Error("Update failed");
-    fetchAdminRequests();
-    fetchAdminSummary();
-  } catch (error) {
-    alert(error.message);
-  }
-}
-
-// ─── RECIPIENT REQUEST LOGIC ─────────────────────────────
-
-async function fetchRecipientRequests() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
-  try {
-    const response = await fetch("http://localhost:5000/api/recipient/requests", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const { data } = await handleApiResponse(response);
-    
-    // Update active tracker if we have a pending/active request
-    const activeReq = data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
-    // (Logic to update the visual tracker UI could go here)
-
-    // Update history table? No table in index.html for recipient history, just a container
-    // If you add it to index.html later, use this data.
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-async function submitRecipientRequest(e) {
-  if (e) e.preventDefault();
-  const token = localStorage.getItem("token");
-  
-  const form = e.target;
-  const bloodGroup = form.querySelector("select[required]").value;
-  const units = form.querySelector("input[type='number']").value;
-  const urgency = form.querySelectorAll("select[required]")[1].value;
-  const hospital = form.querySelector("input[type='text']").value;
-
-  try {
-    const response = await fetch("http://localhost:5000/api/recipient/request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ bloodGroup, units, urgency, hospital })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to submit request");
-
-    document.getElementById("recipient-request-success").classList.remove("hidden");
-    form.reset();
-    setTimeout(() => {
-      document.getElementById("recipient-request-success").classList.add("hidden");
-    }, 3000);
-    fetchRecipientRequests();
-  } catch (error) {
-    alert(error.message);
-  }
-}
-
-// ─── DONOR ELIGIBILITY LOGIC ─────────────────────────────
-
-async function fetchDonorEligibility() {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
-  try {
-    const response = await fetch("http://localhost:5000/api/donor/eligibility", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const { data } = await handleApiResponse(response);
-    
-    const eligibleH3 = document.querySelector("#donor-dashboard h3.text-3xl");
-    if (eligibleH3) {
-      if (data.eligible) {
-        eligibleH3.textContent = "Eligible Now";
-        eligibleH3.style.color = "#16a34a";
-      } else {
-        const nextDate = new Date(data.nextEligibleDate);
-        eligibleH3.textContent = nextDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        eligibleH3.style.color = "#D32F2F";
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  const userStr = localStorage.getItem("user");
-  
-  initAdminModals();
-
-  // Attach Recipient Request Listener
-  const recipientForm = document.querySelector("#recipient-request-form form");
-  if (recipientForm) {
-    recipientForm.onsubmit = submitRecipientRequest;
-  }
-
-  // Hook into Close/Add button to reset modal state
-  const addStockBtn = document.querySelector("#admin-view-inventory button.admin-btn-primary");
-  if (addStockBtn) {
-    addStockBtn.addEventListener("click", resetStockModal);
-  }
-
-  if (token && userStr) {
     try {
-      const user = JSON.parse(userStr);
-      updateNav(user);
-      routeUserToDashboard(user);
-    } catch (e) {
-      logout();
+        const response = await fetch('http://localhost:5000/api/admin/requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const listDiv = document.getElementById('admin-requests-list');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#84758c;">No active request alerts.</div>';
+            const pendingEl = document.getElementById('admin-pending-count');
+            if (pendingEl) pendingEl.textContent = '0';
+            return;
+        }
+
+        // Count pending
+        const pendingCount = data.data.filter(r => r.status === 'PENDING').length;
+        const pendingEl = document.getElementById('admin-pending-count');
+        if (pendingEl) pendingEl.textContent = pendingCount;
+
+        data.data.forEach(req => {
+            let urgencyBadge = 'admin-badge-success';
+            if (req.urgency === 'High') urgencyBadge = 'admin-badge-primary';
+            else if (req.urgency === 'Critical') urgencyBadge = 'admin-badge-danger';
+
+            const div = document.createElement('div');
+            div.className = 'admin-request-item';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
+                '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(req.bloodGroup) + '</div>' +
+                '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(req.hospital) + '</div>' +
+                '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + urgencyBadge + '">' + escapeHtml(req.urgency) + '</span> &middot; ' + req.units + ' Units &middot; <strong>' + escapeHtml(req.status) + '</strong></div></div></div>' +
+                '<div style="display:flex;gap:0.5rem;">' +
+                '<button class="admin-btn-icon approve" onclick="updateReqStatus(\'' + req.id + '\', \'APPROVED\')" title="Approve"><i class="fas fa-check"></i></button>' +
+                '<button class="admin-btn-icon reject" onclick="updateReqStatus(\'' + req.id + '\', \'REJECTED\')" title="Reject"><i class="fas fa-times"></i></button>' +
+                '</div>';
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        console.error(err);
     }
-  } else {
-    navigateTo("home");
-    updateNav(null);
-  }
+}
+
+async function updateReqStatus(id, newStatus) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Request <strong>${id.substring(0,8)}...</strong> was <strong>${newStatus}</strong>`, newStatus === 'APPROVED' ? 'success' : 'info');
+            fetchAdminRequests();
+            fetchInventory(); // Refresh inventory since stock may have changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update request.');
+        }
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// ─── ADMIN DONATIONS MANAGEMENT ─────────────────────────
+
+async function fetchAdminDonations() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/donations', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const listDiv = document.getElementById('admin-donations-list');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (!data.success || data.data.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:3rem;color:#84758c;">No donations found.</div>';
+            return;
+        }
+
+        data.data.forEach(don => {
+            const donorName = don.donorProfile?.user?.name || 'Unknown Donor';
+            const date = new Date(don.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            let statusBadge = 'admin-badge-primary';
+            if (don.status === 'COMPLETED') statusBadge = 'admin-badge-success';
+            else if (don.status === 'CANCELLED') statusBadge = 'admin-badge-danger';
+
+            const div = document.createElement('div');
+            div.className = 'admin-request-item';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
+                '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(don.bloodType) + '</div>' +
+                '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(donorName) + '</div>' +
+                '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + statusBadge + '">' + escapeHtml(don.status) + '</span> &middot; ' + don.units + ' Unit &middot; ' + date + ' &middot; ' + escapeHtml(don.location) + '</div></div></div>' +
+                (don.status === 'SCHEDULED' ? '<div style="display:flex;gap:0.5rem;">' +
+                '<button class="admin-btn-icon approve" onclick="updateDonationStatus(\'' + don.id + '\', \'COMPLETED\')" title="Complete"><i class="fas fa-check"></i></button>' +
+                '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                '</div>' : '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + don.status + '</div>');
+            listDiv.appendChild(div);
+        });
+    } catch (err) {
+        console.error('Failed to fetch admin donations:', err);
+    }
+}
+
+async function updateDonationStatus(id, newStatus) {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            addToActivityFeed(`Donation <strong>${id.substring(0,8)}...</strong> marked as <strong>${newStatus}</strong>`, newStatus === 'COMPLETED' ? 'success' : 'info');
+            fetchAdminDonations();
+            fetchInventory(); // Refresh inventory since stock changed
+            fetchAdminStats();
+        } else {
+            alert(data.message || 'Failed to update donation.');
+        }
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+// ─── ADMIN STATS ────────────────────────────────────────
+
+async function fetchAdminStats() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5000/api/admin/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+            const totalUsersEl = document.getElementById('admin-total-users');
+            const pendingEl = document.getElementById('admin-pending-count');
+            if (totalUsersEl) totalUsersEl.textContent = data.data.totalUsers || 0;
+            if (pendingEl) pendingEl.textContent = data.data.pendingRequests || 0;
+        }
+    } catch(err) {
+        console.error('Failed to fetch admin stats:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            updateNav(user);
+            routeUserToDashboard(user);
+        } catch (e) {
+            logout();
+        }
+    } else {
+        navigateTo('home');
+        updateNav(null);
+    }
 });
 
 /**
@@ -1472,48 +2309,471 @@ document.addEventListener("DOMContentLoaded", () => {
  * ═══════════════════════════════════════════════
  */
 function navigateAdmin(viewId) {
-  console.log("Navigating Admin to:", viewId);
+    console.log('Navigating Admin to:', viewId);
+    
+    // 1. Hide all views
+    document.querySelectorAll('.admin-view').forEach(view => {
+        view.classList.remove('active');
+        view.style.display = 'none';
+    });
 
-  // 1. Hide all views
-  document.querySelectorAll(".admin-view").forEach((view) => {
-    view.classList.remove("active");
-    view.style.display = "none";
-  });
-
-  // 2. Show target view
-  const targetView = document.getElementById(viewId);
-  if (targetView) {
-    targetView.classList.add("active");
-    targetView.style.display = "block";
-    if (viewId === "admin-view-dashboard") {
-      targetView.style.display = "block";
+    // 2. Show target view
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.add('active');
+        targetView.style.display = 'block'; 
     }
-  }
 
-  // 3. Update Sidebar Links
-  document.querySelectorAll(".admin-sidebar-link").forEach((link) => {
-    link.classList.remove("active");
-  });
-  const activeLink = document.getElementById("link-" + viewId);
-  if (activeLink) {
-    activeLink.classList.add("active");
-  }
+    // 3. Update Sidebar Links
+    document.querySelectorAll('.admin-sidebar-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    const activeLink = document.getElementById('link-' + viewId);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
 
-  // 4. Update Header Title
-  const titleMap = {
-    "admin-view-dashboard": "Dashboard Overview",
-    "admin-view-inventory": "Inventory Management",
-    "admin-view-requests": "Blood Request Triage",
-    "admin-view-users": "User Directory",
-  };
-  const titleElem = document.getElementById("admin-page-title");
-  if (titleElem) {
-    titleElem.textContent = titleMap[viewId] || "Admin Panel";
-  }
+    // 4. Update Header Title
+    const titleMap = {
+        'admin-view-dashboard': 'Dashboard Overview',
+        'admin-view-inventory': 'Inventory Management',
+        'admin-view-donations': 'Donation Approvals',
+        'admin-view-requests': 'Blood Request Triage',
+        'admin-view-users': 'User Directory'
+    };
+    const titleElem = document.getElementById('admin-page-title');
+    if (titleElem) {
+        titleElem.textContent = titleMap[viewId] || 'Admin Panel';
+    }
 
-  // 5. Trigger Data Refreshes if needed
-  if (viewId === "admin-view-dashboard") fetchAdminSummary();
-  if (viewId === "admin-view-inventory") fetchInventory();
-  if (viewId === "admin-view-requests") fetchAdminRequests();
-  if (viewId === "admin-view-users") fetchAdminUsers();
+    // 5. Trigger Data Refreshes
+    if (viewId === 'admin-view-dashboard') { fetchAdminStats(); fetchInventory(); }
+    if (viewId === 'admin-view-inventory') fetchInventory();
+    if (viewId === 'admin-view-donations') fetchAdminDonations();
+    if (viewId === 'admin-view-requests') fetchAdminRequests();
+    if (viewId === 'admin-view-users') fetchAdminUsers();
 }
+
+// Nav Dropdown functionality
+function toggleDropdown(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('nav-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('nav-dropdown');
+    const container = document.getElementById('nav-user-container');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+        if (container && !container.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    }
+});
+
+async function fetchDonorEligibility() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        
+        const nextEl = document.getElementById('donor-next-eligible');
+        if (!nextEl) return;
+
+        if (result.success && result.data) {
+            const { eligible, nextEligibleDate } = result.data;
+            if (eligible) {
+                nextEl.textContent = '✅ Eligible Now';
+                nextEl.style.color = '#16a34a'; // Green
+            } else {
+                const d = new Date(nextEligibleDate);
+                const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                nextEl.textContent = `❌ ${formatted}`;
+                nextEl.style.color = '#ef4444'; // Red
+            }
+        }
+    } catch (err) { console.error('Eligibility fetch error:', err); }
+}
+
+function populateDetailedProfile(user, role) {
+    const profile = role === 'donor' ? user.donorProfile : user.recipientProfile;
+    if (!profile) return;
+
+    const fields = {
+        [`${role}-profile-phone`]: profile.phone,
+        [`${role}-profile-address`]: profile.address,
+    };
+
+    if (role === 'donor') {
+        fields['donor-profile-weight'] = profile.weight ? `${profile.weight} kg` : null;
+        if (profile.dateOfBirth) {
+            const birth = new Date(profile.dateOfBirth);
+            const age = new Date().getFullYear() - birth.getFullYear();
+            fields['donor-profile-age'] = `${age} Years`;
+        }
+    }
+
+    Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.textContent = val;
+    });
+}
+
+// === LifeLink AI Chatbot Implementation ===
+function initChatbot() {
+    // Inject Chatbot Styles
+    const chatbotStyle = document.createElement('style');
+    chatbotStyle.textContent = `
+        #lifelink-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+        }
+        #lifelink-chat-bubble {
+            width: 65px;
+            height: 65px;
+            background-color: #b11e28;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(177, 30, 40, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid white;
+        }
+        #lifelink-chat-bubble:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 25px rgba(177, 30, 40, 0.5);
+        }
+        #lifelink-chat-window {
+            position: absolute;
+            bottom: 85px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(30px) scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        #lifelink-chat-window.active {
+            display: flex;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        #lifelink-chat-header {
+            background: linear-gradient(135deg, #b11e28, #8a171f);
+            color: white;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #lifelink-chat-header .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+        #lifelink-chat-header .close-btn:hover {
+            opacity: 0.8;
+        }
+        #lifelink-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #fdfdfd;
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 transparent;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .chat-msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: relative;
+            animation: msgFadeIn 0.3s ease-out forwards;
+        }
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.assistant {
+            align-self: flex-start;
+            background: #f1f5f9;
+            color: #334155;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: #b11e28;
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 12px;
+            background: white;
+            align-items: center;
+        }
+        #lifelink-chat-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        #lifelink-chat-input:focus {
+            border-color: #b11e28;
+        }
+        #lifelink-chat-send {
+            background: #b11e28;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-send:hover {
+            transform: scale(1.05);
+            background: #8a171f;
+        }
+        #lifelink-chat-send i {
+            font-size: 16px;
+        }
+        .typing-indicator {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 5px 20px;
+            font-style: italic;
+            display: none;
+            font-weight: 500;
+        }
+        .quick-replies {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+            align-self: flex-start;
+        }
+        .quick-reply-btn {
+            background: white;
+            border: 1px solid #b11e28;
+            color: #b11e28;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-align: left;
+            width: fit-content;
+        }
+        .quick-reply-btn:hover {
+            background: #fef2f2;
+            transform: translateX(5px);
+        }
+    `;
+    document.head.appendChild(chatbotStyle);
+
+    // Inject HTML Structure
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'lifelink-chat-container';
+    chatContainer.innerHTML = `
+        <div id="lifelink-chat-window">
+            <div id="lifelink-chat-header">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> LifeLink Assistant 🩸
+                </span>
+                <span class="close-btn" id="lifelink-chat-close">&times;</span>
+            </div>
+            <div id="lifelink-chat-messages"></div>
+            <div id="lifelink-typing" class="typing-indicator">LifeLink Assistant is typing...</div>
+            <div id="lifelink-chat-input-area">
+                <input type="text" id="lifelink-chat-input" placeholder="How can I help you today?">
+                <button id="lifelink-chat-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div id="lifelink-chat-bubble" title="Need help?">
+            <i class="fas fa-tint"></i>
+        </div>
+    `;
+    document.body.appendChild(chatContainer);
+
+    // Chat Logic
+    const bubble = document.getElementById('lifelink-chat-bubble');
+    const chatWindow = document.getElementById('lifelink-chat-window');
+    const closeBtn = document.getElementById('lifelink-chat-close');
+    const chatInput = document.getElementById('lifelink-chat-input');
+    const sendBtn = document.getElementById('lifelink-chat-send');
+    const messagesBox = document.getElementById('lifelink-chat-messages');
+    const typingSign = document.getElementById('lifelink-typing');
+
+    let chatOpenedOnce = false;
+
+    bubble.addEventListener('click', () => {
+        const isOpen = chatWindow.classList.contains('active');
+        if (isOpen) {
+            chatWindow.classList.remove('active');
+            setTimeout(() => chatWindow.style.display = 'none', 400);
+        } else {
+            chatWindow.style.display = 'flex';
+            setTimeout(() => chatWindow.classList.add('active'), 10);
+            if (!chatOpenedOnce) {
+                welcomeUser();
+                chatOpenedOnce = true;
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatWindow.classList.remove('active');
+        setTimeout(() => chatWindow.style.display = 'none', 400);
+    });
+
+    function welcomeUser() {
+        appendMessage("assistant", "Hello! I am the LifeLink Assistant. I can help you with blood donation information, eligibility questions, and how to use this platform. How can I help you today?");
+        
+        const qrWrapper = document.createElement('div');
+        qrWrapper.className = 'quick-replies';
+        const replies = ["Am I eligible to donate?", "What blood type do I need?", "How do I register?"];
+        
+        replies.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-reply-btn';
+            btn.textContent = text;
+            btn.onclick = () => {
+                appendMessage("user", text);
+                qrWrapper.remove();
+                processMessage(text);
+            };
+            qrWrapper.appendChild(btn);
+        });
+        messagesBox.appendChild(qrWrapper);
+        scrollToBottom();
+    }
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-msg ${role}`;
+        msgDiv.textContent = text;
+        messagesBox.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function processMessage(userText) {
+        typingSign.style.display = 'block';
+        scrollToBottom();
+
+        try {
+            console.log("LifeLink AI: Discovering available models...");
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+            const listData = await listRes.json();
+            
+            if (!listRes.ok || !listData.models || listData.models.length === 0) {
+                console.error("Discovery failed:", listData);
+                throw new Error("Could not find any available models for this key.");
+            }
+
+            // Find the best available model
+            const availableModels = listData.models.map(m => m.name.split('/').pop());
+            console.log("Available models:", availableModels);
+            
+            const priority = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-1.0-pro'];
+            const bestModel = priority.find(m => availableModels.includes(m)) || availableModels[0];
+
+            console.log(`LifeLink AI: Selected best model: ${bestModel}`);
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${bestModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: `Instruction: You are LifeLink Assistant. Help with blood donation questions. Keep it short. \n\nUser: ${userText}` }]
+                    }]
+                })
+            });
+
+            const result = await response.json();
+            typingSign.style.display = 'none';
+
+            if (result.candidates && result.candidates[0]?.content?.parts[0]) {
+                appendMessage("assistant", result.candidates[0].content.parts[0].text);
+            } else {
+                throw new Error(result.error?.message || "Response generation failed.");
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            typingSign.style.display = 'none';
+            appendMessage("assistant", "Sorry, I am having trouble connecting. Check the console for available models.");
+        }
+    }
+
+    function handleSend() {
+        const text = chatInput.value.trim();
+        if (text) {
+            appendMessage("user", text);
+            chatInput.value = '';
+            processMessage(text);
+        }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+}
+
+// Ensure chatbot initializes
+document.addEventListener('DOMContentLoaded', () => {
+    initChatbot();
+});
