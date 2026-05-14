@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = 'AIzaSyB3zZ804zCCZCyHIRBsI1H-H42z_qnHXFg';
+
 
 /**
  * LifeLink - Single Page Application Router & Registration Logic
@@ -2715,46 +2715,24 @@ function initChatbot() {
         scrollToBottom();
 
         try {
-            console.log("LifeLink AI: Discovering available models...");
-            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
-            const listData = await listRes.json();
-            
-            if (!listRes.ok || !listData.models || listData.models.length === 0) {
-                console.error("Discovery failed:", listData);
-                throw new Error("Could not find any available models for this key.");
-            }
-
-            // Find the best available model
-            const availableModels = listData.models.map(m => m.name.split('/').pop());
-            console.log("Available models:", availableModels);
-            
-            const priority = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-1.0-pro'];
-            const bestModel = priority.find(m => availableModels.includes(m)) || availableModels[0];
-
-            console.log(`LifeLink AI: Selected best model: ${bestModel}`);
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${bestModel}:generateContent?key=${GEMINI_API_KEY}`, {
+            const response = await fetch('http://localhost:5000/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: `Instruction: You are LifeLink Assistant. Help with blood donation questions. Keep it short. \n\nUser: ${userText}` }]
-                    }]
-                })
+                body: JSON.stringify({ message: userText })
             });
 
             const result = await response.json();
             typingSign.style.display = 'none';
 
-            if (result.candidates && result.candidates[0]?.content?.parts[0]) {
-                appendMessage("assistant", result.candidates[0].content.parts[0].text);
+            if (result.success && result.reply) {
+                appendMessage("assistant", result.reply);
             } else {
-                throw new Error(result.error?.message || "Response generation failed.");
+                throw new Error(result.message || "Failed to get AI response");
             }
         } catch (err) {
             console.error('Chat Error:', err);
             typingSign.style.display = 'none';
-            appendMessage("assistant", "Sorry, I am having trouble connecting. Check the console for available models.");
+            appendMessage("assistant", "Sorry, I am having trouble connecting to the LifeLink Assistant. Please try again in a moment.");
         }
     }
 
