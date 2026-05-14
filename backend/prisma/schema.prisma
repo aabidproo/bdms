@@ -52,18 +52,18 @@ model RecipientProfile {
 }
 
 model BloodInventory {
-  id           String     @id @default(cuid())
+  id           String           @id @default(cuid())
   bloodGroup   String
-  units        Int        @default(0)
-  updatedAt    DateTime   @updatedAt
-  createdAt    DateTime   @default(now())
+  units        Int              @default(0)
+  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime         @default(now())
   donationDate DateTime?
   donorName    String?
   plasmaCount  Float?
   rbcCount     Float?
   expiryDate   DateTime?
   notes        String?
-  tested       Boolean    @default(false)
+  tested       Boolean          @default(false)
   dispatches   Dispatch[]
   alerts       InventoryAlert[]
 
@@ -71,14 +71,34 @@ model BloodInventory {
 }
 
 model Hospital {
-  id        String     @id @default(cuid())
-  name      String
-  city      String
-  phone     String?
-  createdAt DateTime   @default(now())
+  id         String     @id @default(cuid())
+  name       String
+  city       String
+  province   String?
+  district   String?
+  address    String?
+  phone      String?
+  category   String?    @default("Government")
+  createdAt  DateTime   @default(now())
   dispatches Dispatch[]
+  stocks     BloodBankStock[]
 
   @@map("hospitals")
+}
+
+model BloodBankStock {
+  id          String   @id @default(cuid())
+  hospitalId  String
+  bloodGroup  String
+  component   String   @default("Whole Blood")
+  units       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  hospital    Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([bloodGroup])
+  @@map("blood_bank_stocks")
 }
 
 model Dispatch {

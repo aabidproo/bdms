@@ -509,119 +509,90 @@
                 <h2 class="text-3xl font-extrabold text-gray-900">Find Blood Facilities</h2>
             </div>
 
-            <div
-                class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-10 flex flex-col md:flex-row gap-4 relative z-10">
-                <input type="text" placeholder="Search by location, zip code, or hospital name..."
-                    class="flex-1 px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-medium">
-                <select
-                    class="px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-medium text-gray-700 w-full md:w-auto">
-                    <option value="">Any Blood Type</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                </select>
-                <button
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-bold shadow-md transition-all active:scale-95 w-full md:w-auto">Search</button>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 relative z-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Province -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Province</label>
+                        <select id="search-province" onchange="updateDistricts()"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">Select Province</option>
+                            <option value="Koshi">Koshi</option>
+                            <option value="Madhesh">Madhesh</option>
+                            <option value="Bagmati">Bagmati</option>
+                            <option value="Gandaki">Gandaki</option>
+                            <option value="Lumbini">Lumbini</option>
+                            <option value="Karnali">Karnali</option>
+                            <option value="Sudurpashchim">Sudurpashchim</option>
+                        </select>
+                    </div>
+                    <!-- District -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">District</label>
+                        <select id="search-district" disabled
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-not-allowed opacity-60">
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                    <!-- Blood Group -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Blood Group</label>
+                        <select id="search-blood-group"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">All Blood Groups</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <!-- Component -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Blood Component</label>
+                        <select id="search-component"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">All Components</option>
+                            <option value="Whole Blood">Whole Blood</option>
+                            <option value="Packed RBC">Packed RBC</option>
+                            <option value="Fresh Frozen Plasma">Fresh Frozen Plasma</option>
+                            <option value="Platelets">Platelets</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <button onclick="searchBloodAvailability()"
+                        class="bg-[#b11e28] hover:bg-red-800 text-white px-10 py-3.5 rounded-xl font-bold shadow-md shadow-red-900/20 transition-all active:scale-[0.98] w-full md:w-auto">
+                        <i class="fas fa-search mr-2"></i> Search Availability
+                    </button>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-0">
-                <!-- Facility Item 1 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">City Central Hospital</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>123 Main St, Downtown</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-100 rounded-full text-xs font-bold font-mono">O-
-                                Available</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">A+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">B-</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 2 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Westside Blood Center</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>45 West Ave, Metro Area</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">AB+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">O+</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 3 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">North Hills Clinic</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>88 North Rd, Suburbs</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">A-</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">B+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">O+</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 4 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Red Cross Community Lab</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>21 Innovation Drive</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-100 rounded-full text-xs font-bold font-mono">O-
-                                Urgent Need</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 5 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Lifeline Center</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>199 South Blvd</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">Universal
-                                Reception (AB+)</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
+            <!-- Results Table -->
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative z-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="blood-results-table">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Blood Bank Name & Details</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Availability</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blood-results-body" class="divide-y divide-gray-100">
+                            <!-- Placeholder row -->
+                            <tr>
+                                <td colspan="4" class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-search text-3xl mb-3 text-gray-300"></i>
+                                    <p>Select criteria and search to find blood availability.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -983,16 +954,30 @@
                             <span id="auth-error-text">An error occurred</span>
                         </div>
 
-                        <!-- Step 1 -->
+                        <!-- Step 1: Personal Information -->
                         <div id="auth-step-1" class="flex flex-col space-y-4 block">
-                            <input type="email" id="reg-email" placeholder="Email Address" required
+                            <input type="text" id="reg-name" placeholder="Full Name" required
                                 class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div class="flex gap-3">
-                                <input type="password" id="reg-password" placeholder="Password" required
+                                <input type="tel" id="reg-phone" placeholder="Phone Number" required
                                     class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="password" id="reg-confirm" placeholder="Confirm" required
-                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                                <select id="reg-blood" required
+                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                                    <option value="" disabled selected>Blood Type</option>
+                                    <option>A+</option>
+                                    <option>A-</option>
+                                    <option>B+</option>
+                                    <option>B-</option>
+                                    <option>AB+</option>
+                                    <option>AB-</option>
+                                    <option>O+</option>
+                                    <option>O-</option>
+                                </select>
                             </div>
+                            <input type="text" id="reg-address" placeholder="Full Address" required
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                            <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)"
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">I
@@ -1017,30 +1002,52 @@
                             </button>
                         </div>
 
-                        <!-- Step 2 -->
+                        <!-- Step 2 (Donor Only): Health Details -->
                         <div id="auth-step-2" class="flex flex-col space-y-3 hidden">
-                            <input type="text" id="reg-name" placeholder="Full Name" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div class="flex gap-3">
-                                <input type="tel" id="reg-phone" placeholder="Phone Number" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-blood" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Blood Type</option>
-                                    <option>A+</option>
-                                    <option>A-</option>
-                                    <option>B+</option>
-                                    <option>B-</option>
-                                    <option>AB+</option>
-                                    <option>AB-</option>
-                                    <option>O+</option>
-                                    <option>O-</option>
-                                </select>
+                                <div class="w-1/2 flex flex-col">
+                                    <label for="reg-dob" class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Age: <span class="normal-case text-gray-400 font-medium">(Date of Birth)</span></label>
+                                    <input type="date" id="reg-dob" required
+                                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm"
+                                        onchange="autoCheckEligibility()">
+                                </div>
+                                <div class="w-1/2 flex flex-col">
+                                    <label for="reg-gender" class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Gender</label>
+                                    <select id="reg-gender" required
+                                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
                             </div>
-                            <input type="text" id="reg-address" placeholder="Full Address" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                            <div class="flex gap-3">
+                                <div class="w-full flex flex-col">
+                                    <label for="reg-weight" class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Weight (kg)</label>
+                                    <input type="number" id="reg-weight" placeholder="e.g. 65" min="1" max="300" required
+                                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm"
+                                        oninput="autoCheckEligibility()">
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Eligibility Check</p>
+                                <label class="flex items-center gap-2 cursor-pointer" id="eligibility-age-label">
+                                    <input type="checkbox" id="eligibility-age" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                        onchange="checkEligibility()">
+                                    <span class="text-[13px] font-medium text-gray-700">Age: Between 18 and 65 years old</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer" id="eligibility-weight-label">
+                                    <input type="checkbox" id="eligibility-weight" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                        onchange="checkEligibility()">
+                                    <span class="text-[13px] font-medium text-gray-700">Weigh more than 50kg (110 lbs)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                        onchange="checkEligibility()">
+                                    <span class="text-[13px] font-medium text-gray-700">In generally good health?</span>
+                                </label>
+                            </div>
                             <div class="flex gap-3 pt-2">
                                 <button type="button"
                                     class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
@@ -1053,50 +1060,22 @@
                             </div>
                         </div>
 
-                        <!-- Step 3 (Donor Only) -->
+                        <!-- Step 3: Account Credentials -->
                         <div id="auth-step-3" class="flex flex-col space-y-3 hidden">
+                            <input type="email" id="reg-email" placeholder="Email Address" required
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div class="flex gap-3">
-                                <input type="date" id="reg-dob" required
+                                <input type="password" id="reg-password" placeholder="Password" required
                                     class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-gender" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Gender</option>
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-3">
-                                <input type="number" id="reg-weight" placeholder="Weight (kg)" required
+                                <input type="password" id="reg-confirm" placeholder="Confirm" required
                                     class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="date" id="reg-last-donation" title="Last Donation Date (Optional)"
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            </div>
-                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">Between 18 and 65 years
-                                        old?</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">Weigh more than 50kg (110
-                                        lbs)?</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">In generally good health?</span>
-                                </label>
                             </div>
                             <div class="flex gap-3 pt-2">
                                 <button type="button"
                                     class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
                                     onclick="prevAuthStep()">Back</button>
-                                <button type="button" id="final-register-btn" disabled
-                                    class="w-2/3 bg-[#b11e28] text-white font-bold py-3.5 rounded-xl transition-all text-sm opacity-50 cursor-not-allowed"
+                                <button type="button" id="final-register-btn"
+                                    class="w-2/3 bg-[#b11e28] hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-md shadow-red-900/20 transition-all active:scale-[0.98] text-sm"
                                     onclick="completeRegistration()">
                                     Register <i class="fas fa-check ml-2"></i>
                                 </button>

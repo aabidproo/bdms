@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const donationRoutes = require('./routes/donation.routes');
 const requestRoutes = require('./routes/request.routes');
+const publicRoutes = require('./routes/public.routes');
 const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/public', publicRoutes);
 
 // ─── Protected Profile Routes ───────────────────────────
 app.get('/api/donor/profile', authenticate, authorize('DONOR'), async (req, res, next) => {
