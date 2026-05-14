@@ -1,3 +1,5 @@
+const GEMINI_API_KEY = 'AIzaSyB3zZ804zCCZCyHIRBsI1H-H42z_qnHXFg';
+
 /**
  * LifeLink - Single Page Application Router & Registration Logic
  */
@@ -153,14 +155,14 @@ function selectAuthRole(role) {
     authRole = role;
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
         card.classList.add('border-gray-100');
     });
     
     const selectedCard = document.querySelector(`.auth-role-card[data-role="${role}"]`);
     if (selectedCard) {
         selectedCard.classList.remove('border-gray-100');
-        selectedCard.classList.add('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        selectedCard.classList.add('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
     }
 }
 
@@ -175,21 +177,62 @@ function hideError() {
     document.getElementById('auth-error-box').classList.add('hidden');
 }
 
+// --- Auto-tick helpers for DOB and Weight ---
+function autoTickAge() {
+    const dobInput = document.getElementById('reg-dob');
+    const chkAge = document.getElementById('chk-age');
+    if (!dobInput || !chkAge || !dobInput.value) return;
+
+    const dob = new Date(dobInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    chkAge.checked = (age >= 18 && age <= 65);
+    checkEligibility();
+}
+
+function autoTickWeight() {
+    const weightInput = document.getElementById('reg-weight');
+    const chkWeight = document.getElementById('chk-weight');
+    const weightError = document.getElementById('weight-error');
+    if (!weightInput || !chkWeight) return;
+
+    const val = parseFloat(weightInput.value);
+
+    // Show error for invalid weight
+    if (weightInput.value !== '' && (isNaN(val) || val <= 0)) {
+        if (weightError) weightError.classList.remove('hidden');
+        chkWeight.checked = false;
+    } else {
+        if (weightError) weightError.classList.add('hidden');
+        chkWeight.checked = (val >= 50 && val > 0);
+    }
+    checkEligibility();
+}
+
+// Attach auto-tick event listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const dobField = document.getElementById('reg-dob');
+    const weightField = document.getElementById('reg-weight');
+    if (dobField) dobField.addEventListener('change', autoTickAge);
+    if (weightField) weightField.addEventListener('input', autoTickWeight);
+});
+
 function nextAuthStep() {
     hideError();
+    // Step 1: Name, Phone, Role
     if (authStep === 1) {
-        const email = document.getElementById('reg-email').value;
-        const pass = document.getElementById('reg-password').value;
-        const conf = document.getElementById('reg-confirm').value;
-        
-        if (!email || !pass) {
-            return showError('Please provide an email and password.');
+        const name = document.getElementById('reg-name').value;
+        const phone = document.getElementById('reg-phone').value;
+
+        if (!name || name.length < 2) {
+            return showError('Name must be at least 2 characters.');
         }
-        if (pass.length < 6) {
-            return showError('Password must be at least 6 characters.');
-        }
-        if (pass !== conf) {
-            return showError('Passwords do not match.');
+        if (!phone || phone.length < 7) {
+            return showError('Phone number must be at least 7 characters.');
         }
         if (!authRole) {
             return showError('Please select whether you are joining as a Donor or Recipient.');
@@ -209,26 +252,27 @@ function nextAuthStep() {
         if (isRecipient) {
             step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
             step2Btn.onclick = completeRegistration;
-            step2Btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-            step2Btn.classList.add('bg-green-600', 'hover:bg-green-700');
         } else {
             step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
             step2Btn.onclick = nextAuthStep;
-            step2Btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            step2Btn.classList.add('bg-indigo-600');
         }
 
         authStep = 2;
-    } else if (authStep === 2) {
-        const name = document.getElementById('reg-name').value;
-        const phone = document.getElementById('reg-phone').value;
-        const address = document.getElementById('reg-address').value;
+    }
+    // Step 2: Email, Password, Blood, Address
+    else if (authStep === 2) {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        const conf = document.getElementById('reg-confirm').value;
         const blood = document.getElementById('reg-blood').value;
+        const address = document.getElementById('reg-address').value;
 
-        if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
-        if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!address) return showError('Address is required.');
+        if (!email) return showError('Email is required.');
+        if (!pass) return showError('Password is required.');
+        if (pass.length < 6) return showError('Password must be at least 6 characters.');
+        if (pass !== conf) return showError('Passwords do not match.');
         if (!blood) return showError('Please select a blood type.');
+        if (!address) return showError('Address is required.');
 
         if (authRole === 'donor') {
             document.getElementById('auth-step-2').classList.add('hidden');
@@ -272,29 +316,35 @@ function checkEligibility() {
     const regBtn = document.getElementById('final-register-btn');
     if (allChecked) {
         regBtn.removeAttribute('disabled');
-        regBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-        regBtn.classList.add('hover:bg-green-700', 'hover:shadow-lg', 'active:scale-95', 'bg-green-600');
+        regBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.add('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
     } else {
         regBtn.setAttribute('disabled', 'true');
-        regBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-        regBtn.classList.remove('hover:bg-green-700', 'hover:shadow-lg', 'active:scale-95', 'bg-green-600');
+        regBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.remove('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
     }
 }
 
 async function completeRegistration() {
     hideError();
     let btn;
+
+    // Common validation for both roles (fields from Steps 1 & 2)
+    const name = document.getElementById('reg-name').value;
+    const phone = document.getElementById('reg-phone').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    const blood = document.getElementById('reg-blood').value;
+    const address = document.getElementById('reg-address').value;
+
+    if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
+    if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
+    if (!email) return showError('Email is required.');
+    if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
+    if (!blood) return showError('Please select a blood type.');
+    if (!address) return showError('Address is required.');
+
     if (authRole === 'recipient') {
-        const name = document.getElementById('reg-name').value;
-        const phone = document.getElementById('reg-phone').value;
-        const address = document.getElementById('reg-address').value;
-        const blood = document.getElementById('reg-blood').value;
-        
-        if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
-        if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!address) return showError('Address is required.');
-        if (!blood) return showError('Please select a blood type.');
-        
         btn = document.getElementById('step-2-next-btn');
     } else {
         const dob = document.getElementById('reg-dob').value;
@@ -303,7 +353,8 @@ async function completeRegistration() {
         
         if (!dob) return showError('Date of Birth is required.');
         if (!gender) return showError('Gender is required.');
-        if (!weight || parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
+        if (!weight || parseFloat(weight) <= 0) return showError('Weight must be a positive number.');
+        if (parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
         
         btn = document.getElementById('final-register-btn');
     }
@@ -329,10 +380,6 @@ async function completeRegistration() {
             payload.dateOfBirth = new Date(document.getElementById('reg-dob').value).toISOString();
             payload.gender = document.getElementById('reg-gender').value;
             payload.weight = parseFloat(document.getElementById('reg-weight').value);
-            const lastDonation = document.getElementById('reg-last-donation').value;
-            if (lastDonation) {
-                payload.lastDonationDate = new Date(lastDonation).toISOString();
-            }
         }
         
         const response = await fetch('http://localhost:5000/api/auth/register', {
@@ -397,20 +444,22 @@ function resetAuthWizard() {
     document.querySelectorAll('#auth-step-3 input:not([type="checkbox"])').forEach(input => input.value = '');
     document.querySelectorAll('#auth-step-2 select, #auth-step-3 select').forEach(select => select.selectedIndex = 0);
     document.querySelectorAll('.eligibility-check').forEach(input => input.checked = false);
+
+    // Hide weight error
+    const weightError = document.getElementById('weight-error');
+    if (weightError) weightError.classList.add('hidden');
     
     // Reset Step 2 button
     const step2Btn = document.getElementById('step-2-next-btn');
     if(step2Btn) {
         step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
         step2Btn.onclick = nextAuthStep;
-        step2Btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-        step2Btn.classList.add('bg-indigo-600');
     }
 
     // Reset Cards
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
         card.classList.add('border-gray-100');
     });
 
@@ -2376,3 +2425,355 @@ function populateDetailedProfile(user, role) {
         if (el && val) el.textContent = val;
     });
 }
+
+// === LifeLink AI Chatbot Implementation ===
+function initChatbot() {
+    // Inject Chatbot Styles
+    const chatbotStyle = document.createElement('style');
+    chatbotStyle.textContent = `
+        #lifelink-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+        }
+        #lifelink-chat-bubble {
+            width: 65px;
+            height: 65px;
+            background-color: #b11e28;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(177, 30, 40, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid white;
+        }
+        #lifelink-chat-bubble:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 25px rgba(177, 30, 40, 0.5);
+        }
+        #lifelink-chat-window {
+            position: absolute;
+            bottom: 85px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(30px) scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        #lifelink-chat-window.active {
+            display: flex;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        #lifelink-chat-header {
+            background: linear-gradient(135deg, #b11e28, #8a171f);
+            color: white;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #lifelink-chat-header .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+        #lifelink-chat-header .close-btn:hover {
+            opacity: 0.8;
+        }
+        #lifelink-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #fdfdfd;
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 transparent;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .chat-msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: relative;
+            animation: msgFadeIn 0.3s ease-out forwards;
+        }
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.assistant {
+            align-self: flex-start;
+            background: #f1f5f9;
+            color: #334155;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: #b11e28;
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 12px;
+            background: white;
+            align-items: center;
+        }
+        #lifelink-chat-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        #lifelink-chat-input:focus {
+            border-color: #b11e28;
+        }
+        #lifelink-chat-send {
+            background: #b11e28;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-send:hover {
+            transform: scale(1.05);
+            background: #8a171f;
+        }
+        #lifelink-chat-send i {
+            font-size: 16px;
+        }
+        .typing-indicator {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 5px 20px;
+            font-style: italic;
+            display: none;
+            font-weight: 500;
+        }
+        .quick-replies {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+            align-self: flex-start;
+        }
+        .quick-reply-btn {
+            background: white;
+            border: 1px solid #b11e28;
+            color: #b11e28;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-align: left;
+            width: fit-content;
+        }
+        .quick-reply-btn:hover {
+            background: #fef2f2;
+            transform: translateX(5px);
+        }
+    `;
+    document.head.appendChild(chatbotStyle);
+
+    // Inject HTML Structure
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'lifelink-chat-container';
+    chatContainer.innerHTML = `
+        <div id="lifelink-chat-window">
+            <div id="lifelink-chat-header">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> LifeLink Assistant 🩸
+                </span>
+                <span class="close-btn" id="lifelink-chat-close">&times;</span>
+            </div>
+            <div id="lifelink-chat-messages"></div>
+            <div id="lifelink-typing" class="typing-indicator">LifeLink Assistant is typing...</div>
+            <div id="lifelink-chat-input-area">
+                <input type="text" id="lifelink-chat-input" placeholder="How can I help you today?">
+                <button id="lifelink-chat-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div id="lifelink-chat-bubble" title="Need help?">
+            <i class="fas fa-tint"></i>
+        </div>
+    `;
+    document.body.appendChild(chatContainer);
+
+    // Chat Logic
+    const bubble = document.getElementById('lifelink-chat-bubble');
+    const chatWindow = document.getElementById('lifelink-chat-window');
+    const closeBtn = document.getElementById('lifelink-chat-close');
+    const chatInput = document.getElementById('lifelink-chat-input');
+    const sendBtn = document.getElementById('lifelink-chat-send');
+    const messagesBox = document.getElementById('lifelink-chat-messages');
+    const typingSign = document.getElementById('lifelink-typing');
+
+    let chatOpenedOnce = false;
+
+    bubble.addEventListener('click', () => {
+        const isOpen = chatWindow.classList.contains('active');
+        if (isOpen) {
+            chatWindow.classList.remove('active');
+            setTimeout(() => chatWindow.style.display = 'none', 400);
+        } else {
+            chatWindow.style.display = 'flex';
+            setTimeout(() => chatWindow.classList.add('active'), 10);
+            if (!chatOpenedOnce) {
+                welcomeUser();
+                chatOpenedOnce = true;
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatWindow.classList.remove('active');
+        setTimeout(() => chatWindow.style.display = 'none', 400);
+    });
+
+    function welcomeUser() {
+        appendMessage("assistant", "Hello! I am the LifeLink Assistant. I can help you with blood donation information, eligibility questions, and how to use this platform. How can I help you today?");
+        
+        const qrWrapper = document.createElement('div');
+        qrWrapper.className = 'quick-replies';
+        const replies = ["Am I eligible to donate?", "What blood type do I need?", "How do I register?"];
+        
+        replies.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-reply-btn';
+            btn.textContent = text;
+            btn.onclick = () => {
+                appendMessage("user", text);
+                qrWrapper.remove();
+                processMessage(text);
+            };
+            qrWrapper.appendChild(btn);
+        });
+        messagesBox.appendChild(qrWrapper);
+        scrollToBottom();
+    }
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-msg ${role}`;
+        msgDiv.textContent = text;
+        messagesBox.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function processMessage(userText) {
+        typingSign.style.display = 'block';
+        scrollToBottom();
+
+        try {
+            console.log("LifeLink AI: Discovering available models...");
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+            const listData = await listRes.json();
+            
+            if (!listRes.ok || !listData.models || listData.models.length === 0) {
+                console.error("Discovery failed:", listData);
+                throw new Error("Could not find any available models for this key.");
+            }
+
+            // Find the best available model
+            const availableModels = listData.models.map(m => m.name.split('/').pop());
+            console.log("Available models:", availableModels);
+            
+            const priority = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-1.0-pro'];
+            const bestModel = priority.find(m => availableModels.includes(m)) || availableModels[0];
+
+            console.log(`LifeLink AI: Selected best model: ${bestModel}`);
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${bestModel}:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: `Instruction: You are LifeLink Assistant. Help with blood donation questions. Keep it short. \n\nUser: ${userText}` }]
+                    }]
+                })
+            });
+
+            const result = await response.json();
+            typingSign.style.display = 'none';
+
+            if (result.candidates && result.candidates[0]?.content?.parts[0]) {
+                appendMessage("assistant", result.candidates[0].content.parts[0].text);
+            } else {
+                throw new Error(result.error?.message || "Response generation failed.");
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            typingSign.style.display = 'none';
+            appendMessage("assistant", "Sorry, I am having trouble connecting. Check the console for available models.");
+        }
+    }
+
+    function handleSend() {
+        const text = chatInput.value.trim();
+        if (text) {
+            appendMessage("user", text);
+            chatInput.value = '';
+            processMessage(text);
+        }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+}
+
+// Ensure chatbot initializes
+document.addEventListener('DOMContentLoaded', () => {
+    initChatbot();
+});

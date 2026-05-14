@@ -983,16 +983,12 @@
                             <span id="auth-error-text">An error occurred</span>
                         </div>
 
-                        <!-- Step 1 -->
+                        <!-- Step 1: Name, Phone, Role -->
                         <div id="auth-step-1" class="flex flex-col space-y-4 block">
-                            <input type="email" id="reg-email" placeholder="Email Address" required
+                            <input type="text" id="reg-name" placeholder="Full Name" required
                                 class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <div class="flex gap-3">
-                                <input type="password" id="reg-password" placeholder="Password" required
-                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="password" id="reg-confirm" placeholder="Confirm" required
-                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            </div>
+                            <input type="tel" id="reg-phone" placeholder="Phone Number" required
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div>
                                 <label
                                     class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">I
@@ -1017,26 +1013,28 @@
                             </button>
                         </div>
 
-                        <!-- Step 2 -->
+                        <!-- Step 2: Email, Password, Blood Type, Address -->
                         <div id="auth-step-2" class="flex flex-col space-y-3 hidden">
-                            <input type="text" id="reg-name" placeholder="Full Name" required
+                            <input type="email" id="reg-email" placeholder="Email Address" required
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <div class="flex gap-3">
-                                <input type="tel" id="reg-phone" placeholder="Phone Number" required
+                                <input type="password" id="reg-password" placeholder="Password" required
                                     class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-blood" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Blood Type</option>
-                                    <option>A+</option>
-                                    <option>A-</option>
-                                    <option>B+</option>
-                                    <option>B-</option>
-                                    <option>AB+</option>
-                                    <option>AB-</option>
-                                    <option>O+</option>
-                                    <option>O-</option>
-                                </select>
+                                <input type="password" id="reg-confirm" placeholder="Confirm" required
+                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             </div>
+                            <select id="reg-blood" required
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                                <option value="" disabled selected>Blood Type</option>
+                                <option>A+</option>
+                                <option>A-</option>
+                                <option>B+</option>
+                                <option>B-</option>
+                                <option>AB+</option>
+                                <option>AB-</option>
+                                <option>O+</option>
+                                <option>O-</option>
+                            </select>
                             <input type="text" id="reg-address" placeholder="Full Address" required
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
                             <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)"
@@ -1053,11 +1051,14 @@
                             </div>
                         </div>
 
-                        <!-- Step 3 (Donor Only) -->
+                        <!-- Step 3 (Donor Only): DOB, Gender, Weight, Eligibility -->
                         <div id="auth-step-3" class="flex flex-col space-y-3 hidden">
-                            <div class="flex gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Date of Birth</label>
                                 <input type="date" id="reg-dob" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                            </div>
+                            <div class="flex gap-3">
                                 <select id="reg-gender" required
                                     class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
                                     <option value="" disabled selected>Gender</option>
@@ -1065,28 +1066,27 @@
                                     <option value="FEMALE">Female</option>
                                     <option value="OTHER">Other</option>
                                 </select>
-                            </div>
-                            <div class="flex gap-3">
-                                <input type="number" id="reg-weight" placeholder="Weight (kg)" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="date" id="reg-last-donation" title="Last Donation Date (Optional)"
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                                <div class="w-1/2 relative">
+                                    <input type="number" id="reg-weight" placeholder="Weight (kg)" required min="1"
+                                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+                                    <span id="weight-error" class="hidden text-red-500 text-xs font-semibold mt-1 block">Weight must be a positive number</span>
+                                </div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                    <input type="checkbox" id="chk-age" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
                                         onchange="checkEligibility()">
                                     <span class="text-[13px] font-medium text-gray-700">Between 18 and 65 years
                                         old?</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                    <input type="checkbox" id="chk-weight" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
                                         onchange="checkEligibility()">
                                     <span class="text-[13px] font-medium text-gray-700">Weigh more than 50kg (110
                                         lbs)?</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
+                                    <input type="checkbox" id="chk-health" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
                                         onchange="checkEligibility()">
                                     <span class="text-[13px] font-medium text-gray-700">In generally good health?</span>
                                 </label>
