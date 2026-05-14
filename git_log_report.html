@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Log Output - Relevant Commits</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: #161b22;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #30363d;
+        }
+        h1 {
+            color: #58a6ff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+        }
+        .terminal {
+            background: #010409;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Cascadia Code', 'Source Code Pro', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: 1px solid #30363d;
+        }
+        .command {
+            color: #7ee787;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .line { margin-bottom: 8px; }
+        .hash { color: #d2a8ff; font-weight: bold; }
+        .msg { color: #f0f6f0; }
+        .highlight {
+            background: rgba(240, 230, 140, 0.1);
+            color: #e3b341;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Git Log: Security & Fixes</h1>
+        <div class="terminal">
+            <div class="command">PS D:\Project\bdms> git log --oneline --all | grep -i "reset\|token\|password\|fix\|security"</div>
+            
+            <div class="line">
+                <span class="hash">c3770da</span> 
+                <span class="msg">fix: blood type display, donor eligibility status, recipient request tracking</span>
+            </div>
+            
+            <div class="line">
+                <span class="hash">a890a71</span> 
+                <span class="msg">Admin Panel Expansion: Modular multi-page refactor and layout fixes</span>
+            </div>
+            
+            <div class="line">
+                <span class="hash">56806c9</span> 
+                <span class="msg">feat: <span class="highlight">forgot password</span> and <span class="highlight">reset password</span> with email - Task 4</span>
+            </div>
+            
+            <div class="line">
+                <span class="hash">7932f1e</span> 
+                <span class="msg">Implemented <span class="highlight">Forgot Password</span> UI</span>
+            </div>
+            
+            <div class="line">
+                <span class="hash">cc3a40b</span> 
+                <span class="msg">fix: remove duplicate nested folders</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

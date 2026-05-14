@@ -1,3 +1,5 @@
+
+
 /**
  * LifeLink - Single Page Application Router & Registration Logic
  */
@@ -153,14 +155,14 @@ function selectAuthRole(role) {
     authRole = role;
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
         card.classList.add('border-gray-100');
     });
     
     const selectedCard = document.querySelector(`.auth-role-card[data-role="${role}"]`);
     if (selectedCard) {
         selectedCard.classList.remove('border-gray-100');
-        selectedCard.classList.add('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        selectedCard.classList.add('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
     }
 }
 
@@ -175,19 +177,64 @@ function hideError() {
     document.getElementById('auth-error-box').classList.add('hidden');
 }
 
+// --- Auto-tick helpers for DOB and Weight ---
+function autoTickAge() {
+    const dobInput = document.getElementById('reg-dob');
+    const chkAge = document.getElementById('chk-age');
+    if (!dobInput || !chkAge || !dobInput.value) return;
+
+    const dob = new Date(dobInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    chkAge.checked = (age >= 18 && age <= 65);
+    checkEligibility();
+}
+
+function autoTickWeight() {
+    const weightInput = document.getElementById('reg-weight');
+    const chkWeight = document.getElementById('chk-weight');
+    const weightError = document.getElementById('weight-error');
+    if (!weightInput || !chkWeight) return;
+
+    const val = parseFloat(weightInput.value);
+
+    // Show error for invalid weight
+    if (weightInput.value !== '' && (isNaN(val) || val <= 0)) {
+        if (weightError) weightError.classList.remove('hidden');
+        chkWeight.checked = false;
+    } else {
+        if (weightError) weightError.classList.add('hidden');
+        chkWeight.checked = (val >= 50 && val > 0);
+    }
+    checkEligibility();
+}
+
+// Attach auto-tick event listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const dobField = document.getElementById('reg-dob');
+    const weightField = document.getElementById('reg-weight');
+    if (dobField) dobField.addEventListener('change', autoTickAge);
+    if (weightField) weightField.addEventListener('input', autoTickWeight);
+});
+
 function nextAuthStep() {
     hideError();
+    // Step 1: Personal Information
     if (authStep === 1) {
         // Step 1: Validate personal info + role
         const name = document.getElementById('reg-name').value;
         const phone = document.getElementById('reg-phone').value;
-        const address = document.getElementById('reg-address').value;
         const blood = document.getElementById('reg-blood').value;
+        const address = document.getElementById('reg-address').value;
 
         if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
         if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!address) return showError('Address is required.');
         if (!blood) return showError('Please select a blood type.');
+        if (!address) return showError('Address is required.');
         if (!authRole) return showError('Please select whether you are joining as a Donor or Recipient.');
 
         document.getElementById('auth-step-1').classList.add('hidden');
@@ -423,6 +470,10 @@ function resetAuthWizard() {
     });
     document.querySelectorAll('#auth-step-3 input').forEach(el => el.value = '');
     document.querySelectorAll('.eligibility-check').forEach(input => input.checked = false);
+
+    // Hide weight error
+    const weightError = document.getElementById('weight-error');
+    if (weightError) weightError.classList.add('hidden');
     
     // Reset Step 2 button state
     const step2Btn = document.getElementById('step-2-next-btn');
@@ -436,7 +487,7 @@ function resetAuthWizard() {
     // Reset role Cards
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
         card.classList.add('border-gray-100');
     });
 }
@@ -469,7 +520,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/login', {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -510,7 +561,7 @@ function routeUserToDashboard(user) {
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/donor/profile`, {
+        fetch(`http://localhost:5000/api/donor/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -534,7 +585,7 @@ function routeUserToDashboard(user) {
     else if (user.role === 'RECIPIENT') {
         navigateTo('recipient-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/recipient/profile`, {
+        fetch(`http://localhost:5000/api/recipient/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -664,7 +715,7 @@ async function fetchAdminUsers() {
     }
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/users', {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -793,7 +844,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -859,7 +910,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -916,7 +967,7 @@ async function scheduleDonation(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations', {
+        const response = await fetch('http://localhost:5000/api/donations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -955,7 +1006,7 @@ async function fetchDonorHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations/my', {
+        const response = await fetch('http://localhost:5000/api/donations/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1060,7 +1111,7 @@ async function submitBloodRequest(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests', {
+        const response = await fetch('http://localhost:5000/api/requests', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1098,7 +1149,7 @@ async function fetchRecipientHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests/my', {
+        const response = await fetch('http://localhost:5000/api/requests/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1222,7 +1273,7 @@ async function fetchKPISummary() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/inventory/summary', {
+        const response = await fetch('http://localhost:5000/api/admin/inventory/summary', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1328,7 +1379,7 @@ async function fetchInventory() {
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
     
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1471,7 +1522,7 @@ window.showStockDetails = async function(bloodGroup) {
 
     // Fetch batch data from API
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await response.json();
@@ -1713,7 +1764,7 @@ window.editStock = async function(donationId) {
         };
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/stock/${donationId}`, {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -1793,7 +1844,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
 
     // Fetch hospitals
     try {
-        const res = await fetch('http://localhost:5001/api/admin/hospitals', {
+        const res = await fetch('http://localhost:5000/api/admin/hospitals', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -1823,7 +1874,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/stock/${batchId}/dispatch`, {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${batchId}/dispatch`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hospitalId, quantity, notes })
@@ -1920,7 +1971,7 @@ window.openAlertModal = function(batchId, bloodGroup) {
         const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/alerts/batch/${batchId}`, {
+            const res = await fetch(`http://localhost:5000/api/admin/alerts/batch/${batchId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2047,7 +2098,7 @@ async function submitAddStock(e) {
     const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stock', {
+        const response = await fetch('http://localhost:5000/api/admin/stock', {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2085,7 +2136,7 @@ async function deleteStock(id) {
     if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -2102,7 +2153,7 @@ async function fetchAdminRequests() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/requests', {
+        const response = await fetch('http://localhost:5000/api/admin/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2147,7 +2198,7 @@ async function fetchAdminRequests() {
 async function updateReqStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2176,7 +2227,7 @@ async function fetchAdminDonations() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/donations', {
+        const response = await fetch('http://localhost:5000/api/admin/donations', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2217,7 +2268,7 @@ async function fetchAdminDonations() {
 async function updateDonationStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2246,7 +2297,7 @@ async function fetchAdminStats() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        const response = await fetch('http://localhost:5000/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2354,7 +2405,7 @@ async function fetchDonorEligibility() {
     if (!token) return;
 
     try {
-        const res = await fetch('http://localhost:5001/api/donor/eligibility', {
+        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
@@ -2526,3 +2577,333 @@ async function searchBloodAvailability() {
         `;
     }
 }
+
+// === LifeLink AI Chatbot Implementation ===
+function initChatbot() {
+    // Inject Chatbot Styles
+    const chatbotStyle = document.createElement('style');
+    chatbotStyle.textContent = \`
+        #lifelink-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+        }
+        #lifelink-chat-bubble {
+            width: 65px;
+            height: 65px;
+            background-color: #b11e28;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(177, 30, 40, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid white;
+        }
+        #lifelink-chat-bubble:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 25px rgba(177, 30, 40, 0.5);
+        }
+        #lifelink-chat-window {
+            position: absolute;
+            bottom: 85px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(30px) scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        #lifelink-chat-window.active {
+            display: flex;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        #lifelink-chat-header {
+            background: linear-gradient(135deg, #b11e28, #8a171f);
+            color: white;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #lifelink-chat-header .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+        #lifelink-chat-header .close-btn:hover {
+            opacity: 0.8;
+        }
+        #lifelink-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #fdfdfd;
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 transparent;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .chat-msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: relative;
+            animation: msgFadeIn 0.3s ease-out forwards;
+        }
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.assistant {
+            align-self: flex-start;
+            background: #f1f5f9;
+            color: #334155;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: #b11e28;
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 12px;
+            background: white;
+            align-items: center;
+        }
+        #lifelink-chat-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        #lifelink-chat-input:focus {
+            border-color: #b11e28;
+        }
+        #lifelink-chat-send {
+            background: #b11e28;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-send:hover {
+            transform: scale(1.05);
+            background: #8a171f;
+        }
+        #lifelink-chat-send i {
+            font-size: 16px;
+        }
+        .typing-indicator {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 5px 20px;
+            font-style: italic;
+            display: none;
+            font-weight: 500;
+        }
+        .quick-replies {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+            align-self: flex-start;
+        }
+        .quick-reply-btn {
+            background: white;
+            border: 1px solid #b11e28;
+            color: #b11e28;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-align: left;
+            width: fit-content;
+        }
+        .quick-reply-btn:hover {
+            background: #fef2f2;
+            transform: translateX(5px);
+        }
+    \`;
+    document.head.appendChild(chatbotStyle);
+
+    // Inject HTML Structure
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'lifelink-chat-container';
+    chatContainer.innerHTML = \`
+        <div id="lifelink-chat-window">
+            <div id="lifelink-chat-header">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> LifeLink Assistant 🩸
+                </span>
+                <span class="close-btn" id="lifelink-chat-close">&times;</span>
+            </div>
+            <div id="lifelink-chat-messages"></div>
+            <div id="lifelink-typing" class="typing-indicator">LifeLink Assistant is typing...</div>
+            <div id="lifelink-chat-input-area">
+                <input type="text" id="lifelink-chat-input" placeholder="How can I help you today?">
+                <button id="lifelink-chat-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div id="lifelink-chat-bubble" title="Need help?">
+            <i class="fas fa-tint"></i>
+        </div>
+    \`;
+    document.body.appendChild(chatContainer);
+
+    // Chat Logic
+    const bubble = document.getElementById('lifelink-chat-bubble');
+    const chatWindow = document.getElementById('lifelink-chat-window');
+    const closeBtn = document.getElementById('lifelink-chat-close');
+    const chatInput = document.getElementById('lifelink-chat-input');
+    const sendBtn = document.getElementById('lifelink-chat-send');
+    const messagesBox = document.getElementById('lifelink-chat-messages');
+    const typingSign = document.getElementById('lifelink-typing');
+
+    let chatOpenedOnce = false;
+
+    bubble.addEventListener('click', () => {
+        const isOpen = chatWindow.classList.contains('active');
+        if (isOpen) {
+            chatWindow.classList.remove('active');
+            setTimeout(() => chatWindow.style.display = 'none', 400);
+        } else {
+            chatWindow.style.display = 'flex';
+            setTimeout(() => chatWindow.classList.add('active'), 10);
+            if (!chatOpenedOnce) {
+                welcomeUser();
+                chatOpenedOnce = true;
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatWindow.classList.remove('active');
+        setTimeout(() => chatWindow.style.display = 'none', 400);
+    });
+
+    function welcomeUser() {
+        appendMessage("assistant", "Hello! I am the LifeLink Assistant. I can help you with blood donation information, eligibility questions, and how to use this platform. How can I help you today?");
+        
+        const qrWrapper = document.createElement('div');
+        qrWrapper.className = 'quick-replies';
+        const replies = ["Am I eligible to donate?", "What blood type do I need?", "How do I register?"];
+        
+        replies.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-reply-btn';
+            btn.textContent = text;
+            btn.onclick = () => {
+                appendMessage("user", text);
+                qrWrapper.remove();
+                processMessage(text);
+            };
+            qrWrapper.appendChild(btn);
+        });
+        messagesBox.appendChild(qrWrapper);
+        scrollToBottom();
+    }
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = \`chat-msg \${role}\`;
+        msgDiv.textContent = text;
+        messagesBox.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function processMessage(userText) {
+        typingSign.style.display = 'block';
+        scrollToBottom();
+
+        try {
+            const response = await fetch('http://localhost:5001/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userText })
+            });
+
+            const result = await response.json();
+            typingSign.style.display = 'none';
+
+            if (result.success && result.reply) {
+                appendMessage("assistant", result.reply);
+            } else {
+                throw new Error(result.message || "Failed to get AI response");
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            typingSign.style.display = 'none';
+            appendMessage("assistant", "Sorry, I am having trouble connecting to the LifeLink Assistant. Please try again in a moment.");
+        }
+    }
+
+    function handleSend() {
+        const text = chatInput.value.trim();
+        if (text) {
+            appendMessage("user", text);
+            chatInput.value = '';
+            processMessage(text);
+        }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+}
+
+// Ensure chatbot initializes
+document.addEventListener('DOMContentLoaded', () => {
+    initChatbot();
+});
