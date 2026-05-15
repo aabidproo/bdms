@@ -416,3 +416,125 @@ body {
     transform: translateX(6px);          /* Smooth slide-to-right pop effect */
     border-left: 3px solid rgba(177, 30, 40, 0.3); /* Subtle left border indicator */
 }
+
+/* ═══════════════════════════════════════════════
+   REGISTRATION STEPPER & ENHANCED FORM UI
+   ═══════════════════════════════════════════════ */
+
+.stepper-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.stepper-line {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #e5e7eb;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+.stepper-line-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: #b11e28;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.step-circle.active {
+    border-color: #b11e28;
+    color: #b11e28;
+    box-shadow: 0 0 0 4px rgba(177, 30, 40, 0.1);
+}
+
+.step-circle.completed {
+    background: #b11e28;
+    border-color: #b11e28;
+    color: #fff;
+}
+
+.step-label {
+    position: absolute;
+    top: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+}
+
+.step-circle.active .step-label {
+    color: #b11e28;
+}
+
+/* Step transition animations */
+.auth-step-container {
+    overflow: hidden;
+    position: relative;
+}
+
+.auth-step {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-step.fade-out {
+    opacity: 0;
+    transform: translateX(-20px);
+    pointer-events: none;
+}
+
+.auth-step.fade-in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Input validation states */
+.input-valid {
+    border-color: #10b981 !important;
+    background-color: #f0fdf4 !important;
+}
+
+.input-invalid {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+}
+
+.validation-msg {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.validation-msg.error { color: #ef4444; }
+.validation-msg.success { color: #10b981; }
+

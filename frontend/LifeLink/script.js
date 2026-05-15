@@ -155,16 +155,34 @@ function selectAuthRole(role) {
     authRole = role;
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+        card.classList.remove('border-gray-900', 'bg-gray-50', 'shadow-md');
         card.classList.add('border-gray-100');
+        const icon = card.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-[#b11e28]');
+            icon.classList.add('text-gray-400');
+        }
     });
     
     const selectedCard = document.querySelector(`.auth-role-card[data-role="${role}"]`);
     if (selectedCard) {
         selectedCard.classList.remove('border-gray-100');
-        selectedCard.classList.add('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+        selectedCard.classList.add('border-gray-900', 'bg-gray-50', 'shadow-md');
+        const icon = selectedCard.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-gray-400');
+            icon.classList.add('text-[#b11e28]');
+        }
     }
+    
+    const titleEl = document.getElementById('auth-signup-title');
+    if (titleEl) {
+        titleEl.textContent = role === 'donor' ? 'Join as Donor' : 'Join as Recipient';
+    }
+
+    updateStepper(authStep);
 }
+
 
 function showError(msg) {
     const errorBox = document.getElementById('auth-error-box');
@@ -221,124 +239,151 @@ document.addEventListener('DOMContentLoaded', () => {
     if (weightField) weightField.addEventListener('input', autoTickWeight);
 });
 
+function updateStepper(step) {
+    const progress = document.getElementById('stepper-progress');
+    const isRecipient = authRole === 'recipient';
+    const totalSteps = isRecipient ? 2 : 3;
+    const dots = [1, 2, 3];
+    
+    // Handle visibility of 3rd dot
+    const step3Dot = document.getElementById('step-dot-3');
+    if (step3Dot) {
+        step3Dot.style.display = isRecipient ? 'none' : 'flex';
+    }
+
+    // Update progress line width
+    let width = 0;
+    if (totalSteps === 2) {
+        width = step === 1 ? 0 : 100;
+    } else {
+        width = step === 1 ? 0 : (step === 2 ? 50 : 100);
+    }
+    
+    if (progress) progress.style.width = `${width}%`;
+    
+    dots.forEach(d => {
+        const dot = document.getElementById(`step-dot-${d}`);
+        if (!dot) return;
+        
+        if (d < step) {
+            dot.classList.add('completed');
+            dot.classList.remove('active');
+            dot.innerHTML = '<i class="fas fa-check text-xs"></i><span class="step-label">Done</span>';
+        } else if (d === step) {
+            dot.classList.add('active');
+            dot.classList.remove('completed');
+            dot.innerHTML = `${d}<span class="step-label">${d === 1 ? 'Role' : (d === 2 ? (isRecipient ? 'Details' : 'Account') : 'Details')}</span>`;
+        } else {
+            dot.classList.remove('active', 'completed');
+            dot.innerHTML = `${d}<span class="step-label">${d === 1 ? 'Role' : (d === 2 ? (isRecipient ? 'Details' : 'Account') : 'Details')}</span>`;
+        }
+    });
+}
+
 function nextAuthStep() {
     hideError();
-    // Step 1: Personal Information
+    const currentStepEl = document.getElementById(`auth-step-${authStep}`);
+    
+    // Step 1: Name, Phone, Role
     if (authStep === 1) {
-        // Step 1: Validate personal info + role
         const name = document.getElementById('reg-name').value;
         const phone = document.getElementById('reg-phone').value;
-        const blood = document.getElementById('reg-blood').value;
-        const address = document.getElementById('reg-address').value;
 
         if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
         if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!blood) return showError('Please select a blood type.');
-        if (!address) return showError('Address is required.');
         if (!authRole) return showError('Please select whether you are joining as a Donor or Recipient.');
 
-        document.getElementById('auth-step-1').classList.add('hidden');
-        document.getElementById('auth-step-1').classList.remove('block');
+        // Transition out Step 1, in Step 2
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step2 = document.getElementById('auth-step-2');
+            step2.classList.remove('hidden');
+            step2.classList.add('block', 'fade-in');
+            
+            authStep = 2;
+            updateStepper(2);
+            
+            const isRecipient = authRole === 'recipient';
+            const step2Btn = document.getElementById('step-2-next-btn');
+            if (isRecipient) {
+                step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
+                step2Btn.onclick = completeRegistration;
+            } else {
+                step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
+                step2Btn.onclick = nextAuthStep;
+            }
+        }, 400);
+    }
+    // Step 2: Email, Password, Blood, Address
+    else if (authStep === 2) {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        const conf = document.getElementById('reg-confirm').value;
+        const blood = document.getElementById('reg-blood').value;
+        const address = document.getElementById('reg-address').value;
+
+        if (!email) return showError('Email is required.');
+        if (!pass) return showError('Password is required.');
+        if (pass.length < 6) return showError('Password must be at least 6 characters.');
+        if (pass !== conf) return showError('Passwords do not match.');
+        if (!blood) return showError('Please select a blood type.');
+        if (!address) return showError('Address is required.');
 
         if (authRole === 'donor') {
-            // Donors go to Step 2 (health details)
-            document.getElementById('auth-total-steps').textContent = '3';
-            document.getElementById('auth-step-2').classList.remove('hidden');
-            document.getElementById('auth-step-2').classList.add('block');
-            document.getElementById('auth-current-step').textContent = '2';
-            authStep = 2;
-            autoCheckEligibility();
-        } else {
-            // Recipients skip to Step 3 (credentials)
-            document.getElementById('auth-total-steps').textContent = '2';
-            document.getElementById('auth-step-3').classList.remove('hidden');
-            document.getElementById('auth-step-3').classList.add('block');
-            document.getElementById('auth-current-step').textContent = '2';
-            authStep = 3; // internal step 3 even though displayed as "2 of 2"
+            currentStepEl.classList.add('fade-out');
+            setTimeout(() => {
+                currentStepEl.classList.add('hidden');
+                currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+                
+                const step3 = document.getElementById('auth-step-3');
+                step3.classList.remove('hidden');
+                step3.classList.add('block', 'fade-in');
+                
+                authStep = 3;
+                updateStepper(3);
+                checkEligibility();
+            }, 400);
         }
-    } else if (authStep === 2) {
-        // Step 2: Validate donor health details
-        const dob = document.getElementById('reg-dob').value;
-        const gender = document.getElementById('reg-gender').value;
-        const weight = document.getElementById('reg-weight').value;
-
-        if (!dob) return showError('Date of Birth is required.');
-        if (!gender) return showError('Gender is required.');
-        if (!weight || parseFloat(weight) <= 0) return showError('Please enter a valid weight.');
-        if (parseFloat(weight) < 50) return showError('Weight must be at least 50kg to donate.');
-
-        // Check eligibility before proceeding
-        const checks = document.querySelectorAll('.eligibility-check');
-        let allChecked = true;
-        checks.forEach(check => { if (!check.checked) allChecked = false; });
-        if (!allChecked) return showError('Please confirm all eligibility requirements.');
-
-        document.getElementById('auth-step-2').classList.add('hidden');
-        document.getElementById('auth-step-2').classList.remove('block');
-        document.getElementById('auth-step-3').classList.remove('hidden');
-        document.getElementById('auth-step-3').classList.add('block');
-        document.getElementById('auth-current-step').textContent = '3';
-        authStep = 3;
     }
 }
+
 
 function prevAuthStep() {
     hideError();
+    const currentStepEl = document.getElementById(`auth-step-${authStep}`);
+    
     if (authStep === 2) {
-        document.getElementById('auth-step-2').classList.add('hidden');
-        document.getElementById('auth-step-2').classList.remove('block');
-        document.getElementById('auth-step-1').classList.remove('hidden');
-        document.getElementById('auth-step-1').classList.add('block');
-        document.getElementById('auth-current-step').textContent = '1';
-        authStep = 1;
-    } else if (authStep === 3) {
-        if (authRole === 'donor') {
-            // Go back to Step 2 (health details) for donors
-            document.getElementById('auth-step-3').classList.add('hidden');
-            document.getElementById('auth-step-3').classList.remove('block');
-            document.getElementById('auth-step-2').classList.remove('hidden');
-            document.getElementById('auth-step-2').classList.add('block');
-            document.getElementById('auth-current-step').textContent = '2';
-            authStep = 2;
-        } else {
-            // Recipients skip step 2, go back to step 1
-            document.getElementById('auth-step-3').classList.add('hidden');
-            document.getElementById('auth-step-3').classList.remove('block');
-            document.getElementById('auth-step-1').classList.remove('hidden');
-            document.getElementById('auth-step-1').classList.add('block');
-            document.getElementById('auth-current-step').textContent = '1';
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step1 = document.getElementById('auth-step-1');
+            step1.classList.remove('hidden');
+            step1.classList.add('block', 'fade-in');
+            
             authStep = 1;
-        }
+            updateStepper(1);
+        }, 400);
+    } else if (authStep === 3) {
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step2 = document.getElementById('auth-step-2');
+            step2.classList.remove('hidden');
+            step2.classList.add('block', 'fade-in');
+            
+            authStep = 2;
+            updateStepper(2);
+        }, 400);
     }
 }
 
-// Auto-check age and weight eligibility checkboxes based on user input
-function autoCheckEligibility() {
-    const dobInput = document.getElementById('reg-dob');
-    const weightInput = document.getElementById('reg-weight');
-    const ageCheckbox = document.getElementById('eligibility-age');
-    const weightCheckbox = document.getElementById('eligibility-weight');
-
-    // Auto-check age checkbox
-    if (dobInput && dobInput.value && ageCheckbox) {
-        const dob = new Date(dobInput.value);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const monthDiff = today.getMonth() - dob.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-            age--;
-        }
-        ageCheckbox.checked = (age >= 18 && age <= 65);
-    }
-
-    // Auto-check weight checkbox
-    if (weightInput && weightInput.value && weightCheckbox) {
-        const weight = parseFloat(weightInput.value);
-        weightCheckbox.checked = (weight > 50);
-    }
-
-    checkEligibility();
-}
 
 function checkEligibility() {
     const checks = document.querySelectorAll('.eligibility-check');
@@ -347,39 +392,52 @@ function checkEligibility() {
         if (!check.checked) allChecked = false;
     });
 
-    const step2Btn = document.getElementById('step-2-next-btn');
-    if (step2Btn) {
-        if (allChecked) {
-            step2Btn.removeAttribute('disabled');
-            step2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            step2Btn.setAttribute('disabled', 'true');
-            step2Btn.classList.add('opacity-50', 'cursor-not-allowed');
-        }
+    const regBtn = document.getElementById('final-register-btn');
+    if (allChecked) {
+        regBtn.removeAttribute('disabled');
+        regBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.add('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
+    } else {
+        regBtn.setAttribute('disabled', 'true');
+        regBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.remove('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
     }
 }
 
 async function completeRegistration() {
     hideError();
+    let btn;
 
+    // Common validation for both roles (fields from Steps 1 & 2)
+    const name = document.getElementById('reg-name').value;
+    const phone = document.getElementById('reg-phone').value;
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
-    const conf = document.getElementById('reg-confirm').value;
+    const blood = document.getElementById('reg-blood').value;
+    const address = document.getElementById('reg-address').value;
 
-    if (!email || !pass) {
-        return showError('Please provide an email and password.');
-    }
-    if (pass.length < 6) {
-        return showError('Password must be at least 6 characters.');
-    }
-    if (pass !== conf) {
-        return showError('Passwords do not match.');
-    }
-    if (!authRole) {
-        return showError('Please select whether you are joining as a Donor or Recipient.');
+    if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
+    if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
+    if (!email) return showError('Email is required.');
+    if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
+    if (!blood) return showError('Please select a blood type.');
+    if (!address) return showError('Address is required.');
+
+    if (authRole === 'recipient') {
+        btn = document.getElementById('step-2-next-btn');
+    } else {
+        const dob = document.getElementById('reg-dob').value;
+        const gender = document.getElementById('reg-gender').value;
+        const weight = document.getElementById('reg-weight').value;
+        
+        if (!dob) return showError('Date of Birth is required.');
+        if (!gender) return showError('Gender is required.');
+        if (!weight || parseFloat(weight) <= 0) return showError('Weight must be a positive number.');
+        if (parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
+        
+        btn = document.getElementById('final-register-btn');
     }
 
-    const btn = document.getElementById('final-register-btn');
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
@@ -421,14 +479,15 @@ async function completeRegistration() {
             throw new Error(errorMsg);
         }
 
-        // Hide current step & footer, show success screen
-        document.getElementById('auth-step-3').classList.add('hidden');
-        document.getElementById('auth-step-3').classList.remove('block');
+        // Hide Step 2/3 & Footer, show Success screen
+        document.getElementById(`auth-step-${authRole === 'donor' ? 3 : 2}`).classList.add('hidden');
+        document.getElementById(`auth-step-${authRole === 'donor' ? 3 : 2}`).classList.remove('block');
         document.getElementById('auth-footer-toggle').classList.add('hidden');
         document.getElementById('auth-footer-toggle').classList.remove('block');
         
         document.getElementById('auth-success').classList.remove('hidden');
-        document.getElementById('auth-current-step').parentElement.classList.add('hidden');
+        const stepper = document.getElementById('auth-stepper');
+        if (stepper) stepper.classList.add('hidden');
         document.getElementById('auth-error-box').classList.add('hidden');
     } catch (error) {
         showError(error.message);
@@ -441,56 +500,72 @@ function resetAuthWizard() {
     hideError();
     authStep = 1;
     authRole = null;
+    updateStepper(1);
     
-    // Reset view visibility
+    const titleEl = document.getElementById('auth-signup-title');
+    if (titleEl) titleEl.textContent = 'Create Your Account';
+
+    document.querySelectorAll('.auth-role-card').forEach(card => {
+        card.classList.remove('border-gray-900', 'bg-gray-50', 'shadow-md');
+        card.classList.add('border-gray-100');
+        const icon = card.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-[#b11e28]');
+            icon.classList.add('text-gray-400');
+        }
+    });
+    document.querySelectorAll('.auth-step').forEach(step => {
+        step.classList.add('hidden');
+        step.classList.remove('block', 'fade-in', 'fade-out');
+    });
+    
     document.getElementById('auth-step-1').classList.remove('hidden');
-    document.getElementById('auth-step-1').classList.add('block');
-    document.getElementById('auth-step-2').classList.add('hidden');
-    document.getElementById('auth-step-2').classList.remove('block');
-    document.getElementById('auth-step-3').classList.add('hidden');
-    document.getElementById('auth-step-3').classList.remove('block');
+    document.getElementById('auth-step-1').classList.add('block', 'fade-in');
+    
+    const stepper = document.getElementById('auth-stepper');
+    if (stepper) stepper.classList.remove('hidden');
     
     const successScreen = document.getElementById('auth-success');
     if(successScreen) successScreen.classList.add('hidden');
     
     document.getElementById('auth-footer-toggle').classList.remove('hidden');
     document.getElementById('auth-footer-toggle').classList.add('block');
-    document.getElementById('auth-current-step').parentElement.classList.remove('hidden');
-    document.getElementById('auth-current-step').textContent = '1';
-    document.getElementById('auth-total-steps').textContent = '3';
 
-    // Reset all form inputs
-    document.querySelectorAll('#auth-step-1 input, #auth-step-1 select').forEach(el => {
-        if (el.tagName === 'SELECT') el.selectedIndex = 0;
-        else el.value = '';
+    // Reset Forms
+    document.querySelectorAll('.auth-step input').forEach(input => {
+        input.value = '';
+        input.classList.remove('input-valid', 'input-invalid');
     });
-    document.querySelectorAll('#auth-step-2 input:not([type="checkbox"]), #auth-step-2 select').forEach(el => {
-        if (el.tagName === 'SELECT') el.selectedIndex = 0;
-        else el.value = '';
+    document.querySelectorAll('.auth-step select').forEach(select => {
+        select.selectedIndex = 0;
+        select.classList.remove('input-valid', 'input-invalid');
     });
-    document.querySelectorAll('#auth-step-3 input').forEach(el => el.value = '');
     document.querySelectorAll('.eligibility-check').forEach(input => input.checked = false);
 
     // Hide weight error
     const weightError = document.getElementById('weight-error');
     if (weightError) weightError.classList.add('hidden');
     
-    // Reset Step 2 button state
+    // Reset Step 2 button
     const step2Btn = document.getElementById('step-2-next-btn');
     if(step2Btn) {
         step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
         step2Btn.onclick = nextAuthStep;
-        step2Btn.removeAttribute('disabled');
-        step2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 
-    // Reset role Cards
+    // Reset Cards
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30', 'shadow-md');
         card.classList.add('border-gray-100');
+        card.querySelector('i').classList.remove('text-[#b11e28]');
+        card.querySelector('i').classList.add('text-gray-400');
     });
+
+    checkEligibility();
 }
+
+
 
 // === Session & Login Logic ===
 function showLoginError(msg) {
@@ -520,7 +595,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch('http://localhost:5001/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -561,7 +636,7 @@ function routeUserToDashboard(user) {
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5000/api/donor/profile`, {
+        fetch(`http://localhost:5001/api/donor/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -585,7 +660,7 @@ function routeUserToDashboard(user) {
     else if (user.role === 'RECIPIENT') {
         navigateTo('recipient-dashboard');
         // Fetch and display real profile data
-        fetch(`http://localhost:5000/api/recipient/profile`, {
+        fetch(`http://localhost:5001/api/recipient/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -715,7 +790,7 @@ async function fetchAdminUsers() {
     }
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/users', {
+        const response = await fetch('http://localhost:5001/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -844,7 +919,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -910,7 +985,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -967,7 +1042,7 @@ async function scheduleDonation(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
 
     try {
-        const response = await fetch('http://localhost:5000/api/donations', {
+        const response = await fetch('http://localhost:5001/api/donations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1006,7 +1081,7 @@ async function fetchDonorHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/donations/my', {
+        const response = await fetch('http://localhost:5001/api/donations/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1111,7 +1186,7 @@ async function submitBloodRequest(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
 
     try {
-        const response = await fetch('http://localhost:5000/api/requests', {
+        const response = await fetch('http://localhost:5001/api/requests', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1149,7 +1224,7 @@ async function fetchRecipientHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/requests/my', {
+        const response = await fetch('http://localhost:5001/api/requests/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1273,7 +1348,7 @@ async function fetchKPISummary() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/inventory/summary', {
+        const response = await fetch('http://localhost:5001/api/admin/inventory/summary', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1379,7 +1454,7 @@ async function fetchInventory() {
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
     
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1522,7 +1597,7 @@ window.showStockDetails = async function(bloodGroup) {
 
     // Fetch batch data from API
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await response.json();
@@ -1764,7 +1839,7 @@ window.editStock = async function(donationId) {
         };
 
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${donationId}`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -1844,7 +1919,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
 
     // Fetch hospitals
     try {
-        const res = await fetch('http://localhost:5000/api/admin/hospitals', {
+        const res = await fetch('http://localhost:5001/api/admin/hospitals', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -1874,7 +1949,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
 
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/stock/${batchId}/dispatch`, {
+            const res = await fetch(`http://localhost:5001/api/admin/stock/${batchId}/dispatch`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hospitalId, quantity, notes })
@@ -1971,7 +2046,7 @@ window.openAlertModal = function(batchId, bloodGroup) {
         const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
 
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/alerts/batch/${batchId}`, {
+            const res = await fetch(`http://localhost:5001/api/admin/alerts/batch/${batchId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2098,7 +2173,7 @@ async function submitAddStock(e) {
     const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/stock', {
+        const response = await fetch('http://localhost:5001/api/admin/stock', {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2136,7 +2211,7 @@ async function deleteStock(id) {
     if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
+        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -2153,7 +2228,7 @@ async function fetchAdminRequests() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/requests', {
+        const response = await fetch('http://localhost:5001/api/admin/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2198,7 +2273,7 @@ async function fetchAdminRequests() {
 async function updateReqStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
+        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2227,7 +2302,7 @@ async function fetchAdminDonations() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/donations', {
+        const response = await fetch('http://localhost:5001/api/admin/donations', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2268,7 +2343,7 @@ async function fetchAdminDonations() {
 async function updateDonationStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
+        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2297,7 +2372,7 @@ async function fetchAdminStats() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5000/api/admin/stats', {
+        const response = await fetch('http://localhost:5001/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2405,7 +2480,7 @@ async function fetchDonorEligibility() {
     if (!token) return;
 
     try {
-        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
+        const res = await fetch('http://localhost:5001/api/donor/eligibility', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
@@ -2582,7 +2657,7 @@ async function searchBloodAvailability() {
 function initChatbot() {
     // Inject Chatbot Styles
     const chatbotStyle = document.createElement('style');
-    chatbotStyle.textContent = \`
+    chatbotStyle.textContent = `
         #lifelink-chat-container {
             position: fixed;
             bottom: 30px;
@@ -2769,13 +2844,13 @@ function initChatbot() {
             background: #fef2f2;
             transform: translateX(5px);
         }
-    \`;
+    `;
     document.head.appendChild(chatbotStyle);
 
     // Inject HTML Structure
     const chatContainer = document.createElement('div');
     chatContainer.id = 'lifelink-chat-container';
-    chatContainer.innerHTML = \`
+    chatContainer.innerHTML = `
         <div id="lifelink-chat-window">
             <div id="lifelink-chat-header">
                 <span style="display: flex; align-items: center; gap: 8px;">
@@ -2793,7 +2868,7 @@ function initChatbot() {
         <div id="lifelink-chat-bubble" title="Need help?">
             <i class="fas fa-tint"></i>
         </div>
-    \`;
+    `;
     document.body.appendChild(chatContainer);
 
     // Chat Logic
@@ -2852,7 +2927,7 @@ function initChatbot() {
 
     function appendMessage(role, text) {
         const msgDiv = document.createElement('div');
-        msgDiv.className = \`chat-msg \${role}\`;
+        msgDiv.className = `chat-msg ${role}`;
         msgDiv.textContent = text;
         messagesBox.appendChild(msgDiv);
         scrollToBottom();
@@ -2907,3 +2982,48 @@ function initChatbot() {
 document.addEventListener('DOMContentLoaded', () => {
     initChatbot();
 });
+// --- Professional Form Validation Feedback ---
+document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('.auth-step input, .auth-step select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', () => {
+            validateField(input);
+        });
+        
+        input.addEventListener('input', () => {
+            if (input.classList.contains('input-invalid')) {
+                validateField(input);
+            }
+        });
+    });
+});
+
+function validateField(input) {
+    let isValid = true;
+    const val = input.value.trim();
+    
+    if (input.required && !val) {
+        isValid = false;
+    } else if (input.type === 'email' && val) {
+        isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    } else if (input.id === 'reg-password' && val) {
+        isValid = val.length >= 6;
+    } else if (input.id === 'reg-confirm' && val) {
+        isValid = val === document.getElementById('reg-password').value;
+    } else if (input.id === 'reg-name' && val) {
+        isValid = val.length >= 2;
+    } else if (input.id === 'reg-phone' && val) {
+        isValid = val.length >= 7;
+    }
+    
+    if (isValid && val) {
+        input.classList.remove('input-invalid');
+        input.classList.add('input-valid');
+    } else if (!isValid) {
+        input.classList.remove('input-valid');
+        input.classList.add('input-invalid');
+    } else {
+        input.classList.remove('input-valid', 'input-invalid');
+    }
+}
