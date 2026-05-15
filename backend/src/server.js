@@ -7,6 +7,7 @@ const donationRoutes = require('./routes/donation.routes');
 const requestRoutes = require('./routes/request.routes');
 const publicRoutes = require('./routes/public.routes');
 const chatRoutes = require('./routes/chat.routes');
+const userRoutes = require('./routes/user.routes');
 const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
@@ -49,19 +50,10 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── Protected Profile Routes ───────────────────────────
-app.get('/api/donor/profile', authenticate, authorize('DONOR'), async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      include: { donorProfile: true }
-    });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    res.json({ success: true, data: user });
-  } catch (error) { next(error); }
-});
-
+// ─── Protected Donor Eligibility ───────────────────────
 app.get('/api/donor/eligibility', authenticate, authorize('DONOR'), async (req, res, next) => {
   try {
     const profile = await prisma.donorProfile.findUnique({
@@ -85,17 +77,6 @@ app.get('/api/donor/eligibility', authenticate, authorize('DONOR'), async (req, 
         nextEligibleDate: nextDate.toISOString() 
       } 
     });
-  } catch (error) { next(error); }
-});
-
-app.get('/api/recipient/profile', authenticate, authorize('RECIPIENT'), async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      include: { recipientProfile: true }
-    });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    res.json({ success: true, data: user });
   } catch (error) { next(error); }
 });
 

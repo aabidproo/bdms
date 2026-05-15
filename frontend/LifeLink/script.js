@@ -59,7 +59,7 @@ const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
 const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
-const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
+const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard', 'profile-settings'];
 
 function navigateTo(targetId) {
     const token = localStorage.getItem('token');
@@ -88,7 +88,8 @@ function navigateTo(targetId) {
                 else if (user.role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
                 else if (user.role === 'ADMIN') expectedDash = 'admin-dashboard';
                 
-                if (targetId !== expectedDash && expectedDash !== '') targetId = expectedDash;
+                const allowedRoutes = [expectedDash, 'profile-settings'];
+                if (!allowedRoutes.includes(targetId) && expectedDash !== '') targetId = expectedDash;
             } catch (e) {
                 logout();
                 return;
@@ -633,10 +634,11 @@ function routeUserToDashboard(user) {
     updateNav(user);
     const token = localStorage.getItem('token');
     
+    const profileEndpoint = 'http://localhost:5001/api/users/profile';
+    
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
-        // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/donor/profile`, {
+        fetch(profileEndpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -652,6 +654,9 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'donor');
+                
+                // Keep local storage in sync
+                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
             }
         }).catch(err => console.error('Error fetching donor profile:', err));
 
@@ -659,8 +664,7 @@ function routeUserToDashboard(user) {
     } 
     else if (user.role === 'RECIPIENT') {
         navigateTo('recipient-dashboard');
-        // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/recipient/profile`, {
+        fetch(profileEndpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -676,6 +680,9 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'recipient');
+
+                // Keep local storage in sync
+                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
             }
         }).catch(err => console.error('Error fetching recipient profile:', err));
 
@@ -3025,5 +3032,167 @@ function validateField(input) {
         input.classList.add('input-invalid');
     } else {
         input.classList.remove('input-valid', 'input-invalid');
+    }
+}
+
+// === Profile Settings Logic ===
+async function showProfileSettings() {
+    console.log('Opening profile settings...');
+    const token = localStorage.getItem('token');
+    if (!token) return navigateTo('login');
+
+    try {
+        const res = await fetch('http://localhost:5001/api/users/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const user = data.data;
+            const profile = user.donorProfile || user.recipientProfile || {};
+
+            // Populate Fields
+            const joinYear = user.createdAt ? new Date(user.createdAt).getFullYear() : '2026';
+            document.getElementById('profile-full-name').textContent = user.name;
+            document.getElementById('profile-role-badge').textContent = `${user.role} Member Since ${joinYear}`;
+            document.getElementById('edit-profile-name').value = user.name;
+            document.getElementById('edit-profile-email').value = user.email;
+            document.getElementById('edit-profile-phone').value = profile.phone || '';
+            document.getElementById('edit-profile-blood').value = profile.bloodType || 'N/A';
+            document.getElementById('edit-profile-address').value = profile.address || '';
+            
+            // Set Avatar
+            const avatar = document.getElementById('profile-avatar-display');
+            if (avatar) {
+                avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
+            }
+
+            navigateTo('profile-settings');
+        } else {
+            alert(data.message || 'Failed to load profile.');
+        }
+    } catch (error) {
+        console.error('Profile Load Error:', error);
+        alert('An error occurred while loading your profile.');
+    }
+}
+
+async function saveProfileChanges() {
+    const token = localStorage.getItem('token');
+    const saveBtn = event.target;
+    const originalText = saveBtn.innerHTML;
+
+    const name = document.getElementById('edit-profile-name').value;
+    const email = document.getElementById('edit-profile-email').value;
+    const phone = document.getElementById('edit-profile-phone').value;
+    const address = document.getElementById('edit-profile-address').value;
+    const bloodType = document.getElementById('edit-profile-blood').value;
+
+    if (!name || !email || !phone || !address || !bloodType) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    try {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const res = await fetch('http://localhost:5001/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, email, phone, address, bloodType })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            // Update local storage if needed
+            const user = JSON.parse(localStorage.getItem('user'));
+            user.name = name;
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            // Update UI
+            document.getElementById('profile-full-name').textContent = name;
+            document.getElementById('nav-user-name').textContent = name;
+
+            // Update Dashboards
+            const donorName = document.getElementById('donor-name-display');
+            const recipientName = document.getElementById('recipient-name-display');
+            if (donorName) donorName.textContent = name;
+            if (recipientName) recipientName.textContent = name;
+
+            const donorBlood = document.getElementById('donor-blood-display');
+            const recipientBlood = document.getElementById('recipient-blood-display');
+            if (donorBlood) donorBlood.textContent = bloodType;
+            if (recipientBlood) recipientBlood.textContent = bloodType;
+            
+            alert('Profile updated successfully!');
+        } else {
+            alert(data.message || 'Failed to update profile.');
+        }
+    } catch (error) {
+        console.error('Save Profile Error:', error);
+        alert('An error occurred while saving profile.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    }
+}
+
+async function updateUserPassword() {
+    const token = localStorage.getItem('token');
+    const updateBtn = event.target;
+    
+    const currentPassword = document.getElementById('edit-profile-current-pass').value;
+    const newPassword = document.getElementById('edit-profile-new-pass').value;
+    const confirmPassword = document.getElementById('edit-profile-confirm-pass').value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('Please fill in all password fields.');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('New passwords do not match.');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert('New password must be at least 6 characters.');
+        return;
+    }
+
+    try {
+        updateBtn.disabled = true;
+        const originalText = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+        const res = await fetch('http://localhost:5001/api/users/password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert('Password updated successfully!');
+            // Clear fields
+            document.getElementById('edit-profile-current-pass').value = '';
+            document.getElementById('edit-profile-new-pass').value = '';
+            document.getElementById('edit-profile-confirm-pass').value = '';
+        } else {
+            alert(data.message || 'Failed to update password.');
+        }
+    } catch (error) {
+        console.error('Update Password Error:', error);
+        alert('An error occurred while updating password.');
+    } finally {
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = 'Update Password';
     }
 }
