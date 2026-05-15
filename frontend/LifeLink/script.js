@@ -704,9 +704,30 @@ function updateNav(user) {
     const navUserContainer = document.getElementById('nav-user-container');
     const navLoginBtn = document.getElementById('nav-login-btn');
     const navUserName = document.getElementById('nav-user-name');
+    const navUserAvatar = document.getElementById('nav-user-avatar');
+    const adminSidebarAvatar = document.getElementById('admin-sidebar-avatar');
     
     if (user && navUserContainer && navLoginBtn && navUserName) {
         navUserName.textContent = user.name;
+        
+        if (navUserAvatar) {
+            if (user.avatar) {
+                navUserAvatar.src = user.avatar;
+                navUserAvatar.classList.remove('hidden');
+            } else {
+                navUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=100`;
+                navUserAvatar.classList.remove('hidden');
+            }
+        }
+
+        if (adminSidebarAvatar) {
+            if (user.avatar) {
+                adminSidebarAvatar.innerHTML = `<img src="${user.avatar}" class="w-full h-full object-cover">`;
+            } else {
+                adminSidebarAvatar.textContent = user.name.charAt(0).toUpperCase();
+            }
+        }
+
         navLoginBtn.classList.add('hidden');
         navUserContainer.classList.remove('hidden');
         navUserContainer.classList.add('flex');
@@ -3101,6 +3122,8 @@ function validateField(input) {
 }
 
 // === Profile Settings Logic ===
+let currentAvatarBase64 = null;
+
 async function showProfileSettings() {
     console.log('Opening profile settings...');
     const token = localStorage.getItem('token');
@@ -3129,7 +3152,13 @@ async function showProfileSettings() {
             // Set Avatar
             const avatar = document.getElementById('profile-avatar-display');
             if (avatar) {
-                avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
+                if (user.avatar) {
+                    avatar.src = user.avatar;
+                    currentAvatarBase64 = user.avatar;
+                } else {
+                    avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
+                    currentAvatarBase64 = null;
+                }
             }
 
             navigateTo('profile-settings');
@@ -3168,7 +3197,7 @@ async function saveProfileChanges() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ name, email, phone, address, bloodType })
+            body: JSON.stringify({ name, email, phone, address, bloodType, avatar: currentAvatarBase64 })
         });
 
         const data = await res.json();
@@ -3176,11 +3205,12 @@ async function saveProfileChanges() {
             // Update local storage if needed
             const user = JSON.parse(localStorage.getItem('user'));
             user.name = name;
+            user.avatar = data.data.user.avatar;
             localStorage.setItem('user', JSON.stringify(user));
             
             // Update UI
             document.getElementById('profile-full-name').textContent = name;
-            document.getElementById('nav-user-name').textContent = name;
+            updateNav(user);
 
             // Update Dashboards
             const donorName = document.getElementById('donor-name-display');
@@ -3259,5 +3289,34 @@ async function updateUserPassword() {
     } finally {
         updateBtn.disabled = false;
         updateBtn.innerHTML = 'Update Password';
+    }
+}
+
+// === Avatar & Photo Management ===
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'avatar-upload') {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size too large. Max 2MB allowed.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentAvatarBase64 = event.target.result;
+                const display = document.getElementById('profile-avatar-display');
+                if (display) display.src = currentAvatarBase64;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+});
+
+function removeProfilePhoto() {
+    currentAvatarBase64 = ""; // Empty string tells backend to clear it
+    const display = document.getElementById('profile-avatar-display');
+    const user = JSON.parse(localStorage.getItem('user')) || { name: 'User' };
+    if (display) {
+        display.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
     }
 }

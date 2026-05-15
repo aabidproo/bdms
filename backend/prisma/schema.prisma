@@ -17,6 +17,7 @@ model User {
   updatedAt        DateTime          @updatedAt
   resetToken       String?           @unique
   resetTokenExpiry DateTime?
+  avatar           String?           @default("")
   donorProfile     DonorProfile?
   recipientProfile RecipientProfile?
 }

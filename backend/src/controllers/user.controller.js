@@ -36,7 +36,7 @@ const getProfile = async (req, res, next) => {
 const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.userId;
-    const { name, email, phone, address, bloodType, medicalCondition } = req.body;
+    const { name, email, phone, address, bloodType, medicalCondition, avatar } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -60,7 +60,7 @@ const updateProfile = async (req, res, next) => {
       // Update basic user info
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: { name, email },
+        data: { name, email, avatar },
       });
 
       let updatedProfile = null;
