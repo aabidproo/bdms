@@ -1,3 +1,5 @@
+
+
 /**
  * LifeLink - Single Page Application Router & Registration Logic
  */
@@ -57,7 +59,7 @@ const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
 const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
-const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard'];
+const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard', 'profile-settings'];
 
 function navigateTo(targetId) {
     const token = localStorage.getItem('token');
@@ -86,7 +88,8 @@ function navigateTo(targetId) {
                 else if (user.role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
                 else if (user.role === 'ADMIN') expectedDash = 'admin-dashboard';
                 
-                if (targetId !== expectedDash && expectedDash !== '') targetId = expectedDash;
+                const allowedRoutes = [expectedDash, 'profile-settings'];
+                if (!allowedRoutes.includes(targetId) && expectedDash !== '') targetId = expectedDash;
             } catch (e) {
                 logout();
                 return;
@@ -153,16 +156,34 @@ function selectAuthRole(role) {
     authRole = role;
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-gray-900', 'bg-gray-50', 'shadow-md');
         card.classList.add('border-gray-100');
+        const icon = card.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-[#b11e28]');
+            icon.classList.add('text-gray-400');
+        }
     });
     
     const selectedCard = document.querySelector(`.auth-role-card[data-role="${role}"]`);
     if (selectedCard) {
         selectedCard.classList.remove('border-gray-100');
-        selectedCard.classList.add('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        selectedCard.classList.add('border-gray-900', 'bg-gray-50', 'shadow-md');
+        const icon = selectedCard.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-gray-400');
+            icon.classList.add('text-[#b11e28]');
+        }
     }
+    
+    const titleEl = document.getElementById('auth-signup-title');
+    if (titleEl) {
+        titleEl.textContent = role === 'donor' ? 'Join as Donor' : 'Join as Recipient';
+    }
+
+    updateStepper(authStep);
 }
+
 
 function showError(msg) {
     const errorBox = document.getElementById('auth-error-box');
@@ -175,92 +196,195 @@ function hideError() {
     document.getElementById('auth-error-box').classList.add('hidden');
 }
 
+// --- Auto-tick helpers for DOB and Weight ---
+function autoTickAge() {
+    const dobInput = document.getElementById('reg-dob');
+    const chkAge = document.getElementById('chk-age');
+    if (!dobInput || !chkAge || !dobInput.value) return;
+
+    const dob = new Date(dobInput.value);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    chkAge.checked = (age >= 18 && age <= 65);
+    checkEligibility();
+}
+
+function autoTickWeight() {
+    const weightInput = document.getElementById('reg-weight');
+    const chkWeight = document.getElementById('chk-weight');
+    const weightError = document.getElementById('weight-error');
+    if (!weightInput || !chkWeight) return;
+
+    const val = parseFloat(weightInput.value);
+
+    // Show error for invalid weight
+    if (weightInput.value !== '' && (isNaN(val) || val <= 0)) {
+        if (weightError) weightError.classList.remove('hidden');
+        chkWeight.checked = false;
+    } else {
+        if (weightError) weightError.classList.add('hidden');
+        chkWeight.checked = (val >= 50 && val > 0);
+    }
+    checkEligibility();
+}
+
+// Attach auto-tick event listeners once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const dobField = document.getElementById('reg-dob');
+    const weightField = document.getElementById('reg-weight');
+    if (dobField) dobField.addEventListener('change', autoTickAge);
+    if (weightField) weightField.addEventListener('input', autoTickWeight);
+});
+
+function updateStepper(step) {
+    const progress = document.getElementById('stepper-progress');
+    const isRecipient = authRole === 'recipient';
+    const totalSteps = isRecipient ? 2 : 3;
+    const dots = [1, 2, 3];
+    
+    // Handle visibility of 3rd dot
+    const step3Dot = document.getElementById('step-dot-3');
+    if (step3Dot) {
+        step3Dot.style.display = isRecipient ? 'none' : 'flex';
+    }
+
+    // Update progress line width
+    let width = 0;
+    if (totalSteps === 2) {
+        width = step === 1 ? 0 : 100;
+    } else {
+        width = step === 1 ? 0 : (step === 2 ? 50 : 100);
+    }
+    
+    if (progress) progress.style.width = `${width}%`;
+    
+    dots.forEach(d => {
+        const dot = document.getElementById(`step-dot-${d}`);
+        if (!dot) return;
+        
+        if (d < step) {
+            dot.classList.add('completed');
+            dot.classList.remove('active');
+            dot.innerHTML = '<i class="fas fa-check text-xs"></i><span class="step-label">Done</span>';
+        } else if (d === step) {
+            dot.classList.add('active');
+            dot.classList.remove('completed');
+            dot.innerHTML = `${d}<span class="step-label">${d === 1 ? 'Role' : (d === 2 ? (isRecipient ? 'Details' : 'Account') : 'Details')}</span>`;
+        } else {
+            dot.classList.remove('active', 'completed');
+            dot.innerHTML = `${d}<span class="step-label">${d === 1 ? 'Role' : (d === 2 ? (isRecipient ? 'Details' : 'Account') : 'Details')}</span>`;
+        }
+    });
+}
+
 function nextAuthStep() {
     hideError();
+    const currentStepEl = document.getElementById(`auth-step-${authStep}`);
+    
+    // Step 1: Name, Phone, Role
     if (authStep === 1) {
-        const email = document.getElementById('reg-email').value;
-        const pass = document.getElementById('reg-password').value;
-        const conf = document.getElementById('reg-confirm').value;
-        
-        if (!email || !pass) {
-            return showError('Please provide an email and password.');
-        }
-        if (pass.length < 6) {
-            return showError('Password must be at least 6 characters.');
-        }
-        if (pass !== conf) {
-            return showError('Passwords do not match.');
-        }
-        if (!authRole) {
-            return showError('Please select whether you are joining as a Donor or Recipient.');
-        }
-
-        document.getElementById('auth-step-1').classList.add('hidden');
-        document.getElementById('auth-step-1').classList.remove('block');
-        document.getElementById('auth-step-2').classList.remove('hidden');
-        document.getElementById('auth-step-2').classList.add('block');
-        
-        const isRecipient = authRole === 'recipient';
-        document.getElementById('auth-total-steps').textContent = isRecipient ? '2' : '3';
-        document.getElementById('auth-current-step').textContent = '2';
-        
-        // Setup Step 2 next button based on role
-        const step2Btn = document.getElementById('step-2-next-btn');
-        if (isRecipient) {
-            step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
-            step2Btn.onclick = completeRegistration;
-            step2Btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-            step2Btn.classList.add('bg-green-600', 'hover:bg-green-700');
-        } else {
-            step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
-            step2Btn.onclick = nextAuthStep;
-            step2Btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-            step2Btn.classList.add('bg-indigo-600');
-        }
-
-        authStep = 2;
-    } else if (authStep === 2) {
         const name = document.getElementById('reg-name').value;
         const phone = document.getElementById('reg-phone').value;
-        const address = document.getElementById('reg-address').value;
-        const blood = document.getElementById('reg-blood').value;
 
         if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
         if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!address) return showError('Address is required.');
+        if (!authRole) return showError('Please select whether you are joining as a Donor or Recipient.');
+
+        // Transition out Step 1, in Step 2
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step2 = document.getElementById('auth-step-2');
+            step2.classList.remove('hidden');
+            step2.classList.add('block', 'fade-in');
+            
+            authStep = 2;
+            updateStepper(2);
+            
+            const isRecipient = authRole === 'recipient';
+            const step2Btn = document.getElementById('step-2-next-btn');
+            if (isRecipient) {
+                step2Btn.innerHTML = 'Register <i class="fas fa-check ml-2"></i>';
+                step2Btn.onclick = completeRegistration;
+            } else {
+                step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
+                step2Btn.onclick = nextAuthStep;
+            }
+        }, 400);
+    }
+    // Step 2: Email, Password, Blood, Address
+    else if (authStep === 2) {
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        const conf = document.getElementById('reg-confirm').value;
+        const blood = document.getElementById('reg-blood').value;
+        const address = document.getElementById('reg-address').value;
+
+        if (!email) return showError('Email is required.');
+        if (!pass) return showError('Password is required.');
+        if (pass.length < 6) return showError('Password must be at least 6 characters.');
+        if (pass !== conf) return showError('Passwords do not match.');
         if (!blood) return showError('Please select a blood type.');
+        if (!address) return showError('Address is required.');
 
         if (authRole === 'donor') {
-            document.getElementById('auth-step-2').classList.add('hidden');
-            document.getElementById('auth-step-2').classList.remove('block');
-            document.getElementById('auth-step-3').classList.remove('hidden');
-            document.getElementById('auth-step-3').classList.add('block');
-            document.getElementById('auth-current-step').textContent = '3';
-            authStep = 3;
-            checkEligibility();
+            currentStepEl.classList.add('fade-out');
+            setTimeout(() => {
+                currentStepEl.classList.add('hidden');
+                currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+                
+                const step3 = document.getElementById('auth-step-3');
+                step3.classList.remove('hidden');
+                step3.classList.add('block', 'fade-in');
+                
+                authStep = 3;
+                updateStepper(3);
+                checkEligibility();
+            }, 400);
         }
     }
 }
 
+
 function prevAuthStep() {
     hideError();
+    const currentStepEl = document.getElementById(`auth-step-${authStep}`);
+    
     if (authStep === 2) {
-        document.getElementById('auth-step-2').classList.add('hidden');
-        document.getElementById('auth-step-2').classList.remove('block');
-        document.getElementById('auth-step-1').classList.remove('hidden');
-        document.getElementById('auth-step-1').classList.add('block');
-        document.getElementById('auth-current-step').textContent = '1';
-        document.getElementById('auth-total-steps').textContent = '3';
-        authStep = 1;
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step1 = document.getElementById('auth-step-1');
+            step1.classList.remove('hidden');
+            step1.classList.add('block', 'fade-in');
+            
+            authStep = 1;
+            updateStepper(1);
+        }, 400);
     } else if (authStep === 3) {
-        document.getElementById('auth-step-3').classList.add('hidden');
-        document.getElementById('auth-step-3').classList.remove('block');
-        document.getElementById('auth-step-2').classList.remove('hidden');
-        document.getElementById('auth-step-2').classList.add('block');
-        document.getElementById('auth-current-step').textContent = '2';
-        authStep = 2;
+        currentStepEl.classList.add('fade-out');
+        setTimeout(() => {
+            currentStepEl.classList.add('hidden');
+            currentStepEl.classList.remove('block', 'fade-out', 'fade-in');
+            
+            const step2 = document.getElementById('auth-step-2');
+            step2.classList.remove('hidden');
+            step2.classList.add('block', 'fade-in');
+            
+            authStep = 2;
+            updateStepper(2);
+        }, 400);
     }
 }
+
 
 function checkEligibility() {
     const checks = document.querySelectorAll('.eligibility-check');
@@ -272,29 +396,35 @@ function checkEligibility() {
     const regBtn = document.getElementById('final-register-btn');
     if (allChecked) {
         regBtn.removeAttribute('disabled');
-        regBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-        regBtn.classList.add('hover:bg-green-700', 'hover:shadow-lg', 'active:scale-95', 'bg-green-600');
+        regBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.add('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
     } else {
         regBtn.setAttribute('disabled', 'true');
-        regBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-indigo-600');
-        regBtn.classList.remove('hover:bg-green-700', 'hover:shadow-lg', 'active:scale-95', 'bg-green-600');
+        regBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        regBtn.classList.remove('hover:bg-red-800', 'hover:shadow-lg', 'active:scale-95');
     }
 }
 
 async function completeRegistration() {
     hideError();
     let btn;
+
+    // Common validation for both roles (fields from Steps 1 & 2)
+    const name = document.getElementById('reg-name').value;
+    const phone = document.getElementById('reg-phone').value;
+    const email = document.getElementById('reg-email').value;
+    const pass = document.getElementById('reg-password').value;
+    const blood = document.getElementById('reg-blood').value;
+    const address = document.getElementById('reg-address').value;
+
+    if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
+    if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
+    if (!email) return showError('Email is required.');
+    if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
+    if (!blood) return showError('Please select a blood type.');
+    if (!address) return showError('Address is required.');
+
     if (authRole === 'recipient') {
-        const name = document.getElementById('reg-name').value;
-        const phone = document.getElementById('reg-phone').value;
-        const address = document.getElementById('reg-address').value;
-        const blood = document.getElementById('reg-blood').value;
-        
-        if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
-        if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
-        if (!address) return showError('Address is required.');
-        if (!blood) return showError('Please select a blood type.');
-        
         btn = document.getElementById('step-2-next-btn');
     } else {
         const dob = document.getElementById('reg-dob').value;
@@ -303,7 +433,8 @@ async function completeRegistration() {
         
         if (!dob) return showError('Date of Birth is required.');
         if (!gender) return showError('Gender is required.');
-        if (!weight || parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
+        if (!weight || parseFloat(weight) <= 0) return showError('Weight must be a positive number.');
+        if (parseFloat(weight) < 50) return showError('Weight must be at least 50kg.');
         
         btn = document.getElementById('final-register-btn');
     }
@@ -329,10 +460,6 @@ async function completeRegistration() {
             payload.dateOfBirth = new Date(document.getElementById('reg-dob').value).toISOString();
             payload.gender = document.getElementById('reg-gender').value;
             payload.weight = parseFloat(document.getElementById('reg-weight').value);
-            const lastDonation = document.getElementById('reg-last-donation').value;
-            if (lastDonation) {
-                payload.lastDonationDate = new Date(lastDonation).toISOString();
-            }
         }
         
         const response = await fetch('http://localhost:5001/api/auth/register', {
@@ -360,7 +487,8 @@ async function completeRegistration() {
         document.getElementById('auth-footer-toggle').classList.remove('block');
         
         document.getElementById('auth-success').classList.remove('hidden');
-        document.getElementById('auth-current-step').parentElement.classList.add('hidden');
+        const stepper = document.getElementById('auth-stepper');
+        if (stepper) stepper.classList.add('hidden');
         document.getElementById('auth-error-box').classList.add('hidden');
     } catch (error) {
         showError(error.message);
@@ -373,49 +501,72 @@ function resetAuthWizard() {
     hideError();
     authStep = 1;
     authRole = null;
+    updateStepper(1);
     
-    // Reset view visibility
+    const titleEl = document.getElementById('auth-signup-title');
+    if (titleEl) titleEl.textContent = 'Create Your Account';
+
+    document.querySelectorAll('.auth-role-card').forEach(card => {
+        card.classList.remove('border-gray-900', 'bg-gray-50', 'shadow-md');
+        card.classList.add('border-gray-100');
+        const icon = card.querySelector('i');
+        if (icon) {
+            icon.classList.remove('text-[#b11e28]');
+            icon.classList.add('text-gray-400');
+        }
+    });
+    document.querySelectorAll('.auth-step').forEach(step => {
+        step.classList.add('hidden');
+        step.classList.remove('block', 'fade-in', 'fade-out');
+    });
+    
     document.getElementById('auth-step-1').classList.remove('hidden');
-    document.getElementById('auth-step-1').classList.add('block');
-    document.getElementById('auth-step-2').classList.add('hidden');
-    document.getElementById('auth-step-2').classList.remove('block');
-    document.getElementById('auth-step-3').classList.add('hidden');
-    document.getElementById('auth-step-3').classList.remove('block');
+    document.getElementById('auth-step-1').classList.add('block', 'fade-in');
+    
+    const stepper = document.getElementById('auth-stepper');
+    if (stepper) stepper.classList.remove('hidden');
     
     const successScreen = document.getElementById('auth-success');
     if(successScreen) successScreen.classList.add('hidden');
     
     document.getElementById('auth-footer-toggle').classList.remove('hidden');
     document.getElementById('auth-footer-toggle').classList.add('block');
-    document.getElementById('auth-current-step').parentElement.classList.remove('hidden');
-    document.getElementById('auth-current-step').textContent = '1';
-    document.getElementById('auth-total-steps').textContent = '3';
 
     // Reset Forms
-    document.querySelectorAll('#auth-step-1 input').forEach(input => input.value = '');
-    document.querySelectorAll('#auth-step-2 input').forEach(input => input.value = '');
-    document.querySelectorAll('#auth-step-3 input:not([type="checkbox"])').forEach(input => input.value = '');
-    document.querySelectorAll('#auth-step-2 select, #auth-step-3 select').forEach(select => select.selectedIndex = 0);
+    document.querySelectorAll('.auth-step input').forEach(input => {
+        input.value = '';
+        input.classList.remove('input-valid', 'input-invalid');
+    });
+    document.querySelectorAll('.auth-step select').forEach(select => {
+        select.selectedIndex = 0;
+        select.classList.remove('input-valid', 'input-invalid');
+    });
     document.querySelectorAll('.eligibility-check').forEach(input => input.checked = false);
+
+    // Hide weight error
+    const weightError = document.getElementById('weight-error');
+    if (weightError) weightError.classList.add('hidden');
     
     // Reset Step 2 button
     const step2Btn = document.getElementById('step-2-next-btn');
     if(step2Btn) {
         step2Btn.innerHTML = 'Continue <i class="fas fa-arrow-right ml-2"></i>';
         step2Btn.onclick = nextAuthStep;
-        step2Btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-        step2Btn.classList.add('bg-indigo-600');
     }
 
     // Reset Cards
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
-        card.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+        card.classList.remove('border-[#b11e28]', 'bg-red-50/50', 'ring-2', 'ring-[#b11e28]/30', 'shadow-md');
         card.classList.add('border-gray-100');
+        card.querySelector('i').classList.remove('text-[#b11e28]');
+        card.querySelector('i').classList.add('text-gray-400');
     });
 
     checkEligibility();
 }
+
+
 
 // === Session & Login Logic ===
 function showLoginError(msg) {
@@ -483,10 +634,11 @@ function routeUserToDashboard(user) {
     updateNav(user);
     const token = localStorage.getItem('token');
     
+    const profileEndpoint = 'http://localhost:5001/api/users/profile';
+    
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
-        // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/donor/profile`, {
+        fetch(profileEndpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -502,6 +654,9 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'donor');
+                
+                // Keep local storage in sync
+                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
             }
         }).catch(err => console.error('Error fetching donor profile:', err));
 
@@ -509,8 +664,7 @@ function routeUserToDashboard(user) {
     } 
     else if (user.role === 'RECIPIENT') {
         navigateTo('recipient-dashboard');
-        // Fetch and display real profile data
-        fetch(`http://localhost:5001/api/recipient/profile`, {
+        fetch(profileEndpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
@@ -526,6 +680,9 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'recipient');
+
+                // Keep local storage in sync
+                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
             }
         }).catch(err => console.error('Error fetching recipient profile:', err));
 
@@ -2440,4 +2597,667 @@ function populateDetailedProfile(user, role) {
         const el = document.getElementById(id);
         if (el && val) el.textContent = val;
     });
+}
+
+// === eRaktKosh-Style Blood Availability Search ===
+
+const nepalGeoData = {
+    "Koshi": ["Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang", "Morang", "Okhaldhunga", "Panchthar", "Sankhuwasabha", "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"],
+    "Madhesh": ["Bara", "Dhanusha", "Mahottari", "Parsa", "Rautahat", "Saptari", "Sarlahi", "Siraha"],
+    "Bagmati": ["Bhaktapur", "Chitwan", "Dhading", "Dolakha", "Kathmandu", "Kavrepalanchok", "Lalitpur", "Makwanpur", "Nuwakot", "Ramechhap", "Rasuwa", "Sindhuli", "Sindhupalchok"],
+    "Gandaki": ["Baglung", "Gorkha", "Kaski", "Lamjung", "Manang", "Mustang", "Myagdi", "Nawalpur", "Parbat", "Syangja", "Tanahun"],
+    "Lumbini": ["Arghakhanchi", "Banke", "Bardiya", "Dang", "Gulmi", "Kapilvastu", "Parasi", "Palpa", "Pyuthan", "Rolpa", "Rukum East", "Rupandehi"],
+    "Karnali": ["Dailekh", "Dolpa", "Humla", "Jajarkot", "Jumla", "Kalikot", "Mugu", "Rukum West", "Salyan", "Surkhet"],
+    "Sudurpashchim": ["Achham", "Baitadi", "Bajhang", "Bajura", "Dadeldhura", "Darchula", "Doti", "Kailali", "Kanchanpur"]
+};
+
+function updateDistricts() {
+    const provinceSelect = document.getElementById('search-province');
+    const districtSelect = document.getElementById('search-district');
+    const selectedProvince = provinceSelect.value;
+
+    districtSelect.innerHTML = '<option value="">Select District</option>';
+
+    if (selectedProvince && nepalGeoData[selectedProvince]) {
+        districtSelect.disabled = false;
+        districtSelect.classList.remove('cursor-not-allowed', 'opacity-60');
+        districtSelect.classList.add('cursor-pointer');
+        
+        nepalGeoData[selectedProvince].forEach(district => {
+            const option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            districtSelect.appendChild(option);
+        });
+    } else {
+        districtSelect.disabled = true;
+        districtSelect.classList.add('cursor-not-allowed', 'opacity-60');
+        districtSelect.classList.remove('cursor-pointer');
+    }
+}
+
+async function searchBloodAvailability() {
+    const province = document.getElementById('search-province').value;
+    const district = document.getElementById('search-district').value;
+    const bloodGroup = document.getElementById('search-blood-group').value;
+    const component = document.getElementById('search-component').value;
+    const tbody = document.getElementById('blood-results-body');
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="4" class="p-8 text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin text-3xl mb-3 text-indigo-500"></i>
+                <p>Searching for blood availability...</p>
+            </td>
+        </tr>
+    `;
+
+    try {
+        const queryParams = new URLSearchParams();
+        if (province) queryParams.append('province', province);
+        if (district) queryParams.append('district', district);
+        if (bloodGroup) queryParams.append('bloodGroup', encodeURIComponent(bloodGroup));
+        if (component) queryParams.append('component', encodeURIComponent(component));
+
+        const response = await fetch(`http://localhost:5001/api/public/blood-availability?${queryParams.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.message || 'Failed to fetch');
+
+        const stocks = result.data;
+
+        if (stocks.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-gray-500">
+                        <i class="fas fa-search-minus text-3xl mb-3 text-gray-300"></i>
+                        <p>No blood banks found matching your criteria.</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = stocks.map(stock => {
+            const hospital = stock.hospital;
+            const updatedDate = new Date(stock.updatedAt).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            const availabilityBadge = stock.units > 0 
+                ? `<span class="px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded-full text-xs font-bold font-mono">Available: ${stock.units} Units</span>`
+                : `<span class="px-3 py-1 bg-red-50 text-red-700 border border-red-100 rounded-full text-xs font-bold font-mono">Out of Stock</span>`;
+
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 border-b border-gray-100">
+                        <div class="font-bold text-gray-900">${hospital.name}</div>
+                        <div class="text-xs text-gray-500 mt-1"><i class="fas fa-map-marker-alt text-indigo-400 mr-1"></i> ${hospital.district}, ${hospital.province}</div>
+                        ${hospital.phone ? `<div class="text-xs text-gray-500 mt-1"><i class="fas fa-phone-alt text-indigo-400 mr-1"></i> ${hospital.phone}</div>` : ''}
+                    </td>
+                    <td class="p-4 border-b border-gray-100">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">${hospital.category || 'Hospital'}</span>
+                    </td>
+                    <td class="p-4 border-b border-gray-100">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-bold text-gray-800">${stock.bloodGroup}</span>
+                            <span class="text-xs text-gray-500">${stock.component}</span>
+                            <div class="mt-1">${availabilityBadge}</div>
+                        </div>
+                    </td>
+                    <td class="p-4 border-b border-gray-100 text-sm text-gray-500">
+                        ${updatedDate}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Search error:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="p-8 text-center text-red-500">
+                    <i class="fas fa-exclamation-circle text-3xl mb-3 text-red-400"></i>
+                    <p>Failed to load data. Please try again later.</p>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// === LifeLink AI Chatbot Implementation ===
+function initChatbot() {
+    // Inject Chatbot Styles
+    const chatbotStyle = document.createElement('style');
+    chatbotStyle.textContent = `
+        #lifelink-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            font-family: 'Inter', sans-serif;
+        }
+        #lifelink-chat-bubble {
+            width: 65px;
+            height: 65px;
+            background-color: #b11e28;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(177, 30, 40, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid white;
+        }
+        #lifelink-chat-bubble:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 25px rgba(177, 30, 40, 0.5);
+        }
+        #lifelink-chat-window {
+            position: absolute;
+            bottom: 85px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateY(30px) scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        #lifelink-chat-window.active {
+            display: flex;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        #lifelink-chat-header {
+            background: linear-gradient(135deg, #b11e28, #8a171f);
+            color: white;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #lifelink-chat-header .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+        #lifelink-chat-header .close-btn:hover {
+            opacity: 0.8;
+        }
+        #lifelink-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #fdfdfd;
+            scrollbar-width: thin;
+            scrollbar-color: #e2e8f0 transparent;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        #lifelink-chat-messages::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .chat-msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: relative;
+            animation: msgFadeIn 0.3s ease-out forwards;
+        }
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.assistant {
+            align-self: flex-start;
+            background: #f1f5f9;
+            color: #334155;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: #b11e28;
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 12px;
+            background: white;
+            align-items: center;
+        }
+        #lifelink-chat-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        #lifelink-chat-input:focus {
+            border-color: #b11e28;
+        }
+        #lifelink-chat-send {
+            background: #b11e28;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(177, 30, 40, 0.2);
+        }
+        #lifelink-chat-send:hover {
+            transform: scale(1.05);
+            background: #8a171f;
+        }
+        #lifelink-chat-send i {
+            font-size: 16px;
+        }
+        .typing-indicator {
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 5px 20px;
+            font-style: italic;
+            display: none;
+            font-weight: 500;
+        }
+        .quick-replies {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+            align-self: flex-start;
+        }
+        .quick-reply-btn {
+            background: white;
+            border: 1px solid #b11e28;
+            color: #b11e28;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-align: left;
+            width: fit-content;
+        }
+        .quick-reply-btn:hover {
+            background: #fef2f2;
+            transform: translateX(5px);
+        }
+    `;
+    document.head.appendChild(chatbotStyle);
+
+    // Inject HTML Structure
+    const chatContainer = document.createElement('div');
+    chatContainer.id = 'lifelink-chat-container';
+    chatContainer.innerHTML = `
+        <div id="lifelink-chat-window">
+            <div id="lifelink-chat-header">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> LifeLink Assistant 🩸
+                </span>
+                <span class="close-btn" id="lifelink-chat-close">&times;</span>
+            </div>
+            <div id="lifelink-chat-messages"></div>
+            <div id="lifelink-typing" class="typing-indicator">LifeLink Assistant is typing...</div>
+            <div id="lifelink-chat-input-area">
+                <input type="text" id="lifelink-chat-input" placeholder="How can I help you today?">
+                <button id="lifelink-chat-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div id="lifelink-chat-bubble" title="Need help?">
+            <i class="fas fa-tint"></i>
+        </div>
+    `;
+    document.body.appendChild(chatContainer);
+
+    // Chat Logic
+    const bubble = document.getElementById('lifelink-chat-bubble');
+    const chatWindow = document.getElementById('lifelink-chat-window');
+    const closeBtn = document.getElementById('lifelink-chat-close');
+    const chatInput = document.getElementById('lifelink-chat-input');
+    const sendBtn = document.getElementById('lifelink-chat-send');
+    const messagesBox = document.getElementById('lifelink-chat-messages');
+    const typingSign = document.getElementById('lifelink-typing');
+
+    let chatOpenedOnce = false;
+
+    bubble.addEventListener('click', () => {
+        const isOpen = chatWindow.classList.contains('active');
+        if (isOpen) {
+            chatWindow.classList.remove('active');
+            setTimeout(() => chatWindow.style.display = 'none', 400);
+        } else {
+            chatWindow.style.display = 'flex';
+            setTimeout(() => chatWindow.classList.add('active'), 10);
+            if (!chatOpenedOnce) {
+                welcomeUser();
+                chatOpenedOnce = true;
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatWindow.classList.remove('active');
+        setTimeout(() => chatWindow.style.display = 'none', 400);
+    });
+
+    function welcomeUser() {
+        appendMessage("assistant", "Hello! I am the LifeLink Assistant. I can help you with blood donation information, eligibility questions, and how to use this platform. How can I help you today?");
+        
+        const qrWrapper = document.createElement('div');
+        qrWrapper.className = 'quick-replies';
+        const replies = ["Am I eligible to donate?", "What blood type do I need?", "How do I register?"];
+        
+        replies.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'quick-reply-btn';
+            btn.textContent = text;
+            btn.onclick = () => {
+                appendMessage("user", text);
+                qrWrapper.remove();
+                processMessage(text);
+            };
+            qrWrapper.appendChild(btn);
+        });
+        messagesBox.appendChild(qrWrapper);
+        scrollToBottom();
+    }
+
+    function appendMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-msg ${role}`;
+        msgDiv.textContent = text;
+        messagesBox.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    async function processMessage(userText) {
+        typingSign.style.display = 'block';
+        scrollToBottom();
+
+        try {
+            const response = await fetch('http://localhost:5001/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userText })
+            });
+
+            const result = await response.json();
+            typingSign.style.display = 'none';
+
+            if (result.success && result.reply) {
+                appendMessage("assistant", result.reply);
+            } else {
+                throw new Error(result.message || "Failed to get AI response");
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            typingSign.style.display = 'none';
+            appendMessage("assistant", "Sorry, I am having trouble connecting to the LifeLink Assistant. Please try again in a moment.");
+        }
+    }
+
+    function handleSend() {
+        const text = chatInput.value.trim();
+        if (text) {
+            appendMessage("user", text);
+            chatInput.value = '';
+            processMessage(text);
+        }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+}
+
+// Ensure chatbot initializes
+document.addEventListener('DOMContentLoaded', () => {
+    initChatbot();
+});
+// --- Professional Form Validation Feedback ---
+document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('.auth-step input, .auth-step select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', () => {
+            validateField(input);
+        });
+        
+        input.addEventListener('input', () => {
+            if (input.classList.contains('input-invalid')) {
+                validateField(input);
+            }
+        });
+    });
+});
+
+function validateField(input) {
+    let isValid = true;
+    const val = input.value.trim();
+    
+    if (input.required && !val) {
+        isValid = false;
+    } else if (input.type === 'email' && val) {
+        isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    } else if (input.id === 'reg-password' && val) {
+        isValid = val.length >= 6;
+    } else if (input.id === 'reg-confirm' && val) {
+        isValid = val === document.getElementById('reg-password').value;
+    } else if (input.id === 'reg-name' && val) {
+        isValid = val.length >= 2;
+    } else if (input.id === 'reg-phone' && val) {
+        isValid = val.length >= 7;
+    }
+    
+    if (isValid && val) {
+        input.classList.remove('input-invalid');
+        input.classList.add('input-valid');
+    } else if (!isValid) {
+        input.classList.remove('input-valid');
+        input.classList.add('input-invalid');
+    } else {
+        input.classList.remove('input-valid', 'input-invalid');
+    }
+}
+
+// === Profile Settings Logic ===
+async function showProfileSettings() {
+    console.log('Opening profile settings...');
+    const token = localStorage.getItem('token');
+    if (!token) return navigateTo('login');
+
+    try {
+        const res = await fetch('http://localhost:5001/api/users/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            const user = data.data;
+            const profile = user.donorProfile || user.recipientProfile || {};
+
+            // Populate Fields
+            const joinYear = user.createdAt ? new Date(user.createdAt).getFullYear() : '2026';
+            document.getElementById('profile-full-name').textContent = user.name;
+            document.getElementById('profile-role-badge').textContent = `${user.role} Member Since ${joinYear}`;
+            document.getElementById('edit-profile-name').value = user.name;
+            document.getElementById('edit-profile-email').value = user.email;
+            document.getElementById('edit-profile-phone').value = profile.phone || '';
+            document.getElementById('edit-profile-blood').value = profile.bloodType || 'N/A';
+            document.getElementById('edit-profile-address').value = profile.address || '';
+            
+            // Set Avatar
+            const avatar = document.getElementById('profile-avatar-display');
+            if (avatar) {
+                avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
+            }
+
+            navigateTo('profile-settings');
+        } else {
+            alert(data.message || 'Failed to load profile.');
+        }
+    } catch (error) {
+        console.error('Profile Load Error:', error);
+        alert('An error occurred while loading your profile.');
+    }
+}
+
+async function saveProfileChanges() {
+    const token = localStorage.getItem('token');
+    const saveBtn = event.target;
+    const originalText = saveBtn.innerHTML;
+
+    const name = document.getElementById('edit-profile-name').value;
+    const email = document.getElementById('edit-profile-email').value;
+    const phone = document.getElementById('edit-profile-phone').value;
+    const address = document.getElementById('edit-profile-address').value;
+    const bloodType = document.getElementById('edit-profile-blood').value;
+
+    if (!name || !email || !phone || !address || !bloodType) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    try {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const res = await fetch('http://localhost:5001/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name, email, phone, address, bloodType })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            // Update local storage if needed
+            const user = JSON.parse(localStorage.getItem('user'));
+            user.name = name;
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            // Update UI
+            document.getElementById('profile-full-name').textContent = name;
+            document.getElementById('nav-user-name').textContent = name;
+
+            // Update Dashboards
+            const donorName = document.getElementById('donor-name-display');
+            const recipientName = document.getElementById('recipient-name-display');
+            if (donorName) donorName.textContent = name;
+            if (recipientName) recipientName.textContent = name;
+
+            const donorBlood = document.getElementById('donor-blood-display');
+            const recipientBlood = document.getElementById('recipient-blood-display');
+            if (donorBlood) donorBlood.textContent = bloodType;
+            if (recipientBlood) recipientBlood.textContent = bloodType;
+            
+            alert('Profile updated successfully!');
+        } else {
+            alert(data.message || 'Failed to update profile.');
+        }
+    } catch (error) {
+        console.error('Save Profile Error:', error);
+        alert('An error occurred while saving profile.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    }
+}
+
+async function updateUserPassword() {
+    const token = localStorage.getItem('token');
+    const updateBtn = event.target;
+    
+    const currentPassword = document.getElementById('edit-profile-current-pass').value;
+    const newPassword = document.getElementById('edit-profile-new-pass').value;
+    const confirmPassword = document.getElementById('edit-profile-confirm-pass').value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('Please fill in all password fields.');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('New passwords do not match.');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert('New password must be at least 6 characters.');
+        return;
+    }
+
+    try {
+        updateBtn.disabled = true;
+        const originalText = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+        const res = await fetch('http://localhost:5001/api/users/password', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert('Password updated successfully!');
+            // Clear fields
+            document.getElementById('edit-profile-current-pass').value = '';
+            document.getElementById('edit-profile-new-pass').value = '';
+            document.getElementById('edit-profile-confirm-pass').value = '';
+        } else {
+            alert(data.message || 'Failed to update password.');
+        }
+    } catch (error) {
+        console.error('Update Password Error:', error);
+        alert('An error occurred while updating password.');
+    } finally {
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = 'Update Password';
+    }
 }

@@ -5,6 +5,9 @@ const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const donationRoutes = require('./routes/donation.routes');
 const requestRoutes = require('./routes/request.routes');
+const publicRoutes = require('./routes/public.routes');
+const chatRoutes = require('./routes/chat.routes');
+const userRoutes = require('./routes/user.routes');
 const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
@@ -45,19 +48,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── Protected Profile Routes ───────────────────────────
-app.get('/api/donor/profile', authenticate, authorize('DONOR'), async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      include: { donorProfile: true }
-    });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    res.json({ success: true, data: user });
-  } catch (error) { next(error); }
-});
-
+// ─── Protected Donor Eligibility ───────────────────────
 app.get('/api/donor/eligibility', authenticate, authorize('DONOR'), async (req, res, next) => {
   try {
     const profile = await prisma.donorProfile.findUnique({
@@ -84,17 +80,6 @@ app.get('/api/donor/eligibility', authenticate, authorize('DONOR'), async (req, 
   } catch (error) { next(error); }
 });
 
-app.get('/api/recipient/profile', authenticate, authorize('RECIPIENT'), async (req, res, next) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      include: { recipientProfile: true }
-    });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    res.json({ success: true, data: user });
-  } catch (error) { next(error); }
-});
-
 // ─── Centralized Error Handler (must be last) ───────────
 app.use(errorHandler);
 
@@ -106,5 +91,6 @@ app.listen(PORT, () => {
   console.log(`   → Auth:       http://localhost:${PORT}/api/auth`);
   console.log(`   → Admin:      http://localhost:${PORT}/api/admin`);
   console.log(`   → Donations:  http://localhost:${PORT}/api/donations`);
-  console.log(`   → Requests:   http://localhost:${PORT}/api/requests\n`);
+  console.log(`   → Requests:   http://localhost:${PORT}/api/requests`);
+  console.log(`   → Chat AI:    http://localhost:${PORT}/api/chat\n`);
 });

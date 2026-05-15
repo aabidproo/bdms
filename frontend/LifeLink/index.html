@@ -52,7 +52,7 @@
                 <!-- Dropdown Menu -->
                 <div id="nav-dropdown" class="hidden absolute top-full right-0 mt-4 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 transform origin-top-right transition-all">
                     <div class="py-1">
-                        <a href="#" onclick="event.preventDefault(); goToDashboard(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
+                        <a href="#" onclick="event.preventDefault(); showProfileSettings(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
                             <i class="fas fa-user-circle"></i> View Profile
                         </a>
                         <div class="h-px bg-gray-100 my-1"></div>
@@ -501,6 +501,190 @@
     <!-- Page Sections for Navigation Links -->
 
     <!-- Find Blood -->
+    <!-- Page 6: Profile Settings -->
+    <section id="profile-settings" class="page-section bg-[#FDFDFD] min-h-[calc(100vh-72px)] py-16 px-6 font-sans selection:bg-gray-100">
+        <div class="max-w-6xl mx-auto">
+            
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-gray-100 shadow-sm mb-4">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Management</span>
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <h1 class="text-5xl font-black text-gray-900 tracking-tight">Account</h1>
+                        <span class="text-5xl font-light text-gray-300 tracking-tight">Settings</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="goToDashboard()" class="px-6 py-3 text-sm font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center gap-2">
+                        <i class="fas fa-chevron-left text-xs"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                <!-- Left Sidebar: Profile Card -->
+                <div class="lg:col-span-4 space-y-8 sticky top-24">
+                    <div class="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col items-center text-center relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-gray-50 to-white -z-0"></div>
+                        
+                        <div class="relative w-44 h-44 mb-8 z-10">
+                            <div class="w-full h-full rounded-[2.5rem] bg-white p-1 shadow-2xl border border-gray-100/50 overflow-hidden">
+                                <img id="profile-avatar-display" src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile" class="w-full h-full object-cover rounded-[2.2rem]">
+                            </div>
+                            <label for="avatar-upload" class="absolute -bottom-2 -right-2 w-12 h-12 bg-gray-900 text-white rounded-2xl shadow-xl flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-[#b11e28] transition-all duration-300 border-4 border-white">
+                                <i class="fas fa-camera text-sm"></i>
+                                <input type="file" id="avatar-upload" class="hidden" accept="image/*">
+                            </label>
+                        </div>
+
+                        <div class="z-10 space-y-1">
+                            <h3 id="profile-full-name" class="text-2xl font-black text-gray-900 tracking-tight">User Name</h3>
+                            <div class="flex items-center justify-center gap-2">
+                                <span id="profile-role-badge" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Role Member Since 2026</span>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full mt-10 space-y-3 z-10">
+                            <button class="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:shadow-[0_10px_20px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300">
+                                Update Photo
+                            </button>
+                            <button class="w-full py-4 bg-transparent text-gray-400 rounded-2xl font-bold text-sm hover:text-red-600 transition-all">
+                                Remove Photo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[2rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-gray-50">
+                        <h4 class="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Security Health</h4>
+                        <div class="space-y-5">
+                            <div class="flex items-center justify-between p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                        <i class="fas fa-shield-alt text-xs"></i>
+                                    </div>
+                                    <span class="text-sm font-bold text-emerald-700">Identity</span>
+                                </div>
+                                <span class="text-[10px] font-black text-emerald-600 uppercase">Verified</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                        <i class="fas fa-check-double text-xs"></i>
+                                    </div>
+                                    <span class="text-sm font-bold text-emerald-700">Email</span>
+                                </div>
+                                <span class="text-[10px] font-black text-emerald-600 uppercase">Linked</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Form Content -->
+                <div class="lg:col-span-8 space-y-10">
+                    <!-- Personal Info Card -->
+                    <div class="bg-white rounded-[2.5rem] p-12 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-gray-50 relative overflow-hidden">
+                        <div class="flex items-center gap-4 mb-10">
+                            <div class="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-gray-900 tracking-tight">Personal Details</h3>
+                            <div class="h-px flex-1 bg-gray-100 ml-4 opacity-50"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Full Name</label>
+                                <input type="text" id="edit-profile-name" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none" value="">
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Email Address</label>
+                                <input type="email" id="edit-profile-email" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none" value="">
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Phone Number</label>
+                                <input type="tel" id="edit-profile-phone" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none" value="">
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Blood Group</label>
+                                <div class="relative">
+                                    <select id="edit-profile-blood" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none appearance-none">
+                                        <option value="N/A" disabled selected>Select Blood Group</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                    </select>
+                                    <i class="fas fa-chevron-down absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none"></i>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2 space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Residential Address</label>
+                                <input type="text" id="edit-profile-address" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none" value="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Card -->
+                    <div class="bg-white rounded-[2.5rem] p-12 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-gray-50 relative">
+                        <div class="flex items-center gap-4 mb-10">
+                            <div class="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-gray-900 tracking-tight">Security & Privacy</h3>
+                            <div class="h-px flex-1 bg-gray-100 ml-4 opacity-50"></div>
+                        </div>
+
+                        <div class="space-y-8">
+                            <div class="space-y-3">
+                                <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Current Password</label>
+                                <input type="password" id="edit-profile-current-pass" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none" placeholder="••••••••••••">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="space-y-3">
+                                    <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">New Password</label>
+                                    <input type="password" id="edit-profile-new-pass" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none">
+                                </div>
+                                <div class="space-y-3">
+                                    <label class="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Confirm New Password</label>
+                                    <input type="password" id="edit-profile-confirm-pass" class="w-full px-6 py-4.5 bg-gray-50/50 border border-transparent rounded-2xl focus:ring-4 focus:ring-gray-100 focus:bg-white focus:border-gray-200 transition-all duration-300 font-bold text-gray-800 text-sm outline-none">
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div class="flex items-start gap-4 max-w-sm">
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center text-blue-500">
+                                        <i class="fas fa-shield-check text-sm"></i>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400 leading-relaxed font-semibold">Your password must be at least 8 characters and include a combination of numbers and symbols.</p>
+                                </div>
+                                <button onclick="updateUserPassword()" class="px-8 py-4 bg-gray-100 text-gray-900 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all duration-500 shadow-sm active:scale-95">
+                                    Update Security
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-8 pt-6">
+                        <button onclick="goToDashboard()" class="text-[11px] font-black text-gray-400 hover:text-gray-900 tracking-[0.2em] transition-all uppercase">
+                            Discard
+                        </button>
+                        <button onclick="saveProfileChanges()" class="px-14 py-5 bg-gray-900 text-white rounded-[1.8rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:bg-[#b11e28] hover:-translate-y-1.5 active:scale-95 transition-all duration-500">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="find-blood" class="page-section bg-gray-50 min-h-[calc(100vh-72px)] py-12 px-6">
         <div class="max-w-5xl mx-auto">
             <div class="mb-8">
@@ -509,119 +693,90 @@
                 <h2 class="text-3xl font-extrabold text-gray-900">Find Blood Facilities</h2>
             </div>
 
-            <div
-                class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-10 flex flex-col md:flex-row gap-4 relative z-10">
-                <input type="text" placeholder="Search by location, zip code, or hospital name..."
-                    class="flex-1 px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-medium">
-                <select
-                    class="px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-medium text-gray-700 w-full md:w-auto">
-                    <option value="">Any Blood Type</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                </select>
-                <button
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-bold shadow-md transition-all active:scale-95 w-full md:w-auto">Search</button>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 relative z-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Province -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Province</label>
+                        <select id="search-province" onchange="updateDistricts()"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">Select Province</option>
+                            <option value="Koshi">Koshi</option>
+                            <option value="Madhesh">Madhesh</option>
+                            <option value="Bagmati">Bagmati</option>
+                            <option value="Gandaki">Gandaki</option>
+                            <option value="Lumbini">Lumbini</option>
+                            <option value="Karnali">Karnali</option>
+                            <option value="Sudurpashchim">Sudurpashchim</option>
+                        </select>
+                    </div>
+                    <!-- District -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">District</label>
+                        <select id="search-district" disabled
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 transition-all font-medium text-gray-900 text-sm appearance-none cursor-not-allowed opacity-60">
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                    <!-- Blood Group -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Blood Group</label>
+                        <select id="search-blood-group"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">All Blood Groups</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <!-- Component -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Blood Component</label>
+                        <select id="search-component"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
+                            <option value="">All Components</option>
+                            <option value="Whole Blood">Whole Blood</option>
+                            <option value="Packed RBC">Packed RBC</option>
+                            <option value="Fresh Frozen Plasma">Fresh Frozen Plasma</option>
+                            <option value="Platelets">Platelets</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <button onclick="searchBloodAvailability()"
+                        class="bg-[#b11e28] hover:bg-red-800 text-white px-10 py-3.5 rounded-xl font-bold shadow-md shadow-red-900/20 transition-all active:scale-[0.98] w-full md:w-auto">
+                        <i class="fas fa-search mr-2"></i> Search Availability
+                    </button>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-0">
-                <!-- Facility Item 1 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">City Central Hospital</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>123 Main St, Downtown</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-100 rounded-full text-xs font-bold font-mono">O-
-                                Available</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">A+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">B-</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 2 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Westside Blood Center</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>45 West Ave, Metro Area</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">AB+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">O+</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 3 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">North Hills Clinic</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>88 North Rd, Suburbs</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">A-</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">B+</span>
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">O+</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 4 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Red Cross Community Lab</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>21 Innovation Drive</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-100 rounded-full text-xs font-bold font-mono">O-
-                                Urgent Need</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
-                </div>
-                <!-- Facility Item 5 -->
-                <div
-                    class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Lifeline Center</h3>
-                        <p class="text-gray-500 text-sm mb-4"><i
-                                class="fas fa-map-marker-alt text-indigo-500 mr-2"></i>199 South Blvd</p>
-                        <div class="flex flex-wrap gap-2 mb-6">
-                            <span
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold font-mono">Universal
-                                Reception (AB+)</span>
-                        </div>
-                    </div>
-                    <button
-                        class="w-full bg-gray-50 hover:bg-indigo-50 text-indigo-600 border border-gray-200 hover:border-indigo-200 px-4 py-3 rounded-2xl font-bold text-sm transition-all text-center">Contact
-                        Facility</button>
+            <!-- Results Table -->
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative z-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="blood-results-table">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Blood Bank Name & Details</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Availability</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blood-results-body" class="divide-y divide-gray-100">
+                            <!-- Placeholder row -->
+                            <tr>
+                                <td colspan="4" class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-search text-3xl mb-3 text-gray-300"></i>
+                                    <p>Select criteria and search to find blood availability.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -684,11 +839,11 @@
                 onsubmit="event.preventDefault(); this.style.display='none'; document.getElementById('contact-form-success').classList.remove('hidden');"
                 class="space-y-4">
                 <input type="text" placeholder="Your Name" required
-                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-medium">
+                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 font-medium">
                 <input type="email" placeholder="Your Email address" required
-                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-medium">
+                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 font-medium">
                 <textarea rows="4" placeholder="How can we help?" required
-                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-medium resize-none"></textarea>
+                    class="w-full px-4 py-3 bg-white rounded-2xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 font-medium resize-none"></textarea>
                 <button type="submit"
                     class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-md transition-all active:scale-[0.98]">Send
                     Message <i class="fas fa-paper-plane ml-2"></i></button>
@@ -710,7 +865,7 @@
                 <div class="relative w-full md:w-auto">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="text" placeholder="Filter donors..."
-                        class="w-full md:w-64 pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 font-medium">
+                        class="w-full md:w-64 pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-gray-50 focus:border-gray-400 font-medium">
                 </div>
             </div>
 
@@ -846,17 +1001,21 @@
                             <span id="login-error-text">An error occurred</span>
                         </div>
                         <form id="login-form-inner" class="space-y-4" onsubmit="handleLogin(event)">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email
-                                    Address</label>
-                                <input type="email" id="login-email" placeholder="you@example.com" required
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
+                                <div class="relative">
+                                    <input type="email" id="login-email" placeholder="you@example.com" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm pl-11">
+                                    <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
                             </div>
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
-                                <input type="password" id="login-password" placeholder="Enter your password" required
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password</label>
+                                <div class="relative">
+                                    <input type="password" id="login-password" placeholder="Enter your password" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm pl-11">
+                                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
                             </div>
                             <div class="flex justify-end pt-1">
                                 <a href="#" onclick="showForgotBlock(event)"
@@ -898,11 +1057,13 @@
                             <span id="forgot-success-text">Reset link sent!</span>
                         </div>
                         <form id="forgot-form" class="space-y-4" onsubmit="handleForgotPassword(event)">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email
-                                    Address</label>
-                                <input type="email" id="forgot-email" placeholder="you@example.com" required
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Email Address</label>
+                                <div class="relative">
+                                    <input type="email" id="forgot-email" placeholder="you@example.com" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm pl-11">
+                                    <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
                             </div>
                             <button type="submit" id="forgot-btn"
                                 class="w-full flex items-center justify-center gap-2 bg-[#b11e28] hover:bg-red-800 text-white font-bold py-4 rounded-xl shadow-md shadow-red-900/20 transition-all active:scale-[0.98] text-base">
@@ -938,18 +1099,21 @@
                             <span id="reset-success-text">Password reset successful!</span>
                         </div>
                         <form id="reset-form" class="space-y-4" onsubmit="handleResetPassword(event)">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New
-                                    Password</label>
-                                <input type="password" id="reset-password" placeholder="Enter new password" required
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">New Password</label>
+                                <div class="relative">
+                                    <input type="password" id="reset-password" placeholder="Enter new password" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm pl-11">
+                                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
                             </div>
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Confirm
-                                    Password</label>
-                                <input type="password" id="reset-confirm" placeholder="Confirm new password" required
-                                    class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 placeholder-gray-400 text-sm">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Confirm Password</label>
+                                <div class="relative">
+                                    <input type="password" id="reset-confirm" placeholder="Confirm new password" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 placeholder-gray-400 text-sm pl-11">
+                                    <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
                             </div>
                             <button type="submit" id="reset-btn"
                                 class="w-full flex items-center justify-center gap-2 bg-[#b11e28] hover:bg-red-800 text-white font-bold py-4 rounded-xl shadow-md shadow-red-900/20 transition-all active:scale-[0.98] text-base">
@@ -972,150 +1136,194 @@
                 <div class="relative w-full max-w-sm overflow-y-auto [&::-webkit-scrollbar]:hidden max-h-full">
                     <!-- ═══════════════════════════════════════ SIGN UP CARD ═══ -->
                     <div id="auth-signup-card" class="w-full bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-                        <div class="text-center mb-5">
-                            <h2 class="text-2xl font-extrabold text-gray-900">Create Your Account</h2>
-                            <p class="text-sm text-[#b11e28] font-bold mt-2 pb-4 border-b border-gray-100">Step <span
-                                    id="auth-current-step">1</span> of <span id="auth-total-steps">3</span></p>
+                        <div class="text-center mb-8">
+                            <h2 id="auth-signup-title" class="text-2xl font-extrabold text-gray-900">Create Your Account</h2>
+                            <p class="text-sm text-gray-500 mt-1">Join the LifeLink community today</p>
                         </div>
+
+                        <!-- Progress Stepper -->
+                        <div id="auth-stepper" class="stepper-container px-2">
+                            <div class="stepper-line">
+                                <div id="stepper-progress" class="stepper-line-progress"></div>
+                            </div>
+                            <div class="step-circle active" id="step-dot-1">
+                                1
+                                <span class="step-label">Role</span>
+                            </div>
+                            <div class="step-circle" id="step-dot-2">
+                                2
+                                <span class="step-label">Account</span>
+                            </div>
+                            <div class="step-circle" id="step-dot-3">
+                                3
+                                <span class="step-label">Details</span>
+                            </div>
+                        </div>
+
                         <div id="auth-error-box"
-                            class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4 flex items-start gap-2">
+                            class="hidden bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4 flex items-start gap-2 animate-shake">
                             <i class="fas fa-exclamation-circle mt-0.5"></i>
                             <span id="auth-error-text">An error occurred</span>
                         </div>
 
-                        <!-- Step 1 -->
-                        <div id="auth-step-1" class="flex flex-col space-y-4 block">
-                            <input type="email" id="reg-email" placeholder="Email Address" required
-                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <div class="flex gap-3">
-                                <input type="password" id="reg-password" placeholder="Password" required
-                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="password" id="reg-confirm" placeholder="Confirm" required
-                                    class="w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            </div>
-                            <div>
-                                <label
-                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 text-center">I
-                                    am joining as a...</label>
-                                <div class="flex gap-4">
-                                    <div class="flex-1 auth-role-card bg-white border-2 border-gray-100 rounded-xl p-4 text-center cursor-pointer hover:border-[#b11e28] hover:bg-red-50/30 shadow-sm transition-all"
+
+                        <div class="auth-step-container min-h-[320px]">
+                            <!-- Step 1: Name, Phone, Role -->
+                            <div id="auth-step-1" class="auth-step flex flex-col space-y-4 block fade-in">
+                                <div class="grid grid-cols-2 gap-4 mb-2">
+                                    <div class="auth-role-card group relative bg-white border-2 border-gray-100 rounded-2xl p-5 text-center cursor-pointer hover:border-[#b11e28] hover:bg-red-50/30 transition-all duration-300"
                                         data-role="donor" onclick="selectAuthRole('donor')">
-                                        <i class="fas fa-hand-holding-heart text-3xl text-gray-400 mb-2 block"></i>
-                                        <h4 class="text-sm font-bold text-gray-900">Donor</h4>
+                                        <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-red-100 transition-colors">
+                                            <i class="fas fa-hand-holding-heart text-2xl text-gray-400 group-hover:text-[#b11e28]"></i>
+                                        </div>
+                                        <h4 class="text-sm font-bold text-gray-900 mb-1">Donor</h4>
+                                        <p class="text-[10px] text-gray-500 leading-tight">I want to save lives by donating</p>
                                     </div>
-                                    <div class="flex-1 auth-role-card bg-white border-2 border-gray-100 rounded-xl p-4 text-center cursor-pointer hover:border-[#b11e28] hover:bg-red-50/30 shadow-sm transition-all"
+                                    <div class="auth-role-card group relative bg-white border-2 border-gray-100 rounded-2xl p-5 text-center cursor-pointer hover:border-[#b11e28] hover:bg-red-50/30 transition-all duration-300"
                                         data-role="recipient" onclick="selectAuthRole('recipient')">
-                                        <i class="fas fa-procedures text-3xl text-gray-400 mb-2 block"></i>
-                                        <h4 class="text-sm font-bold text-gray-900">Recipient</h4>
+                                        <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-red-100 transition-colors">
+                                            <i class="fas fa-procedures text-2xl text-gray-400 group-hover:text-[#b11e28]"></i>
+                                        </div>
+                                        <h4 class="text-sm font-bold text-gray-900 mb-1">Recipient</h4>
+                                        <p class="text-[10px] text-gray-500 leading-tight">I am looking for blood donors</p>
                                     </div>
                                 </div>
-                            </div>
-                            <button type="button"
-                                class="w-full bg-[#b11e28] hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-md shadow-red-900/20 transition-all active:scale-[0.98] text-base"
-                                onclick="nextAuthStep()">
-                                Continue <i class="fas fa-arrow-right ml-2"></i>
-                            </button>
-                        </div>
 
-                        <!-- Step 2 -->
-                        <div id="auth-step-2" class="flex flex-col space-y-3 hidden">
-                            <input type="text" id="reg-name" placeholder="Full Name" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <div class="flex gap-3">
-                                <input type="tel" id="reg-phone" placeholder="Phone Number" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-blood" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Blood Type</option>
-                                    <option>A+</option>
-                                    <option>A-</option>
-                                    <option>B+</option>
-                                    <option>B-</option>
-                                    <option>AB+</option>
-                                    <option>AB-</option>
-                                    <option>O+</option>
-                                    <option>O-</option>
-                                </select>
-                            </div>
-                            <input type="text" id="reg-address" placeholder="Full Address" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                            <div class="flex gap-3 pt-2">
+                                <div class="relative">
+                                    <input type="text" id="reg-name" placeholder="Full Name" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                    <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
+                                <div class="relative">
+                                    <input type="tel" id="reg-phone" placeholder="Phone Number" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                    <i class="fas fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
+
                                 <button type="button"
-                                    class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
-                                    onclick="prevAuthStep()">Back</button>
-                                <button type="button" id="step-2-next-btn"
-                                    class="w-2/3 bg-[#b11e28] hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-md shadow-red-900/20 transition-all active:scale-[0.98] text-sm"
+                                    class="w-full bg-[#b11e28] hover:bg-red-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/20 transition-all active:scale-[0.98] text-base mt-2"
                                     onclick="nextAuthStep()">
-                                    Continue <i class="fas fa-arrow-right ml-2"></i>
+                                    Continue <i class="fas fa-arrow-right ml-2 text-sm"></i>
                                 </button>
                             </div>
-                        </div>
 
-                        <!-- Step 3 (Donor Only) -->
-                        <div id="auth-step-3" class="flex flex-col space-y-3 hidden">
-                            <div class="flex gap-3">
-                                <input type="date" id="reg-dob" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <select id="reg-gender" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer">
-                                    <option value="" disabled selected>Gender</option>
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
+                            <!-- Step 2: Email, Password, Blood Type, Address -->
+                            <div id="auth-step-2" class="auth-step flex flex-col space-y-3 hidden">
+                                <div class="relative">
+                                    <input type="email" id="reg-email" placeholder="Email Address" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                    <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="relative">
+                                        <input type="password" id="reg-password" placeholder="Password" required
+                                            class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm">
+                                    </div>
+                                    <div class="relative">
+                                        <input type="password" id="reg-confirm" placeholder="Confirm" required
+                                            class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm">
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <select id="reg-blood" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer pl-11">
+                                        <option value="" disabled selected>Blood Type</option>
+                                        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                                        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                                    </select>
+                                    <i class="fas fa-tint absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                    <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
+                                <div class="relative">
+                                    <input type="text" id="reg-address" placeholder="Full Address" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                    <i class="fas fa-map-marker-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
+                                <div class="relative">
+                                    <input type="text" id="reg-medical" placeholder="Medical Condition (Optional)"
+                                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                    <i class="fas fa-notes-medical absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                </div>
+                                
+                                <div class="flex gap-3 pt-3">
+                                    <button type="button"
+                                        class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
+                                        onclick="prevAuthStep()">Back</button>
+                                    <button type="button" id="step-2-next-btn"
+                                        class="w-2/3 bg-[#b11e28] hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-900/20 transition-all active:scale-[0.98] text-sm"
+                                        onclick="nextAuthStep()">
+                                        Continue <i class="fas fa-arrow-right ml-2 text-sm"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex gap-3">
-                                <input type="number" id="reg-weight" placeholder="Weight (kg)" required
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
-                                <input type="date" id="reg-last-donation" title="Last Donation Date (Optional)"
-                                    class="w-1/2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#b11e28] transition-all font-medium text-gray-900 text-sm">
+
+                            <!-- Step 3 (Donor Only): DOB, Gender, Weight, Eligibility -->
+                            <div id="auth-step-3" class="auth-step flex flex-col space-y-3 hidden">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Date of Birth</label>
+                                    <div class="relative">
+                                        <input type="date" id="reg-dob" required
+                                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                        <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="relative">
+                                        <select id="reg-gender" required
+                                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm appearance-none cursor-pointer pl-11">
+                                            <option value="" disabled selected>Gender</option>
+                                            <option value="MALE">Male</option><option value="FEMALE">Female</option><option value="OTHER">Other</option>
+                                        </select>
+                                        <i class="fas fa-venus-mars absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                        <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="number" id="reg-weight" placeholder="Weight (kg)" required min="1"
+                                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none border-gray-200 focus:border-gray-400 focus:ring-4 focus:ring-gray-50 transition-all font-medium text-gray-900 text-sm pl-11">
+                                        <i class="fas fa-weight absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2.5">
+                                    <label class="flex items-center gap-2.5 cursor-pointer group">
+                                        <input type="checkbox" id="chk-age" class="eligibility-check w-4 h-4 rounded border-gray-300 text-[#b11e28] focus:ring-gray-200 transition-all"
+                                            onchange="checkEligibility()">
+                                        <span class="text-xs font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">Between 18 and 65 years old?</span>
+                                    </label>
+                                    <label class="flex items-center gap-2.5 cursor-pointer group">
+                                        <input type="checkbox" id="chk-weight" class="eligibility-check w-4 h-4 rounded border-gray-300 text-[#b11e28] focus:ring-gray-200 transition-all"
+                                            onchange="checkEligibility()">
+                                        <span class="text-xs font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">Weigh more than 50kg?</span>
+                                    </label>
+                                    <label class="flex items-center gap-2.5 cursor-pointer group">
+                                        <input type="checkbox" id="chk-health" class="eligibility-check w-4 h-4 rounded border-gray-300 text-[#b11e28] focus:ring-gray-200 transition-all"
+                                            onchange="checkEligibility()">
+                                        <span class="text-xs font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">In generally good health?</span>
+                                    </label>
+                                </div>
+                                <div class="flex gap-3 pt-3">
+                                    <button type="button"
+                                        class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
+                                        onclick="prevAuthStep()">Back</button>
+                                    <button type="button" id="final-register-btn" disabled
+                                        class="w-2/3 bg-[#b11e28] text-white font-bold py-3.5 rounded-xl transition-all text-sm opacity-50 cursor-not-allowed shadow-lg shadow-red-900/20"
+                                        onclick="completeRegistration()">
+                                        Complete Registration <i class="fas fa-check ml-2 text-sm"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">Between 18 and 65 years
-                                        old?</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">Weigh more than 50kg (110
-                                        lbs)?</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="eligibility-check w-4 h-4 rounded accent-[#b11e28]"
-                                        onchange="checkEligibility()">
-                                    <span class="text-[13px] font-medium text-gray-700">In generally good health?</span>
-                                </label>
-                            </div>
-                            <div class="flex gap-3 pt-2">
-                                <button type="button"
-                                    class="w-1/3 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition-all active:scale-[0.98] text-sm"
-                                    onclick="prevAuthStep()">Back</button>
-                                <button type="button" id="final-register-btn" disabled
-                                    class="w-2/3 bg-[#b11e28] text-white font-bold py-3.5 rounded-xl transition-all text-sm opacity-50 cursor-not-allowed"
-                                    onclick="completeRegistration()">
-                                    Register <i class="fas fa-check ml-2"></i>
+                            <div id="auth-success" class="flex flex-col items-center space-y-5 hidden pt-2 pb-6">
+                                <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check text-4xl text-green-500"></i>
+                                </div>
+                                <h3 class="text-2xl font-extrabold text-gray-900">Registration Successful!</h3>
+                                <p class="text-sm text-gray-500 text-center px-4">Your profile is ready. You can now log
+                                    into the portal.</p>
+                                <button
+                                    class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition-all text-base shadow-md"
+                                    onclick="navigateTo('home'); toggleAuthMode(); resetAuthWizard();">
+                                    Proceed to Portal
                                 </button>
                             </div>
-                        </div>
-
-                        <!-- Success Screen -->
-                        <div id="auth-success" class="flex flex-col justify-center items-center space-y-5 hidden py-6">
-                            <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-4xl text-green-500"></i>
-                            </div>
-                            <h3 class="text-2xl font-extrabold text-gray-900">Registration Successful!</h3>
-                            <p class="text-sm text-gray-500 text-center px-4">Your profile is ready. You can now log
-                                into the portal.</p>
-                            <button
-                                class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-600 transition-all text-base shadow-md"
-                                onclick="navigateTo('home'); toggleAuthMode(); resetAuthWizard();">
-                                Proceed to Portal
-                            </button>
                         </div>
 
                         <!-- Footer -->
@@ -1148,7 +1356,10 @@
                     <p class="text-lg text-gray-500 font-medium">Your journey to making a difference starts here.</p>
                 </div>
                 <div class="flex items-center gap-4">
-
+                    <button onclick="showProfileSettings()" class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:shadow-md transition-all active:scale-95">
+                        <i class="fas fa-user-cog text-[#D32F2F]"></i>
+                        View Profile
+                    </button>
                 </div>
             </header>
 
@@ -1286,7 +1497,10 @@
                     <p class="text-lg text-gray-500 font-medium">Manage your blood requests and track life-saving deliveries.</p>
                 </div>
                 <div class="flex items-center gap-4">
-
+                    <button onclick="showProfileSettings()" class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:shadow-md transition-all active:scale-95">
+                        <i class="fas fa-user-cog text-[#b11e28]"></i>
+                        View Profile
+                    </button>
                     <button class="group relative bg-gradient-to-r from-[#b11e28] to-[#8a151d] text-white px-8 py-3.5 rounded-full font-semibold transition-all shadow-[0_8px_20px_rgba(177,30,40,0.25)] hover:shadow-[0_8px_25px_rgba(177,30,40,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden" onclick="document.getElementById('recipient-request-form').scrollIntoView({behavior: 'smooth'})">
                          <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
                          <i class="fas fa-hand-holding-medical"></i> 
@@ -1498,8 +1712,8 @@
                 <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-requests');" class="admin-sidebar-link" id="link-admin-view-requests">
                     <i class="fas fa-clipboard-list"></i> Requests
                 </a>
-                <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-users');" class="admin-sidebar-link" id="link-admin-view-users">
-                    <i class="fas fa-user-shield"></i> User Directory
+                <a href="#" onclick="event.preventDefault(); showProfileSettings();" class="admin-sidebar-link" id="link-admin-profile">
+                    <i class="fas fa-user-circle"></i> Profile
                 </a>
                 <div style="margin-top:auto;"></div>
             </nav>
@@ -1521,9 +1735,14 @@
                     </button>
                     <h2 id="admin-page-title" style="font-size:1.25rem; font-weight:700; color:#1a1a2e; letter-spacing:-0.02em;">Dashboard Overview</h2>
                 </div>
-                <button onclick="fetchAdminUsers()" style="background:#f1f5f9; border:1px solid #e2e8f0; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:600; font-size:0.85rem; color:#475569; cursor:pointer;">
-                    <i class="fas fa-sync-alt" style="margin-right:0.4rem;"></i> Refresh
-                </button>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <button onclick="showProfileSettings()" style="background:#fff; border:1px solid #e2e8f0; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:600; font-size:0.85rem; color:#475569; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        <i class="fas fa-user-cog" style="margin-right:0.4rem; color:#D32F2F;"></i> Profile
+                    </button>
+                    <button onclick="fetchAdminUsers()" style="background:#f1f5f9; border:1px solid #e2e8f0; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:600; font-size:0.85rem; color:#475569; cursor:pointer;">
+                        <i class="fas fa-sync-alt" style="margin-right:0.4rem;"></i> Refresh
+                    </button>
+                </div>
             </header>
 
             <div style="flex:1; overflow-y:auto; padding:1.5rem 2rem 3rem 2rem;">
@@ -1864,7 +2083,7 @@
     </section>
 
     <!-- JS Logic -->
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=6"></script>
 
     <!-- Scroll Reveal & Stat Counter Animations -->
     <script>
