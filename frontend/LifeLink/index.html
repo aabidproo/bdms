@@ -1270,24 +1270,24 @@
     </section>
 
     <!-- Page 4: Recipient Dashboard -->
-    <section id="recipient-dashboard" class="page-section bg-gradient-to-br from-indigo-50 via-white to-gray-50 min-h-[calc(100vh-72px)] py-12 px-6 selection:bg-indigo-100 selection:text-indigo-900 font-sans">
+    <section id="recipient-dashboard" class="page-section bg-gradient-to-br from-red-50 via-white to-gray-50 min-h-[calc(100vh-72px)] py-12 px-6 selection:bg-red-100 selection:text-red-900 font-sans">
         <div class="max-w-6xl mx-auto space-y-10 relative overflow-hidden w-full">
 
             <!-- Elegant Header -->
             <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
                 <div class="space-y-2">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-md rounded-full border border-gray-100 shadow-sm mb-2">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
                         <span class="text-xs font-semibold text-gray-600 uppercase tracking-widest">Patient Portal</span>
                     </div>
                     <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-                        Welcome back, <span id="recipient-name-display" class="text-indigo-600">User</span>!
+                        Welcome back, <span id="recipient-name-display" class="text-[#b11e28]">User</span><span class="text-[#b11e28]">!</span>
                     </h2>
                     <p class="text-lg text-gray-500 font-medium">Manage your blood requests and track life-saving deliveries.</p>
                 </div>
                 <div class="flex items-center gap-4">
 
-                    <button class="group relative bg-gradient-to-r from-indigo-600 to-indigo-800 text-white px-8 py-3.5 rounded-full font-semibold transition-all shadow-[0_8px_20px_rgba(79,70,229,0.25)] hover:shadow-[0_8px_25px_rgba(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden" onclick="document.getElementById('recipient-request-form').scrollIntoView({behavior: 'smooth'})">
+                    <button class="group relative bg-gradient-to-r from-[#b11e28] to-[#8a151d] text-white px-8 py-3.5 rounded-full font-semibold transition-all shadow-[0_8px_20px_rgba(177,30,40,0.25)] hover:shadow-[0_8px_25px_rgba(177,30,40,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden" onclick="document.getElementById('recipient-request-form').scrollIntoView({behavior: 'smooth'})">
                          <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
                          <i class="fas fa-hand-holding-medical"></i> 
                          <span>Request Blood</span>
@@ -1310,43 +1310,40 @@
                 <!-- Visual Stepper -->
                 <div id="recipient-stepper" class="relative flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mx-auto pt-4 pb-2 opacity-50 pointer-events-none">
                     <!-- Line connections -->
-                    <div class="absolute top-5 left-0 w-full h-1 bg-gray-100 -translate-y-1/2 hidden md:block rounded-full z-0"></div>
+                    <div class="absolute top-9 left-0 right-0 mx-5 h-1 bg-gray-100 -translate-y-1/2 hidden md:block rounded-full z-0"></div>
                     <!-- Partial progress line -->
-                    <div class="absolute top-5 left-0 w-[66%] h-1 bg-indigo-500 -translate-y-1/2 hidden md:block rounded-full z-0 transition-all duration-1000"></div>
+                    <div id="recipient-stepper-progress" class="absolute top-9 left-0 right-0 mx-5 w-[0%] h-1 bg-[#b11e28] -translate-y-1/2 hidden md:block rounded-full z-0 transition-all duration-1000"></div>
 
-                    <!-- Step 1 (Completed) -->
-                    <div class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-transform hover:scale-110">
+                    <!-- Step 1 (Submitted) -->
+                    <div id="step-submitted" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-file-medical text-sm"></i>
+                        </div>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Submitted</p>
+                    </div>
+
+                    <!-- Step 2 (Approved) -->
+                    <div id="step-approved" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
                             <i class="fas fa-check text-sm"></i>
                         </div>
-                        <p class="text-sm font-bold text-gray-900 hidden md:block">Submitted</p>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Approved</p>
                     </div>
 
-                    <!-- Step 2 (Completed) -->
-                    <div class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-transform hover:scale-110">
-                            <i class="fas fa-check text-sm"></i>
+                    <!-- Step 3 (Dispatched) -->
+                    <div id="step-dispatched" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-shipping-fast text-sm"></i>
                         </div>
-                        <p class="text-sm font-bold text-gray-900 hidden md:block">Approved</p>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Dispatched</p>
                     </div>
 
-                    <!-- Step 3 (Active/Pulsing) -->
-                    <div class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
-                        <div class="relative w-10 h-10">
-                            <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-25"></div>
-                            <div class="relative w-full h-full rounded-full flex items-center justify-center bg-white border-[3px] border-indigo-500 text-indigo-600 shadow-sm transition-transform hover:scale-110">
-                                <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full"></span>
-                            </div>
+                    <!-- Step 4 (Delivered) -->
+                    <div id="step-delivered" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-house-user text-sm"></i>
                         </div>
-                        <p class="text-sm font-bold text-indigo-700 hidden md:block">Dispatched</p>
-                    </div>
-
-                    <!-- Step 4 (Pending) -->
-                    <div class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-white border-2 border-gray-200 text-gray-300 transition-transform hover:scale-110">
-                            <span class="w-2 h-2 bg-gray-200 rounded-full"></span>
-                        </div>
-                        <p class="text-sm font-bold text-gray-400 hidden md:block">Delivered</p>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Delivered</p>
                     </div>
                 </div>
             </div>
@@ -1356,7 +1353,7 @@
                 
                 <!-- Blood Request Form UI -->
                 <div id="recipient-request-form" class="lg:col-span-5 bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 h-max relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-indigo-400"></div>
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#b11e28] to-[#ff4b4b]"></div>
                     
                     <div class="mb-8">
                         <h2 class="text-2xl font-bold text-gray-900 tracking-tight">New Blood Request</h2>
@@ -1426,7 +1423,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" id="request-submit-btn" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
+                        <button type="submit" id="request-submit-btn" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-[#b11e28] hover:shadow-lg hover:shadow-red-500/25 transition-all duration-300 mt-4 flex items-center justify-center gap-2 group">
                             Submit Request
                             <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                         </button>
@@ -1446,7 +1443,7 @@
                             </div>
                         </div>
                         <div class="flex-1 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex items-center gap-4 transition-all hover:-translate-y-1 duration-300">
-                            <div class="p-3 bg-indigo-50 text-indigo-500 rounded-xl shadow-sm"><i class="fas fa-check-double text-xl"></i></div>
+                            <div class="p-3 bg-red-50 text-[#b11e28] rounded-xl shadow-sm"><i class="fas fa-check-double text-xl"></i></div>
                             <div>
                                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fulfilled</p>
                                 <p id="recipient-fulfilled-count" class="text-2xl font-black text-gray-900">0 Requests</p>
@@ -1458,15 +1455,13 @@
                     <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50">
                         <div class="flex items-center justify-between mb-8">
                             <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Request History</h2>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Fulfilled
-                                    </span>
-                                </div>
-                            </div>
+                            <button onclick="fetchRecipientHistory()" class="text-sm font-bold text-gray-400 hover:text-[#b11e28] transition-colors flex items-center gap-1">
+                                <i class="fas fa-sync-alt text-xs"></i> Refresh
+                            </button>
+                        </div>
 
+                        <div id="recipient-history-list" class="space-y-4">
+                            <div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading history...</div>
                         </div>
                     </div>
                 </div>

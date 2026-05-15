@@ -1094,12 +1094,12 @@ async function fetchRecipientHistory() {
 
         // Update active tracker
         const activeReq = data.data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
+        updateRecipientStepper(activeReq);
+
         const trackerInfo = document.getElementById('recipient-active-info');
         const trackerStatus = document.getElementById('recipient-active-status');
-        const stepper = document.getElementById('recipient-stepper');
 
         if (activeReq && trackerInfo) {
-            // Detailed banner info
             const idShort = activeReq.id.substring(0,8).toUpperCase();
             trackerInfo.innerHTML = `Active: <strong>#${idShort}</strong> &bull; ${activeReq.bloodGroup} &bull; ${activeReq.units} Units`;
             
@@ -1117,13 +1117,9 @@ async function fetchRecipientHistory() {
                 trackerStatus.className = `px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${colorClass} border shadow-sm`;
                 trackerStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotClass} ${activeReq.status === 'PENDING' ? 'animate-pulse' : ''}"></span> ${label}`;
             }
-            if (stepper) {
-                stepper.classList.remove('opacity-50', 'pointer-events-none');
-            }
         } else {
             if (trackerInfo) trackerInfo.textContent = 'No active requests.';
             if (trackerStatus) trackerStatus.classList.add('hidden');
-            if (stepper) stepper.classList.add('opacity-50', 'pointer-events-none');
         }
 
         // Render history
@@ -1142,7 +1138,7 @@ async function fetchRecipientHistory() {
                 statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-amber-50 text-amber-600 border border-amber-100/50"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending</span>';
                 cardBg = 'bg-white shadow-sm';
             } else if (req.status === 'APPROVED') {
-                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100/50"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Approved</span>';
+                statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-[#b11e28] border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-[#b11e28]"></span> Approved</span>';
             } else if (req.status === 'REJECTED') {
                 statusBadge = '<span class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-100/50"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Rejected</span>';
             } else if (req.status === 'FULFILLED') {
@@ -1153,7 +1149,7 @@ async function fetchRecipientHistory() {
             div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
             div.innerHTML = `
                 <div class="flex items-center gap-5">
-                    <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
+                    <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-red-50 border-red-100 text-[#b11e28]' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
                         ${escapeHtml(req.bloodGroup)}
                     </div>
                     <div>
@@ -1171,6 +1167,75 @@ async function fetchRecipientHistory() {
         historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
     }
 }
+
+function updateRecipientStepper(activeReq) {
+    const stepper = document.getElementById('recipient-stepper');
+    const progressLine = document.getElementById('recipient-stepper-progress');
+    if (!stepper || !progressLine) return;
+
+    if (!activeReq) {
+        stepper.classList.add('opacity-50', 'pointer-events-none');
+        progressLine.style.width = '0%';
+        resetStepperUI();
+        return;
+    }
+
+    stepper.classList.remove('opacity-50', 'pointer-events-none');
+    resetStepperUI();
+
+    const steps = {
+        'PENDING': 1,
+        'APPROVED': 2,
+        'DISPATCHED': 3,
+        'DELIVERED': 4
+    };
+
+    const currentStep = steps[activeReq.status] || 1;
+    const progressWidths = ['0%', '0%', '33.33%', '66.66%', '100%'];
+    progressLine.style.width = progressWidths[currentStep];
+
+    const stepIds = ['step-submitted', 'step-approved', 'step-dispatched', 'step-delivered'];
+    
+    stepIds.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const iconDiv = el.querySelector('.step-icon');
+        const label = el.querySelector('p');
+        
+        if (index + 1 < currentStep) {
+            // Completed steps
+            iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-[#b11e28] text-white shadow-[0_0_15px_rgba(177,30,40,0.3)] transition-transform hover:scale-110 z-10';
+            iconDiv.innerHTML = '<i class="fas fa-check text-sm"></i>';
+            label.className = 'text-sm font-bold text-gray-900 hidden md:block';
+        } else if (index + 1 === currentStep) {
+            // Current active step
+            iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white border-[3px] border-[#b11e28] text-[#b11e28] shadow-sm transition-transform hover:scale-110 relative z-10';
+            // Add ping animation for active step
+            iconDiv.innerHTML = `<div class="absolute inset-0 bg-[#b11e28] rounded-full animate-ping opacity-25"></div><span class="w-2.5 h-2.5 bg-[#b11e28] rounded-full relative z-10"></span>`;
+            label.className = 'text-sm font-bold text-[#b11e28] hidden md:block';
+        } else {
+            // Pending steps
+            // Keep default style from HTML
+        }
+    });
+}
+
+function resetStepperUI() {
+    const stepIds = ['step-submitted', 'step-approved', 'step-dispatched', 'step-delivered'];
+    const icons = ['fa-file-medical', 'fa-check', 'fa-shipping-fast', 'fa-house-user'];
+    
+    stepIds.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const iconDiv = el.querySelector('.step-icon');
+        const label = el.querySelector('p');
+        
+        iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10';
+        iconDiv.innerHTML = `<i class="fas ${icons[index]} text-sm"></i>`;
+        label.className = 'text-sm font-bold text-gray-500 hidden md:block';
+    });
+}
+
 
 
 // ─── ADMIN INVENTORY MANAGEMENT ──────────────────────────
