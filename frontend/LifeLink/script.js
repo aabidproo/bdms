@@ -462,7 +462,7 @@ async function completeRegistration() {
             payload.weight = parseFloat(document.getElementById('reg-weight').value);
         }
         
-        const response = await fetch('http://localhost:5001/api/auth/register', {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -596,7 +596,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/login', {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -634,7 +634,7 @@ function routeUserToDashboard(user) {
     updateNav(user);
     const token = localStorage.getItem('token');
     
-    const profileEndpoint = 'http://localhost:5001/api/users/profile';
+    const profileEndpoint = 'http://localhost:5000/api/users/profile';
     
     if (user.role === 'DONOR') {
         navigateTo('donor-dashboard');
@@ -818,7 +818,7 @@ async function fetchAdminUsers() {
     }
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/users', {
+        const response = await fetch('http://localhost:5000/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -947,7 +947,7 @@ async function handleForgotPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/forgot-password', {
+        const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -1013,7 +1013,7 @@ async function handleResetPassword(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
     
     try {
-        const response = await fetch('http://localhost:5001/api/auth/reset-password', {
+        const response = await fetch('http://localhost:5000/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
@@ -1070,7 +1070,7 @@ async function scheduleDonation(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Scheduling...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations', {
+        const response = await fetch('http://localhost:5000/api/donations', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1109,7 +1109,7 @@ async function fetchDonorHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/donations/my', {
+        const response = await fetch('http://localhost:5000/api/donations/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1214,7 +1214,7 @@ async function submitBloodRequest(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests', {
+        const response = await fetch('http://localhost:5000/api/requests', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1252,7 +1252,7 @@ async function fetchRecipientHistory() {
     if (!historyList) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/requests/my', {
+        const response = await fetch('http://localhost:5000/api/requests/my', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1441,7 +1441,7 @@ async function fetchKPISummary() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/inventory/summary', {
+        const response = await fetch('http://localhost:5000/api/admin/inventory/summary', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1547,7 +1547,7 @@ async function fetchInventory() {
     const searchStr = document.getElementById('admin-inventory-search')?.value || '';
     
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock?search=${encodeURIComponent(searchStr)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -1690,7 +1690,7 @@ window.showStockDetails = async function(bloodGroup) {
 
     // Fetch batch data from API
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${encodeURIComponent(bloodGroup)}/batches`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await response.json();
@@ -1932,7 +1932,7 @@ window.editStock = async function(donationId) {
         };
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/stock/${donationId}`, {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${donationId}`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -2012,7 +2012,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
 
     // Fetch hospitals
     try {
-        const res = await fetch('http://localhost:5001/api/admin/hospitals', {
+        const res = await fetch('http://localhost:5000/api/admin/hospitals', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -2042,7 +2042,7 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/stock/${batchId}/dispatch`, {
+            const res = await fetch(`http://localhost:5000/api/admin/stock/${batchId}/dispatch`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hospitalId, quantity, notes })
@@ -2139,7 +2139,7 @@ window.openAlertModal = function(batchId, bloodGroup) {
         const method = document.querySelector('input[name="alert-method"]:checked')?.value || 'in_app';
 
         try {
-            const res = await fetch(`http://localhost:5001/api/admin/alerts/batch/${batchId}`, {
+            const res = await fetch(`http://localhost:5000/api/admin/alerts/batch/${batchId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2266,7 +2266,7 @@ async function submitAddStock(e) {
     const plasmaCount = document.getElementById('add-stock-plasma')?.value;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stock', {
+        const response = await fetch('http://localhost:5000/api/admin/stock', {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2304,7 +2304,7 @@ async function deleteStock(id) {
     if (!confirm('Are you sure you want to completely erase this stock listing?')) return;
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/stock/${id}`, {
+        const response = await fetch(`http://localhost:5000/api/admin/stock/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -2321,7 +2321,7 @@ async function fetchAdminRequests() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/requests', {
+        const response = await fetch('http://localhost:5000/api/admin/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2366,7 +2366,7 @@ async function fetchAdminRequests() {
 async function updateReqStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -2395,7 +2395,7 @@ async function fetchAdminDonations() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/donations', {
+        const response = await fetch('http://localhost:5000/api/admin/donations', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2436,7 +2436,7 @@ async function fetchAdminDonations() {
 async function updateDonationStatus(id, newStatus) {
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`http://localhost:5001/api/admin/donations/${id}/status`, {
+        const response = await fetch(`http://localhost:5000/api/admin/donations/${id}/status`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2465,7 +2465,7 @@ async function fetchAdminStats() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:5001/api/admin/stats', {
+        const response = await fetch('http://localhost:5000/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -2573,7 +2573,7 @@ async function fetchDonorEligibility() {
     if (!token) return;
 
     try {
-        const res = await fetch('http://localhost:5001/api/donor/eligibility', {
+        const res = await fetch('http://localhost:5000/api/donor/eligibility', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
@@ -3130,7 +3130,7 @@ async function showProfileSettings() {
     if (!token) return navigateTo('login');
 
     try {
-        const res = await fetch('http://localhost:5001/api/users/profile', {
+        const res = await fetch('http://localhost:5000/api/users/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -3191,7 +3191,7 @@ async function saveProfileChanges() {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-        const res = await fetch('http://localhost:5001/api/users/profile', {
+        const res = await fetch('http://localhost:5000/api/users/profile', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -3264,7 +3264,7 @@ async function updateUserPassword() {
         const originalText = updateBtn.innerHTML;
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
 
-        const res = await fetch('http://localhost:5001/api/users/password', {
+        const res = await fetch('http://localhost:5000/api/users/password', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
