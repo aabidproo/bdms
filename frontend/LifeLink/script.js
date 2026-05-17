@@ -61,7 +61,7 @@ const pageSections = document.querySelectorAll('.page-section');
 // === Navigation & SPA Routing ===
 const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard', 'profile-settings'];
 
-function navigateTo(targetId) {
+window.navigateTo = function(targetId) {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
 
@@ -152,7 +152,7 @@ function toggleAuthMode() {
     }
 }
 
-function selectAuthRole(role) {
+window.selectAuthRole = function(role) {
     authRole = role;
     const cards = document.querySelectorAll('.auth-role-card');
     cards.forEach(card => {
@@ -2549,7 +2549,7 @@ function navigateAdmin(viewId) {
 }
 
 // Nav Dropdown functionality
-function toggleDropdown(event) {
+window.toggleDropdown = function(event) {
     if (event) event.stopPropagation();
     const dropdown = document.getElementById('nav-dropdown');
     if (dropdown) {
@@ -2657,7 +2657,7 @@ function updateDistricts() {
     }
 }
 
-async function searchBloodAvailability() {
+window.searchBloodAvailability = async function() {
     const province = document.getElementById('search-province').value;
     const district = document.getElementById('search-district').value;
     const bloodGroup = document.getElementById('search-blood-group').value;
@@ -2677,10 +2677,10 @@ async function searchBloodAvailability() {
         const queryParams = new URLSearchParams();
         if (province) queryParams.append('province', province);
         if (district) queryParams.append('district', district);
-        if (bloodGroup) queryParams.append('bloodGroup', encodeURIComponent(bloodGroup));
-        if (component) queryParams.append('component', encodeURIComponent(component));
+        if (bloodGroup) queryParams.append('bloodGroup', bloodGroup);
+        if (component) queryParams.append('component', component);
 
-        const response = await fetch(`http://localhost:5001/api/public/blood-availability?${queryParams.toString()}`);
+        const response = await fetch(`http://localhost:5000/api/public/blood-availability?${queryParams.toString()}`);
         const result = await response.json();
 
         if (!response.ok) throw new Error(result.message || 'Failed to fetch');
@@ -3035,7 +3035,7 @@ function initChatbot() {
         scrollToBottom();
 
         try {
-            const response = await fetch('http://localhost:5001/api/chat', {
+            const response = await fetch('http://localhost:5000/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userText })

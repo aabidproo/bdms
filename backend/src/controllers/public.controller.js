@@ -7,14 +7,14 @@ const searchBloodAvailability = async (req, res, next) => {
     const { province, district, bloodGroup, component } = req.query;
 
     const where = {};
-    if (bloodGroup) where.bloodGroup = decodeURIComponent(bloodGroup);
-    if (component) where.component = decodeURIComponent(component);
+    if (bloodGroup) where.bloodGroup = bloodGroup;
+    if (component) where.component = component;
     
     // Filter hospitals if province or district is provided
     if (province || district) {
       where.hospital = {};
-      if (province) where.hospital.province = decodeURIComponent(province);
-      if (district) where.hospital.district = decodeURIComponent(district);
+      if (province) where.hospital.province = province;
+      if (district) where.hospital.district = district;
     }
 
     const stocks = await prisma.bloodBankStock.findMany({
