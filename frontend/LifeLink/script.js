@@ -625,6 +625,8 @@ async function completeRegistration() {
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
     const blood = document.getElementById('reg-blood').value;
+    const province = document.getElementById('reg-province').value;
+    const district = document.getElementById('reg-district').value;
     const address = document.getElementById('reg-address').value;
 
     if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
@@ -632,6 +634,8 @@ async function completeRegistration() {
     if (!email) return showError('Email is required.');
     if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
     if (!blood) return showError('Please select a blood type.');
+    if (!province) return showError('Please select a province.');
+    if (!district) return showError('Please select a district.');
     if (!address) return showError('Address is required.');
 
     if (authRole === 'recipient') {
@@ -661,6 +665,8 @@ async function completeRegistration() {
             name: document.getElementById('reg-name').value,
             role: authRole.toUpperCase(),
             phone: document.getElementById('reg-phone').value,
+            province: document.getElementById('reg-province').value,
+            district: document.getElementById('reg-district').value,
             address: document.getElementById('reg-address').value,
             bloodType: document.getElementById('reg-blood').value,
             medicalCondition: document.getElementById('reg-medical').value || null
@@ -1064,6 +1070,7 @@ function checkAuthOnLoad() {
 // Run initialization on load
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthOnLoad();
+    initNepalLocations();
 });
 
 
@@ -3162,15 +3169,60 @@ function populateDetailedProfile(user, role) {
 
 // === eRaktKosh-Style Blood Availability Search ===
 
-const nepalGeoData = {
-    "Koshi": ["Bhojpur", "Dhankuta", "Ilam", "Jhapa", "Khotang", "Morang", "Okhaldhunga", "Panchthar", "Sankhuwasabha", "Solukhumbu", "Sunsari", "Taplejung", "Terhathum", "Udayapur"],
-    "Madhesh": ["Bara", "Dhanusha", "Mahottari", "Parsa", "Rautahat", "Saptari", "Sarlahi", "Siraha"],
-    "Bagmati": ["Bhaktapur", "Chitwan", "Dhading", "Dolakha", "Kathmandu", "Kavrepalanchok", "Lalitpur", "Makwanpur", "Nuwakot", "Ramechhap", "Rasuwa", "Sindhuli", "Sindhupalchok"],
-    "Gandaki": ["Baglung", "Gorkha", "Kaski", "Lamjung", "Manang", "Mustang", "Myagdi", "Nawalpur", "Parbat", "Syangja", "Tanahun"],
-    "Lumbini": ["Arghakhanchi", "Banke", "Bardiya", "Dang", "Gulmi", "Kapilvastu", "Parasi", "Palpa", "Pyuthan", "Rolpa", "Rukum East", "Rupandehi"],
-    "Karnali": ["Dailekh", "Dolpa", "Humla", "Jajarkot", "Jumla", "Kalikot", "Mugu", "Rukum West", "Salyan", "Surkhet"],
-    "Sudurpashchim": ["Achham", "Baitadi", "Bajhang", "Bajura", "Dadeldhura", "Darchula", "Doti", "Kailali", "Kanchanpur"]
-};
+let nepalLocations = {};
+
+async function initNepalLocations() {
+    try {
+        const response = await fetch('http://localhost:5001/api/locations');
+        const result = await response.json();
+        if (result.success) {
+            nepalLocations = result.data;
+            
+            // Populate search province select
+            const searchProvinceSelect = document.getElementById('search-province');
+            if (searchProvinceSelect) {
+                searchProvinceSelect.innerHTML = '<option value="">Select Province</option>';
+                Object.keys(nepalLocations).forEach(prov => {
+                    const opt = document.createElement('option');
+                    opt.value = prov;
+                    opt.textContent = prov;
+                    searchProvinceSelect.appendChild(opt);
+                });
+            }
+            
+            // Populate registration province select
+            const regProvinceSelect = document.getElementById('reg-province');
+            if (regProvinceSelect) {
+                regProvinceSelect.innerHTML = '<option value="" disabled selected>Select Province</option>';
+                Object.keys(nepalLocations).forEach(prov => {
+                    const opt = document.createElement('option');
+                    opt.value = prov;
+                    opt.textContent = prov;
+                    regProvinceSelect.appendChild(opt);
+                });
+            }
+            
+            // Populate donation-location (Choose a hospital...)
+            const donationLocSelect = document.getElementById('donation-location');
+            if (donationLocSelect) {
+                donationLocSelect.innerHTML = '<option value="" disabled selected>Choose a hospital...</option>';
+                // Flatten all hospitals
+                Object.values(nepalLocations).forEach(districtsObj => {
+                    Object.values(districtsObj).forEach(hospitalsArr => {
+                        hospitalsArr.forEach(hosp => {
+                            const opt = document.createElement('option');
+                            opt.value = hosp;
+                            opt.textContent = hosp;
+                            donationLocSelect.appendChild(opt);
+                        });
+                    });
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load Nepal locations:', error);
+    }
+}
 
 function updateDistricts() {
     const provinceSelect = document.getElementById('search-province');
@@ -3179,12 +3231,12 @@ function updateDistricts() {
 
     districtSelect.innerHTML = '<option value="">Select District</option>';
 
-    if (selectedProvince && nepalGeoData[selectedProvince]) {
+    if (selectedProvince && nepalLocations[selectedProvince]) {
         districtSelect.disabled = false;
         districtSelect.classList.remove('cursor-not-allowed', 'opacity-60');
         districtSelect.classList.add('cursor-pointer');
         
-        nepalGeoData[selectedProvince].forEach(district => {
+        Object.keys(nepalLocations[selectedProvince]).forEach(district => {
             const option = document.createElement('option');
             option.value = district;
             option.textContent = district;
@@ -3196,6 +3248,56 @@ function updateDistricts() {
         districtSelect.classList.remove('cursor-pointer');
     }
 }
+
+function updateRegDistricts() {
+    const provinceSelect = document.getElementById('reg-province');
+    const districtSelect = document.getElementById('reg-district');
+    const selectedProvince = provinceSelect.value;
+
+    districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
+
+    if (selectedProvince && nepalLocations[selectedProvince]) {
+        districtSelect.disabled = false;
+        districtSelect.classList.remove('cursor-not-allowed', 'opacity-60');
+        districtSelect.classList.add('cursor-pointer');
+        
+        Object.keys(nepalLocations[selectedProvince]).forEach(district => {
+            const option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            districtSelect.appendChild(option);
+        });
+    } else {
+        districtSelect.disabled = true;
+        districtSelect.classList.add('cursor-not-allowed', 'opacity-60');
+        districtSelect.classList.remove('cursor-pointer');
+    }
+    
+    updateRegAddress();
+}
+
+function updateRegAddress() {
+    const provinceSelect = document.getElementById('reg-province');
+    const districtSelect = document.getElementById('reg-district');
+    const addressInput = document.getElementById('reg-address');
+    
+    const province = provinceSelect.value;
+    const district = districtSelect.value;
+    
+    if (province && district) {
+        addressInput.value = `${district}, ${province}`;
+    } else if (province) {
+        addressInput.value = province;
+    } else {
+        addressInput.value = '';
+    }
+}
+
+// Bind to window for global access
+window.initNepalLocations = initNepalLocations;
+window.updateDistricts = updateDistricts;
+window.updateRegDistricts = updateRegDistricts;
+window.updateRegAddress = updateRegAddress;
 
 window.searchBloodAvailability = async function() {
     const province = document.getElementById('search-province').value;
@@ -3220,7 +3322,7 @@ window.searchBloodAvailability = async function() {
         if (bloodGroup) queryParams.append('bloodGroup', bloodGroup);
         if (component) queryParams.append('component', component);
 
-        const response = await fetch(`http://localhost:5001/api/public/blood-availability?${queryParams.toString()}`);
+        const response = await fetch(`http://localhost:5001/api/search?${queryParams.toString()}`);
         const result = await response.json();
 
         if (!response.ok) throw new Error(result.message || 'Failed to fetch');
@@ -3249,11 +3351,15 @@ window.searchBloodAvailability = async function() {
                 ? `<span class="px-3 py-1 bg-green-50 text-green-700 border border-green-100 rounded-full text-xs font-bold font-mono">Available: ${stock.units} Units</span>`
                 : `<span class="px-3 py-1 bg-red-50 text-red-700 border border-red-100 rounded-full text-xs font-bold font-mono">Out of Stock</span>`;
 
+            const districtName = hospital.districtRel ? hospital.districtRel.name : (hospital.district || '');
+            const provinceName = (hospital.districtRel && hospital.districtRel.province) ? hospital.districtRel.province.name : (hospital.province || '');
+            const locationText = districtName && provinceName ? `${districtName}, ${provinceName}` : (districtName || provinceName || '');
+
             return `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="p-4 border-b border-gray-100">
                         <div class="font-bold text-gray-900">${hospital.name}</div>
-                        <div class="text-xs text-gray-500 mt-1"><i class="fas fa-map-marker-alt text-indigo-400 mr-1"></i> ${hospital.district}, ${hospital.province}</div>
+                        <div class="text-xs text-gray-500 mt-1"><i class="fas fa-map-marker-alt text-indigo-400 mr-1"></i> ${locationText}</div>
                         ${hospital.phone ? `<div class="text-xs text-gray-500 mt-1"><i class="fas fa-phone-alt text-indigo-400 mr-1"></i> ${hospital.phone}</div>` : ''}
                     </td>
                     <td class="p-4 border-b border-gray-100">

@@ -56,6 +56,8 @@ const registerSchema = z
     // Profile fields are spread at the top level
     // and validated conditionally via superRefine
     phone: z.string().optional(),
+    province: z.string().optional(),
+    district: z.string().optional(),
     dateOfBirth: z.string().optional(),
     gender: z.string().optional(),
     address: z.string().optional(),

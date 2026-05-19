@@ -16,6 +16,9 @@ const authorize = require('./middleware/authorize');
 
 const prisma = require('./lib/prisma');
 
+const locationRoutes = require('./routes/location.routes');
+const bloodRoutes = require('./routes/blood.routes');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -55,6 +58,9 @@ app.use('/api/public', publicRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/blood', bloodRoutes);
+app.get('/api/search', require('./controllers/blood.controller').searchBlood);
 app.patch('/api/user/active-role', authenticate, updateActiveRole);
 app.post('/api/user/add-role', authenticate, addRole);
 

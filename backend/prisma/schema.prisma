@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -74,18 +74,40 @@ model BloodInventory {
   @@map("blood_inventory")
 }
 
-model Hospital {
+model Province {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  districts District[]
+
+  @@map("provinces")
+}
+
+model District {
   id         String     @id @default(cuid())
   name       String
-  city       String
-  province   String?
-  district   String?
-  address    String?
-  phone      String?
-  category   String?    @default("Government")
-  createdAt  DateTime   @default(now())
-  dispatches Dispatch[]
-  stocks     BloodBankStock[]
+  provinceId String
+  province   Province   @relation(fields: [provinceId], references: [id])
+  hospitals  Hospital[]
+
+  @@unique([name, provinceId])
+  @@map("districts")
+}
+
+model Hospital {
+  id          String          @id @default(cuid())
+  name        String
+  city        String          @default("")
+  province    String?
+  district    String?
+  address     String?
+  phone       String?
+  category    String?         @default("General Hospital")
+  isActive    Boolean         @default(true)
+  districtId  String?
+  districtRel District?       @relation(fields: [districtId], references: [id])
+  createdAt   DateTime        @default(now())
+  dispatches  Dispatch[]
+  stocks      BloodBankStock[]
 
   @@map("hospitals")
 }
@@ -102,6 +124,7 @@ model BloodBankStock {
 
   @@index([hospitalId])
   @@index([bloodGroup])
+  @@unique([hospitalId, bloodGroup, component])
   @@map("blood_bank_stocks")
 }
 
