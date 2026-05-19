@@ -7,5 +7,6 @@ const donationController = require('../controllers/donation.controller');
 // All donation routes require DONOR role
 router.post('/', authenticate, authorize('DONOR'), donationController.scheduleDonation);
 router.get('/my', authenticate, authorize('DONOR'), donationController.getMyDonations);
+router.get('/matched-requests', authenticate, authorize('DONOR'), donationController.getMatchedRequests);
 
 module.exports = router;

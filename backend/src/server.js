@@ -8,6 +8,7 @@ const requestRoutes = require('./routes/request.routes');
 const publicRoutes = require('./routes/public.routes');
 const chatRoutes = require('./routes/chat.routes');
 const userRoutes = require('./routes/user.routes');
+const { updateActiveRole, addRole } = require('./controllers/user.controller');
 const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
@@ -51,6 +52,8 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', userRoutes);
+app.patch('/api/user/active-role', authenticate, updateActiveRole);
+app.post('/api/user/add-role', authenticate, addRole);
 
 // ─── Protected Profile Routes ───────────────────────────
 // ─── Protected Donor Eligibility ───────────────────────

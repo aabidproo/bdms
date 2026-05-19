@@ -88,7 +88,44 @@ const getMyDonations = async (req, res, next) => {
   }
 };
 
+const getMatchedRequests = async (req, res, next) => {
+  try {
+    const donorProfile = await prisma.donorProfile.findUnique({
+      where: { userId: req.user.userId }
+    });
+
+    if (!donorProfile) {
+      return res.status(404).json({ success: false, message: 'Donor profile not found.' });
+    }
+
+    const requests = await prisma.bloodRequest.findMany({
+      where: {
+        bloodGroup: donorProfile.bloodType,
+        status: 'PENDING'
+      },
+      include: {
+        recipientProfile: {
+          include: {
+            user: {
+              select: { name: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: requests
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   scheduleDonation,
   getMyDonations,
+  getMatchedRequests,
 };

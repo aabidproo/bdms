@@ -15,4 +15,7 @@ router.put('/profile', userController.updateProfile);
 // PUT /api/users/password - Update password
 router.put('/password', userController.updatePassword);
 
+// PATCH /api/users/active-role - Switch active role
+router.patch('/active-role', userController.updateActiveRole);
+
 module.exports = router;

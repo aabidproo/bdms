@@ -68,7 +68,53 @@ const getMyRequests = async (req, res, next) => {
   }
 };
 
+const getMatchedDonors = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+
+    const bloodRequest = await prisma.bloodRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        recipientProfile: true
+      }
+    });
+
+    if (!bloodRequest) {
+      return res.status(404).json({ success: false, message: 'Blood request not found.' });
+    }
+
+    // Verify ownership: must be the recipient who made the request
+    if (bloodRequest.recipientProfile.userId !== req.user.userId) {
+      return res.status(403).json({ success: false, message: 'Access denied. You do not own this request.' });
+    }
+
+    // Find all donors with matching blood group
+    const matchedDonors = await prisma.donorProfile.findMany({
+      where: {
+        bloodType: bloodRequest.bloodGroup
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            avatar: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: matchedDonors
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   submitRequest,
   getMyRequests,
+  getMatchedDonors,
 };

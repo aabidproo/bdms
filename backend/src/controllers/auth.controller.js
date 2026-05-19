@@ -2,10 +2,19 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const prisma = require('../lib/prisma');
+const SALT_ROUNDS = 10;
 const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../validators/auth.validator');
 const { sendPasswordResetEmail } = require('../lib/mailer');
 
-const SALT_ROUNDS = 10;
+const formatUser = (user) => {
+  if (!user) return null;
+  const roles = user.user_roles ? user.user_roles.split(',').map(r => r.trim().toLowerCase()) : [];
+  return {
+    ...user,
+    user_roles: roles,
+    last_active_role: user.last_active_role ? user.last_active_role.toLowerCase() : roles[0] || 'donor'
+  };
+};
 
 // ─── POST /api/auth/register ────────────────────────────
 const register = async (req, res, next) => {
@@ -49,6 +58,8 @@ const register = async (req, res, next) => {
           password: hashedPassword,
           name,
           role,
+          user_roles: role.toLowerCase(),
+          last_active_role: role.toLowerCase(),
         },
       });
 
@@ -87,12 +98,13 @@ const register = async (req, res, next) => {
 
     // 5. Return response (exclude password)
     const { password: _, ...userWithoutPassword } = result.user;
+    const formattedUser = formatUser(userWithoutPassword);
 
     return res.status(201).json({
       success: true,
       message: 'Registration successful!',
       data: {
-        user: userWithoutPassword,
+        user: formattedUser,
         profile: result.profile,
       },
     });
@@ -142,13 +154,14 @@ const login = async (req, res, next) => {
 
     // 5. Return token + user (exclude password)
     const { password: _, ...userWithoutPassword } = user;
+    const formattedUser = formatUser(userWithoutPassword);
 
     return res.status(200).json({
       success: true,
       message: 'Login successful!',
       data: {
         token,
-        user: userWithoutPassword,
+        user: formattedUser,
       },
     });
   } catch (error) {

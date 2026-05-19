@@ -20,6 +20,8 @@ model User {
   avatar           String?           @default("")
   donorProfile     DonorProfile?
   recipientProfile RecipientProfile?
+  user_roles       String            @default("donor")
+  last_active_role String?           @default("donor")
 }
 
 model DonorProfile {

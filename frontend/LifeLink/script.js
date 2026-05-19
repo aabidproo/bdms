@@ -79,6 +79,182 @@ const pageSections = document.querySelectorAll('.page-section');
 // === Navigation & SPA Routing ===
 const DASHBOARD_ROUTES = ['donor-dashboard', 'recipient-dashboard', 'admin-dashboard', 'profile-settings'];
 
+window.RoleStore = {
+  activeRole: null, // "donor" or "recipient"
+  userRoles: [], // e.g. ["donor", "recipient"]
+  userRole: null, // original registration role e.g. "donor"
+  
+  init(user) {
+    if (!user) return;
+    this.userRoles = user.user_roles || (user.role ? [user.role.toLowerCase()] : []);
+    this.userRole = user.role ? user.role.toLowerCase() : null;
+    this.activeRole = user.last_active_role ? user.last_active_role.toLowerCase() : (user.role ? user.role.toLowerCase() : 'donor');
+    this.renderToggle();
+  },
+  
+  async setActiveRole(role) {
+    // If user already has this role, just switch
+    if (this.userRoles.includes(role)) {
+      this.activeRole = role;
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.last_active_role = role;
+      localStorage.setItem('user', JSON.stringify(user));
+      renderDashboardForActiveRole(role);
+
+      // Persist server-side
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await fetch('http://localhost:5001/api/user/active-role', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ role })
+          });
+        } catch (err) { console.error('Failed to sync active role:', err); }
+      }
+      this.renderToggle();
+      return;
+    }
+
+    // User doesn't have this role yet — auto-provision it!
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Show a brief loading state on the toggle
+    this.renderToggle('loading');
+
+    try {
+      const res = await fetch('http://localhost:5001/api/user/add-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        // Update local storage with fresh dual-role user data
+        localStorage.setItem('user', JSON.stringify(data.data));
+        this.userRoles = data.data.user_roles || [];
+        this.activeRole = role;
+
+        // Re-render dashboard for the new role
+        renderDashboardForActiveRole(role);
+        this.renderToggle();
+      } else {
+        alert(data.message || 'Failed to add role.');
+        this.renderToggle();
+      }
+    } catch (err) {
+      console.error('Auto-provision role error:', err);
+      alert('Something went wrong. Please try again.');
+      this.renderToggle();
+    }
+  },
+  
+  renderToggle(state) {
+    const container = document.getElementById('nav-role-toggle-container');
+    if (!container) return;
+
+    // NEVER show toggle for admin users
+    if (this.userRole === 'admin') {
+      container.classList.add('hidden');
+      container.classList.remove('flex');
+      return;
+    }
+
+    // Show toggle for ANY donor or recipient user (not admins)
+    const isEligible = this.userRole === 'donor' || this.userRole === 'recipient' ||
+                       this.userRoles.includes('donor') || this.userRoles.includes('recipient');
+
+    if (!isEligible) {
+      container.classList.add('hidden');
+      container.classList.remove('flex');
+      return;
+    }
+
+    container.classList.remove('hidden');
+    container.classList.add('flex');
+    
+    if (state === 'loading') {
+      container.innerHTML = `
+        <div class="flex items-center bg-white/10 p-0.5 rounded-full border border-white/20 select-none">
+          <span class="px-4 py-1.5 text-xs font-black text-white/70"><i class="fas fa-spinner fa-spin"></i> Switching...</span>
+        </div>
+      `;
+      return;
+    }
+
+    const isDonor = this.activeRole === 'donor';
+    container.innerHTML = `
+      <div class="flex items-center bg-white/10 p-0.5 rounded-full border border-white/20 select-none">
+        <button onclick="window.RoleStore.setActiveRole('donor')" 
+          class="px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${isDonor ? 'bg-white text-[#b11e28] shadow' : 'text-white hover:bg-white/10'}">
+          Donor
+        </button>
+        <button onclick="window.RoleStore.setActiveRole('recipient')" 
+          class="px-4 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${!isDonor ? 'bg-white text-[#b11e28] shadow' : 'text-white hover:bg-white/10'}">
+          Recipient
+        </button>
+      </div>
+    `;
+  }
+};
+
+function renderDashboardForActiveRole(role) {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (!token || !userStr) return;
+    
+    if (role === 'donor') {
+        navigateTo('donor-dashboard');
+        const profileEndpoint = 'http://localhost:5001/api/users/profile';
+        fetch(profileEndpoint, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.donorProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('donor-name-display');
+                const bloodDisplay = document.getElementById('donor-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'donor');
+            }
+        }).catch(err => console.error('Error fetching donor profile:', err));
+
+        setTimeout(() => fetchDonorHistory(), 300);
+        setTimeout(() => fetchDonorMatchedRequests(), 300);
+    } else if (role === 'recipient') {
+        navigateTo('recipient-dashboard');
+        const profileEndpoint = 'http://localhost:5001/api/users/profile';
+        fetch(profileEndpoint, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data) {
+                const profile = res.data;
+                const bloodType = profile.recipientProfile?.bloodType || 'Unknown';
+                
+                const nameDisplay = document.getElementById('recipient-name-display');
+                const bloodDisplay = document.getElementById('recipient-blood-display');
+                
+                if (nameDisplay) nameDisplay.textContent = profile.name;
+                if (bloodDisplay) bloodDisplay.textContent = bloodType;
+                
+                populateDetailedProfile(profile, 'recipient');
+            }
+        }).catch(err => console.error('Error fetching recipient profile:', err));
+
+        setTimeout(() => fetchRecipientHistory(), 300);
+    }
+}
+
 window.navigateTo = function(targetId) {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
@@ -86,9 +262,10 @@ window.navigateTo = function(targetId) {
     if (token && userStr && !DASHBOARD_ROUTES.includes(targetId) && targetId !== 'login') {
         try {
             const user = JSON.parse(userStr);
-            if (user.role === 'DONOR') targetId = 'donor-dashboard';
-            else if (user.role === 'RECIPIENT') targetId = 'recipient-dashboard';
-            else if (user.role === 'ADMIN') targetId = 'admin-dashboard';
+            const active = user.last_active_role ? user.last_active_role.toLowerCase() : (user.role ? user.role.toLowerCase() : 'donor');
+            if (user.role === 'ADMIN') targetId = 'admin-dashboard';
+            else if (active === 'donor') targetId = 'donor-dashboard';
+            else if (active === 'recipient') targetId = 'recipient-dashboard';
         } catch (e) {
             logout();
             return;
@@ -101,13 +278,27 @@ window.navigateTo = function(targetId) {
         } else {
             try {
                 const user = JSON.parse(userStr);
-                let expectedDash = '';
-                if (user.role === 'DONOR') expectedDash = 'donor-dashboard';
-                else if (user.role === 'RECIPIENT') expectedDash = 'recipient-dashboard';
-                else if (user.role === 'ADMIN') expectedDash = 'admin-dashboard';
+                const roles = user.user_roles || (user.role ? [user.role.toLowerCase()] : []);
                 
-                const allowedRoutes = [expectedDash, 'profile-settings'];
-                if (!allowedRoutes.includes(targetId) && expectedDash !== '') targetId = expectedDash;
+                let allowedRoutes = ['profile-settings'];
+                if (user.role === 'ADMIN') {
+                    allowedRoutes.push('admin-dashboard');
+                }
+                if (roles.includes('donor')) {
+                    allowedRoutes.push('donor-dashboard');
+                }
+                if (roles.includes('recipient')) {
+                    allowedRoutes.push('recipient-dashboard');
+                }
+                
+                const active = user.last_active_role ? user.last_active_role.toLowerCase() : (user.role ? user.role.toLowerCase() : 'donor');
+                let defaultDash = 'donor-dashboard';
+                if (user.role === 'ADMIN') defaultDash = 'admin-dashboard';
+                else if (active === 'recipient') defaultDash = 'recipient-dashboard';
+                
+                if (!allowedRoutes.includes(targetId)) {
+                    targetId = defaultDash;
+                }
             } catch (e) {
                 logout();
                 return;
@@ -630,6 +821,8 @@ async function handleLogin(e) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
         
+        window.RoleStore.init(data.data.user);
+        
         // Hide auth slide panel side effect if it's there
         const loginSec = document.getElementById('login');
         if (loginSec) loginSec.classList.remove('sign-up-active');
@@ -772,8 +965,9 @@ function goToDashboard() {
     }
     try {
         const user = JSON.parse(userStr);
+        const active = user.last_active_role ? user.last_active_role.toLowerCase() : (user.role ? user.role.toLowerCase() : 'donor');
         if (user.role === 'ADMIN') navigateTo('admin-dashboard');
-        else if (user.role === 'RECIPIENT') navigateTo('recipient-dashboard');
+        else if (active === 'recipient') navigateTo('recipient-dashboard');
         else navigateTo('donor-dashboard');
     } catch (e) {
         navigateTo('login');
@@ -787,6 +981,13 @@ function logout() {
     navigateTo('login');
     const loginSec = document.getElementById('login');
     if (loginSec) loginSec.classList.remove('sign-up-active');
+    
+    // Hide role toggle
+    const toggleContainer = document.getElementById('nav-role-toggle-container');
+    if (toggleContainer) {
+        toggleContainer.classList.add('hidden');
+        toggleContainer.classList.remove('flex');
+    }
 }
 
 function checkAuthOnLoad() {
@@ -1342,7 +1543,15 @@ async function fetchRecipientHistory() {
             }
 
             const div = document.createElement('div');
-            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4`;
+            div.className = `group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-gray-100/60 ${cardBg} hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 gap-4 cursor-pointer`;
+            div.onclick = () => {
+                // Highlight selected request
+                Array.from(historyList.children).forEach(child => {
+                    child.classList.remove('border-red-500', 'bg-red-50/10');
+                });
+                div.classList.add('border-red-500', 'bg-red-50/10');
+                fetchRecipientMatchedDonors(req.id, req);
+            };
             div.innerHTML = `
                 <div class="flex items-center gap-5">
                     <div class="w-12 h-12 ${req.status === 'PENDING' ? 'bg-red-50 border-red-100 text-[#b11e28]' : 'bg-white border-gray-100 text-gray-600'} rounded-full flex items-center justify-center font-bold shadow-sm border group-hover:scale-110 transition-transform">
@@ -1357,6 +1566,12 @@ async function fetchRecipientHistory() {
             `;
             historyList.appendChild(div);
         });
+
+        // Auto-select latest active request to show matches
+        if (data.data.length > 0) {
+            const firstCard = historyList.firstElementChild;
+            if (firstCard) firstCard.click();
+        }
 
     } catch (error) {
         console.error('Failed to fetch recipient history:', error);
@@ -2568,8 +2783,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (token && userStr) {
         try {
             const user = JSON.parse(userStr);
+            window.RoleStore.init(user);
             updateNav(user);
             routeUserToDashboard(user);
+
+            // Dynamically sync fresh user roles/profile in the background
+            fetch('http://localhost:5001/api/users/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data) {
+                    const freshUser = res.data;
+                    localStorage.setItem('user', JSON.stringify(freshUser));
+                    window.RoleStore.init(freshUser);
+                }
+            })
+            .catch(err => console.error('Background profile sync error:', err));
         } catch (e) {
             logout();
         }
@@ -2670,9 +2900,16 @@ async function fetchDonorEligibility() {
                 nextEl.style.color = '#16a34a'; // Green
             } else {
                 const d = new Date(nextEligibleDate);
-                const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                nextEl.textContent = `❌ ${formatted}`;
-                nextEl.style.color = '#ef4444'; // Red
+                const now = new Date();
+                const diffTime = d - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays > 0) {
+                    nextEl.textContent = `⏳ In ${diffDays} Days`;
+                    nextEl.style.color = '#eab308'; // Amber
+                } else {
+                    nextEl.textContent = '✅ Eligible Now';
+                    nextEl.style.color = '#16a34a'; // Green
+                }
             }
         }
     } catch (err) { console.error('Eligibility fetch error:', err); }
@@ -3400,5 +3637,130 @@ function removeProfilePhoto() {
     const user = JSON.parse(localStorage.getItem('user')) || { name: 'User' };
     if (display) {
         display.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
+    }
+}
+
+async function fetchDonorMatchedRequests() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const listElement = document.getElementById('donor-matched-requests-list');
+    if (!listElement) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/donations/matched-requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">Could not load matched requests.</div>';
+            return;
+        }
+
+        if (data.data.length === 0) {
+            listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;"><i class="fas fa-check-circle" style="font-size:1.5rem;color:#16a34a;display:block;margin-bottom:0.5rem;"></i>No pending requests for your blood type currently. Thank you!</div>';
+            return;
+        }
+
+        listElement.innerHTML = '';
+        data.data.forEach(request => {
+            const date = new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            const card = document.createElement('div');
+            card.className = 'group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-red-100 bg-red-50/10 hover:bg-red-50/30 hover:border-red-200 transition-all duration-300 gap-4';
+            
+            let urgencyClass = 'bg-gray-100 text-gray-700';
+            if (request.urgency === 'Urgent') urgencyClass = 'bg-amber-50 text-amber-700 border border-amber-100';
+            else if (request.urgency === 'Critical') urgencyClass = 'bg-red-50 text-red-700 border border-red-100 font-bold';
+
+            card.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-red-500 text-white rounded-full flex flex-col items-center justify-center font-black shadow-sm">
+                        <span class="text-xs">${request.bloodGroup}</span>
+                        <span class="text-[0.65rem] font-bold mt-[-3px]">${request.units}U</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-black text-gray-900 text-[1.05rem]">${escapeHtml(request.hospital)}</h4>
+                            <span class="px-2.5 py-0.5 rounded-full text-[0.65rem] uppercase tracking-wider ${urgencyClass}">${request.urgency}</span>
+                        </div>
+                        <p class="text-gray-500 text-xs font-semibold mt-1">Requested by: ${escapeHtml(request.recipientProfile?.user?.name || 'Anonymous')} | Date: ${date}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="tel:${escapeHtml(request.recipientProfile?.phone || '')}" class="px-4 py-2 bg-white border border-red-200 hover:border-red-500 rounded-xl text-xs font-bold text-[#D32F2F] hover:bg-red-50/50 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+                        <i class="fas fa-phone"></i> Contact
+                    </a>
+                </div>
+            `;
+            listElement.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error fetching matched requests:', error);
+        listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">An error occurred while loading.</div>';
+    }
+}
+
+async function fetchRecipientMatchedDonors(requestId, requestDetails) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const listElement = document.getElementById('recipient-matches-list');
+    const badgeElement = document.getElementById('recipient-matches-badge');
+    if (!listElement) return;
+
+    listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Finding compatible donors...</div>';
+
+    try {
+        const response = await fetch(`http://localhost:5001/api/requests/${requestId}/matched-donors`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">Could not load matched donors.</div>';
+            if (badgeElement) badgeElement.classList.add('hidden');
+            return;
+        }
+
+        const count = data.data.length;
+        if (badgeElement) {
+            badgeElement.textContent = `${count} Matched`;
+            badgeElement.classList.remove('hidden');
+        }
+
+        if (count === 0) {
+            listElement.innerHTML = `<div style="text-align:center;padding:2rem;color:#94a3b8;"><i class="fas fa-heartbeat" style="font-size:1.5rem;color:#ef4444;display:block;margin-bottom:0.5rem;"></i>No matched donors for compatible blood type found yet. We will notify you once a compatible donor matches!</div>`;
+            return;
+        }
+
+        listElement.innerHTML = '';
+        data.data.forEach(donor => {
+            const card = document.createElement('div');
+            card.className = 'group flex flex-col sm:flex-row sm:items-center justify-between p-4 px-6 rounded-2xl border border-indigo-100 bg-indigo-50/10 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all duration-300 gap-4';
+            
+            card.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex flex-col items-center justify-center font-black shadow-sm">
+                        <span class="text-sm">${donor.bloodType}</span>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-gray-900 text-[1.05rem]">${escapeHtml(donor.user?.name || 'Anonymous Donor')}</h4>
+                        <p class="text-gray-500 text-xs font-semibold mt-1">Location: ${escapeHtml(donor.address || 'N/A')} | Phone: ${escapeHtml(donor.phone || 'Hidden')}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="tel:${escapeHtml(donor.phone || '')}" class="px-4 py-2 bg-white border border-indigo-200 hover:border-indigo-500 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+                        <i class="fas fa-phone"></i> Call Donor
+                    </a>
+                </div>
+            `;
+            listElement.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error fetching matched donors:', error);
+        listElement.innerHTML = '<div style="text-align:center;padding:2rem;color:#94a3b8;">An error occurred while loading.</div>';
+        if (badgeElement) badgeElement.classList.add('hidden');
     }
 }
