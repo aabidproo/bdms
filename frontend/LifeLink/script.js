@@ -39,7 +39,15 @@ function profilePopulateDistricts() {
     
     districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
     
-    if (province && nepalDistricts[province]) {
+    if (province && nepalLocations && nepalLocations[province]) {
+        districtSelect.disabled = false;
+        Object.keys(nepalLocations[province]).forEach(district => {
+            const opt = document.createElement('option');
+            opt.value = district;
+            opt.textContent = district;
+            districtSelect.appendChild(opt);
+        });
+    } else if (province && nepalDistricts[province]) {
         districtSelect.disabled = false;
         nepalDistricts[province].forEach(district => {
             const opt = document.createElement('option');
@@ -3356,6 +3364,18 @@ async function initNepalLocations() {
                     opt.value = prov;
                     opt.textContent = prov;
                     regProvinceSelect.appendChild(opt);
+                });
+            }
+
+            // Populate edit profile province select
+            const editProvinceSelect = document.getElementById('edit-profile-province');
+            if (editProvinceSelect) {
+                editProvinceSelect.innerHTML = '<option value="" disabled selected>Select Province</option>';
+                Object.keys(nepalLocations).forEach(prov => {
+                    const opt = document.createElement('option');
+                    opt.value = prov;
+                    opt.textContent = prov;
+                    editProvinceSelect.appendChild(opt);
                 });
             }
         }
