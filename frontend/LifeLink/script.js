@@ -926,6 +926,7 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'donor');
+                loadHospitalsForDonor(profile);
                 
                 // Keep local storage in sync (include avatar)
                 const updatedUser = { ...user, name: profile.name, avatar: profile.avatar || '' };
@@ -954,6 +955,7 @@ function routeUserToDashboard(user) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'recipient');
+                loadHospitalsForDonor(profile);
 
                 // Keep local storage in sync (include avatar)
                 const updatedUser = { ...user, name: profile.name, avatar: profile.avatar || '' };
@@ -3262,10 +3264,15 @@ async function initNepalLocations() {
 }
 
 async function loadHospitalsForDonor(profile) {
+    const currentUser = profile;
+    console.log('[DEBUG] currentUser object:', JSON.stringify(currentUser, null, 2));
+    console.log('[DEBUG] donorProfile:', currentUser?.donorProfile);
+    console.log('[DEBUG] address field:', currentUser?.donorProfile?.address);
+
     // 1. Get donor profile address
-    const address = profile?.donorProfile?.address || 
-                    profile?.recipientProfile?.address ||
-                    profile?.address || '';
+    const address = currentUser?.donorProfile?.address || 
+                    currentUser?.recipientProfile?.address ||
+                    currentUser?.address || '';
     
     console.log('[Hospital Filter] Raw address:', address);
 
@@ -3306,10 +3313,12 @@ async function loadHospitalsForDonor(profile) {
         const params = new URLSearchParams({ district });
         if (province) params.append('province', province);
         
+        console.log('[DEBUG] API URL called:', `/api/locations/hospitals-by-name?${params}`);
+
         const res = await fetch(`http://localhost:5001/api/locations/hospitals-by-name?${params}`);
         const json = await res.json();
         
-        console.log('[Hospital Filter] API response:', json);
+        console.log('[DEBUG] API response:', JSON.stringify(json, null, 2));
         
         if (json.success && json.data.length > 0) {
             dropdown.innerHTML = '<option value="">Choose a hospital...</option>' +
