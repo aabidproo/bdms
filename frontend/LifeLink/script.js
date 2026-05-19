@@ -18,7 +18,7 @@ function toggleAdminSidebar() {
     }
 }
 
-function addToActivityFeed(eventText, type = 'info') {
+function addToActivityFeed(eventText, type = 'info', date = null) {
     const feed = document.getElementById('admin-activity-feed');
     if (!feed) return;
     
@@ -29,21 +29,27 @@ function addToActivityFeed(eventText, type = 'info') {
     let bgColor = 'rgba(99,102,241,0.1)';
     let color = '#6366f1';
     
-    if (type === 'success') {
-        iconClass = 'plus';
+    if (type === 'success' || type === 'donation' || type === 'inventory') {
+        iconClass = type === 'donation' ? 'heart-pulse' : (type === 'inventory' ? 'box' : 'plus');
         bgColor = 'rgba(22,163,74,0.1)';
         color = '#16a34a';
-    } else if (type === 'alert') {
-        iconClass = 'heartbeat';
+    } else if (type === 'alert' || type === 'request') {
+        iconClass = type === 'request' ? 'hand-holding-medical' : 'heartbeat';
         bgColor = 'rgba(211,47,47,0.1)';
         color = '#D32F2F';
+    } else if (type === 'user') {
+        iconClass = 'user-plus';
+        bgColor = 'rgba(99,102,241,0.1)';
+        color = '#6366f1';
     }
+    
+    const timeText = date ? formatTimeAgo(new Date(date)) : 'Just now';
     
     item.innerHTML = `
         <div class="activity-icon" style="background:${bgColor}; color:${color};"><i class="fas fa-${iconClass}"></i></div>
         <div class="activity-content">
             <div>${eventText}</div>
-            <div class="activity-time">Just now</div>
+            <div class="activity-time">${timeText}</div>
         </div>
     `;
     
@@ -52,6 +58,18 @@ function addToActivityFeed(eventText, type = 'info') {
     if (feed.children.length > 10) {
         feed.removeChild(feed.lastChild);
     }
+}
+
+function formatTimeAgo(date) {
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
 }
 
 // === DOM Element Queries ===
@@ -1559,6 +1577,11 @@ async function fetchInventory() {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#84758c;">No inventory found.</td></tr>';
             const unitsEl = document.getElementById('admin-total-units');
             if (unitsEl) unitsEl.textContent = '0';
+            
+            const matrixContainer = document.getElementById('supply-matrix-container');
+            if (matrixContainer) {
+                matrixContainer.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:2rem; color:#94a3b8; font-size:0.9rem;">No blood stock available in matrix.</div>';
+            }
             return;
         }
 
@@ -2470,14 +2493,73 @@ async function fetchAdminStats() {
         });
         const data = await response.json();
         if (data.success) {
+            const stats = data.data;
             const totalUsersEl = document.getElementById('admin-total-users');
             const pendingEl = document.getElementById('admin-pending-count');
-            if (totalUsersEl) totalUsersEl.textContent = data.data.totalUsers || 0;
-            if (pendingEl) pendingEl.textContent = data.data.pendingRequests || 0;
+            if (totalUsersEl) totalUsersEl.textContent = stats.totalUsers || 0;
+            if (pendingEl) pendingEl.textContent = stats.pendingRequests || 0;
+
+            // Update Chart
+            if (stats.requestVolume) {
+                updateRequestChart(stats.requestVolume);
+            }
+
+            // Update Activity Feed
+            if (stats.recentActivity) {
+                const feed = document.getElementById('admin-activity-feed');
+                const emptyState = document.getElementById('activity-empty-state');
+                if (feed) {
+                    // Clear existing items but preserve empty state if needed
+                    const items = feed.querySelectorAll('.activity-item');
+                    items.forEach(el => el.remove());
+
+                    if (stats.recentActivity.length > 0) {
+                        if (emptyState) emptyState.style.display = 'none';
+                        stats.recentActivity.reverse().forEach(act => {
+                            addToActivityFeed(act.text, act.type, act.date);
+                        });
+                    } else {
+                        if (emptyState) emptyState.style.display = 'block';
+                    }
+                }
+            }
         }
     } catch(err) {
         console.error('Failed to fetch admin stats:', err);
     }
+}
+
+function updateRequestChart(volume) {
+    const barsContainer = document.getElementById('admin-request-volume-bars');
+    const labelsContainer = document.getElementById('admin-request-volume-labels');
+    if (!barsContainer || !labelsContainer) return;
+
+    const maxCount = Math.max(...volume.map(v => v.count), 5); // Minimum scale of 5
+    
+    barsContainer.innerHTML = '';
+    labelsContainer.innerHTML = '';
+
+    volume.forEach((v, index) => {
+        const height = (v.count / maxCount) * 100;
+        const date = new Date(v.date);
+        const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+        const isToday = index === volume.length - 1;
+
+        const bar = document.createElement('div');
+        bar.style.flex = '1';
+        bar.style.background = isToday ? '#6366f1' : '#f1f5f9';
+        bar.style.height = `${Math.max(height, 5)}%`;
+        bar.style.borderRadius = '4px';
+        bar.style.transition = 'height 1s cubic-bezier(0.4, 0, 0.2, 1)';
+        if (isToday) bar.style.boxShadow = '0 10px 15px -3px rgba(99, 102, 241, 0.3)';
+        bar.title = `${v.count} requests on ${v.date}`;
+        
+        barsContainer.appendChild(bar);
+
+        const label = document.createElement('span');
+        label.textContent = dayLabel;
+        labelsContainer.appendChild(label);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

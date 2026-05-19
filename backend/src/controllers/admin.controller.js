@@ -21,9 +21,72 @@ const getStats = async (req, res, next) => {
     const totalUnits = inventory.reduce((sum, item) => sum + item.units, 0);
     const scheduledDonations = await prisma.donation.count({ where: { status: 'SCHEDULED' } });
 
+    // --- Request Volume (Last 7 Days) ---
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const requests = await prisma.bloodRequest.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true }
+    });
+
+    const volumeMap = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      volumeMap[key] = 0;
+    }
+
+    requests.forEach(r => {
+      const key = r.createdAt.toISOString().split('T')[0];
+      if (volumeMap[key] !== undefined) volumeMap[key]++;
+    });
+
+    const requestVolume = Object.entries(volumeMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // --- Recent Activity ---
+    const [recentUsers, recentRequests, recentDonations, recentInventory] = await Promise.all([
+      prisma.user.findMany({ 
+        where: { role: { not: 'ADMIN' } },
+        orderBy: { createdAt: 'desc' }, 
+        take: 5,
+        select: { name: true, role: true, createdAt: true }
+      }),
+      prisma.bloodRequest.findMany({ 
+        orderBy: { createdAt: 'desc' }, 
+        take: 5,
+        select: { bloodGroup: true, hospital: true, createdAt: true, status: true }
+      }),
+      prisma.donation.findMany({ 
+        where: { status: 'COMPLETED' },
+        orderBy: { updatedAt: 'desc' }, 
+        take: 5,
+        include: { donorProfile: { include: { user: { select: { name: true } } } } }
+      }),
+      prisma.bloodInventory.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      })
+    ]);
+
+    const activity = [
+      ...recentUsers.map(u => ({ type: 'user', text: `<strong>${u.name}</strong> joined as a ${u.role.toLowerCase()}`, date: u.createdAt })),
+      ...recentRequests.map(r => ({ type: 'request', text: `<strong>${r.bloodGroup}</strong> requested by ${r.hospital}`, date: r.createdAt })),
+      ...recentDonations.map(d => ({ type: 'donation', text: `<strong>${d.donorProfile.user.name}</strong> completed donation (${d.bloodType})`, date: d.updatedAt })),
+      ...recentInventory.map(i => ({ type: 'inventory', text: `Stock updated: ${i.units} units of <strong>${i.bloodGroup}</strong>`, date: i.createdAt }))
+    ];
+
+    const recentActivity = activity
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 10);
+
     res.json({
       success: true,
-      data: { totalUsers, pendingRequests, totalUnits, scheduledDonations }
+      data: { totalUsers, pendingRequests, totalUnits, scheduledDonations, requestVolume, recentActivity }
     });
   } catch (error) {
     next(error);

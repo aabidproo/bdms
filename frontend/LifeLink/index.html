@@ -1756,15 +1756,10 @@
                         <span style="font-size:0.75rem; color:#94a3b8; font-weight:500;">Last synced: Just now</span>
                     </div>
                     <div id="supply-matrix-container" class="supply-matrix-grid">
-                        <!-- Dynamic Blood Group Cards -->
-                        <div class="matrix-card"><div class="matrix-group">A+</div><div class="matrix-level-outer"><div class="matrix-level-inner level-optimal" style="width:65%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#16a34a;">Optimal</span></div>
-                        <div class="matrix-card"><div class="matrix-group">A-</div><div class="matrix-level-outer"><div class="matrix-level-inner level-low" style="width:20%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#ef4444;">Low Stock</span></div>
-                        <div class="matrix-card"><div class="matrix-group">B+</div><div class="matrix-level-outer"><div class="matrix-level-inner level-surplus" style="width:85%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#2563eb;">Surplus</span></div>
-                        <div class="matrix-card"><div class="matrix-group">B-</div><div class="matrix-level-outer"><div class="matrix-level-inner level-optimal" style="width:50%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#16a34a;">Stable</span></div>
-                        <div class="matrix-card"><div class="matrix-group">AB+</div><div class="matrix-level-outer"><div class="matrix-level-inner level-low" style="width:15%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#ef4444;">Critical</span></div>
-                        <div class="matrix-card"><div class="matrix-group">AB-</div><div class="matrix-level-outer"><div class="matrix-level-inner level-optimal" style="width:40%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#16a34a;">Optimal</span></div>
-                        <div class="matrix-card"><div class="matrix-group">O+</div><div class="matrix-level-outer"><div class="matrix-level-inner level-optimal" style="width:70%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#16a34a;">Steady</span></div>
-                        <div class="matrix-card"><div class="matrix-group">O-</div><div class="matrix-level-outer"><div class="matrix-level-inner level-low" style="width:25%;"></div></div><span style="font-size:0.7rem; font-weight:700; color:#ef4444;">Restock Soon</span></div>
+                        <!-- Loading State -->
+                        <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.9rem;">
+                            <i class="fas fa-circle-notch fa-spin" style="margin-right: 0.5rem;"></i> Loading stock matrix...
+                        </div>
                     </div>
                 </div>
 
@@ -1775,7 +1770,7 @@
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
                             <div class="admin-stat-card">
                                 <div class="admin-stat-label">System Users</div>
-                                <div class="admin-stat-value"><span id="admin-total-users">0</span> <div class="stat-trend up">+12%</div></div>
+                                <div class="admin-stat-value"><span id="admin-total-users">0</span></div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-label">Pending Triage</div>
@@ -1788,16 +1783,17 @@
                             <div class="admin-table-header" style="padding:0; border:none; margin-bottom:1rem;">
                                 <h3><i class="fas fa-chart-area" style="color:#6366f1;"></i> Request Volume</h3>
                             </div>
-                            <div style="height:120px; display:flex; align-items:flex-end; gap:0.5rem; padding-top:1rem;">
-                                <div style="flex:1; background:#f1f5f9; height:30%; border-radius:4px;"></div>
-                                <div style="flex:1; background:#f1f5f9; height:50%; border-radius:4px;"></div>
-                                <div style="flex:1; background:#f1f5f9; height:45%; border-radius:4px;"></div>
-                                <div style="flex:1; background:#f1f5f9; height:80%; border-radius:4px;"></div>
-                                <div style="flex:1; background:#6366f1; height:60%; border-radius:4px; box-shadow:0 10px 15px -3px rgba(99, 102, 241, 0.3);"></div>
-                                <div style="flex:1; background:#818cf8; height:90%; border-radius:4px;"></div>
-                                <div style="flex:1; background:#e2e8f0; height:40%; border-radius:4px;"></div>
+                            <div id="admin-request-volume-bars" style="height:120px; display:flex; align-items:flex-end; gap:0.5rem; padding-top:1rem;">
+                                <!-- Dynamic bars -->
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
+                                <div style="flex:1; background:#f1f5f9; height:0%; border-radius:4px;"></div>
                             </div>
-                            <div style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.65rem; color:#94a3b8; font-weight:600;">
+                            <div id="admin-request-volume-labels" style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.65rem; color:#94a3b8; font-weight:600;">
                                 <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
                             </div>
                         </div>
@@ -1808,31 +1804,15 @@
                         <div class="admin-table-header" style="padding:0; border:none; margin-bottom:1rem;">
                             <h3><i class="fas fa-bolt" style="color:#fbbf24;"></i> System Activity</h3>
                         </div>
-                        <div id="admin-activity-feed" style="flex:1; overflow-y:auto; max-height:350px;">
+                        <div id="admin-activity-feed" style="flex:1; overflow-y:auto; max-height:350px; display:flex; flex-direction:column;">
                             <!-- Activity items will be dynamic -->
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:rgba(22,163,74,0.1); color:#16a34a;"><i class="fas fa-plus"></i></div>
-                                <div class="activity-content">
-                                    <div><strong>System</strong> replenished 20 units of <strong>O+</strong></div>
-                                    <div class="activity-time">2 mins ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:rgba(99,102,241,0.1); color:#6366f1;"><i class="fas fa-user-plus"></i></div>
-                                <div class="activity-content">
-                                    <div><strong>Arjun Sharma</strong> joined as a Donor</div>
-                                    <div class="activity-time">45 mins ago</div>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon" style="background:rgba(211,47,47,0.1); color:#D32F2F;"><i class="fas fa-heartbeat"></i></div>
-                                <div class="activity-content">
-                                    <div>Urgent request from <strong>City Hospital</strong></div>
-                                    <div class="activity-time">1 hour ago</div>
-                                </div>
+                            <div id="activity-empty-state" style="text-align:center; padding:3rem 1rem; color:#94a3b8; font-size:0.85rem;">
+                                <i class="fas fa-history" style="font-size:1.5rem; margin-bottom:0.75rem; display:block; opacity:0.5;"></i>
+                                No recent system activity to show.
                             </div>
                         </div>
-                    </div>
+                </div>
+
                 </div>
 
                 </div> <!-- End Dashboard -->
