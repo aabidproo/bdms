@@ -4,6 +4,54 @@
  * LifeLink - Single Page Application Router & Registration Logic
  */
 
+const nepalDistricts = {
+    'Koshi': ['Bhojpur', 'Dhankuta', 'Ilam', 'Jhapa', 'Khotang', 'Morang', 'Okhaldhunga', 'Panchthar', 'Sankhuwasabha', 'Solukhumbu', 'Sunsari', 'Taplejung', 'Terhathum', 'Udayapur'],
+    'Madhesh': ['Bara', 'Dhanusha', 'Mahottari', 'Parsa', 'Rautahat', 'Saptari', 'Sarlahi', 'Siraha'],
+    'Bagmati': ['Bhaktapur', 'Chitwan', 'Dhading', 'Dolakha', 'Kathmandu', 'Kavrepalanchok', 'Lalitpur', 'Makwanpur', 'Nuwakot', 'Ramechhap', 'Rasuwa', 'Sindhuli', 'Sindhupalchok'],
+    'Gandaki': ['Baglung', 'Gorkha', 'Kaski', 'Lamjung', 'Manang', 'Mustang', 'Myagdi', 'Nawalpur', 'Parbat', 'Syangja', 'Tanahun'],
+    'Lumbini': ['Arghakhanchi', 'Banke', 'Bardiya', 'Dang', 'Eastern Rukum', 'Gulmi', 'Kapilvastu', 'Parasi', 'Palpa', 'Pyuthan', 'Rolpa', 'Rupandehi'],
+    'Karnali': ['Dailekh', 'Dolpa', 'Humla', 'Jajarkot', 'Jumla', 'Kalikot', 'Mugu', 'Salyan', 'Surkhet', 'Western Rukum'],
+    'Sudurpashchim': ['Achham', 'Baitadi', 'Bajhang', 'Bajura', 'Dadeldhura', 'Darchula', 'Doti', 'Kailali', 'Kanchanpur']
+};
+
+function populateDistricts() {
+    const province = document.getElementById('reg-province').value;
+    const districtSelect = document.getElementById('reg-district');
+    
+    districtSelect.innerHTML = '<option value="" disabled selected>District</option>';
+    
+    if (province && nepalDistricts[province]) {
+        districtSelect.disabled = false;
+        nepalDistricts[province].forEach(district => {
+            const opt = document.createElement('option');
+            opt.value = district;
+            opt.textContent = district;
+            districtSelect.appendChild(opt);
+        });
+    } else {
+        districtSelect.disabled = true;
+    }
+}
+
+function profilePopulateDistricts() {
+    const province = document.getElementById('edit-profile-province').value;
+    const districtSelect = document.getElementById('edit-profile-district');
+    
+    districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
+    
+    if (province && nepalDistricts[province]) {
+        districtSelect.disabled = false;
+        nepalDistricts[province].forEach(district => {
+            const opt = document.createElement('option');
+            opt.value = district;
+            opt.textContent = district;
+            districtSelect.appendChild(opt);
+        });
+    } else {
+        districtSelect.disabled = true;
+    }
+}
+
 
 // === Admin Dashboard Enhancements ===
 function toggleAdminSidebar() {
@@ -534,14 +582,18 @@ function nextAuthStep() {
         const pass = document.getElementById('reg-password').value;
         const conf = document.getElementById('reg-confirm').value;
         const blood = document.getElementById('reg-blood').value;
-        const address = document.getElementById('reg-address').value;
+        const prov = document.getElementById('reg-province').value;
+        const dist = document.getElementById('reg-district').value;
+        const city = document.getElementById('reg-city').value;
 
         if (!email) return showError('Email is required.');
         if (!pass) return showError('Password is required.');
         if (pass.length < 6) return showError('Password must be at least 6 characters.');
         if (pass !== conf) return showError('Passwords do not match.');
         if (!blood) return showError('Please select a blood type.');
-        if (!address) return showError('Address is required.');
+        if (!prov) return showError('Province is required.');
+        if (!dist) return showError('District is required.');
+        if (!city) return showError('City/Local address is required.');
 
         if (authRole === 'donor') {
             currentStepEl.classList.add('fade-out');
@@ -625,18 +677,18 @@ async function completeRegistration() {
     const email = document.getElementById('reg-email').value;
     const pass = document.getElementById('reg-password').value;
     const blood = document.getElementById('reg-blood').value;
-    const province = document.getElementById('reg-province').value;
-    const district = document.getElementById('reg-district').value;
-    const address = document.getElementById('reg-address').value;
+    const prov = document.getElementById('reg-province').value;
+    const dist = document.getElementById('reg-district').value;
+    const city = document.getElementById('reg-city').value;
 
     if (!name || name.length < 2) return showError('Name must be at least 2 characters.');
     if (!phone || phone.length < 7) return showError('Phone number must be at least 7 characters.');
     if (!email) return showError('Email is required.');
     if (!pass || pass.length < 6) return showError('Password must be at least 6 characters.');
     if (!blood) return showError('Please select a blood type.');
-    if (!province) return showError('Please select a province.');
-    if (!district) return showError('Please select a district.');
-    if (!address) return showError('Address is required.');
+    if (!prov || !dist || !city) return showError('Full address (Province, District, City) is required.');
+    
+    const address = `${city}, ${dist}, ${prov}`;
 
     if (authRole === 'recipient') {
         btn = document.getElementById('step-2-next-btn');
@@ -665,9 +717,9 @@ async function completeRegistration() {
             name: document.getElementById('reg-name').value,
             role: authRole.toUpperCase(),
             phone: document.getElementById('reg-phone').value,
-            province: document.getElementById('reg-province').value,
-            district: document.getElementById('reg-district').value,
-            address: document.getElementById('reg-address').value,
+            province: prov,
+            district: dist,
+            address: address,
             bloodType: document.getElementById('reg-blood').value,
             medicalCondition: document.getElementById('reg-medical').value || null
         };
@@ -3605,7 +3657,7 @@ function initChatbot() {
         <div id="lifelink-chat-window">
             <div id="lifelink-chat-header">
                 <span style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-robot"></i> LifeLink Assistant 🩸
+                    <img src="./photos/Logo.png" alt="LifeLink Logo" style="width:22px;height:22px;object-fit:contain;display:inline-block;vertical-align:middle;margin-right:6px;"/> LifeLink Assistant 🩸
                 </span>
                 <span class="close-btn" id="lifelink-chat-close">&times;</span>
             </div>
@@ -3617,7 +3669,7 @@ function initChatbot() {
             </div>
         </div>
         <div id="lifelink-chat-bubble" title="Need help?">
-            <i class="fas fa-tint"></i>
+            <img src="./photos/Logo.png" alt="LifeLink Logo" style="width:26px;height:26px;object-fit:contain;"/>
         </div>
     `;
     document.body.appendChild(chatContainer);
@@ -3840,7 +3892,29 @@ async function showProfileSettings() {
             document.getElementById('edit-profile-email').value = user.email;
             document.getElementById('edit-profile-phone').value = profile.phone || '';
             document.getElementById('edit-profile-blood').value = profile.bloodType || 'N/A';
-            document.getElementById('edit-profile-address').value = profile.address || '';
+            
+            // Parse and populate the structured address fields
+            const fullAddress = profile.address || '';
+            const parts = fullAddress.split(',').map(p => p.trim());
+            let city = '';
+            let district = '';
+            let province = '';
+            
+            if (parts.length === 3) {
+                city = parts[0];
+                district = parts[1];
+                province = parts[2];
+            } else if (parts.length === 2) {
+                city = parts[0];
+                district = parts[1];
+            } else {
+                city = fullAddress;
+            }
+
+            document.getElementById('edit-profile-province').value = province || '';
+            profilePopulateDistricts();
+            document.getElementById('edit-profile-district').value = district || '';
+            document.getElementById('edit-profile-city').value = city || '';
             
             // Set Avatar
             const avatar = document.getElementById('profile-avatar-display');
@@ -3899,22 +3973,27 @@ async function saveProfileChanges() {
     const name = document.getElementById('edit-profile-name').value;
     const email = document.getElementById('edit-profile-email').value;
     const phone = document.getElementById('edit-profile-phone').value;
-    const address = document.getElementById('edit-profile-address').value;
     const bloodType = document.getElementById('edit-profile-blood').value;
+    
+    const prov = document.getElementById('edit-profile-province').value;
+    const dist = document.getElementById('edit-profile-district').value;
+    const city = document.getElementById('edit-profile-city').value;
 
     const user = JSON.parse(localStorage.getItem('user')) || {};
     const isAdmin = user.role === 'ADMIN';
 
+    let address = '';
     if (isAdmin) {
         if (!name) {
             alert('Please fill in your name.');
             return;
         }
     } else {
-        if (!name || !email || !phone || !address || !bloodType) {
+        if (!name || !email || !phone || !prov || !dist || !city || !bloodType) {
             alert('Please fill in all required fields.');
             return;
         }
+        address = `${city}, ${dist}, ${prov}`;
     }
 
     try {
