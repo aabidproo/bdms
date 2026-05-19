@@ -495,21 +495,23 @@ const updateRequestStatus = async (req, res, next) => {
     }
 
     if (status === 'APPROVED' && request.status === 'PENDING') {
+      const { allocatedUnits } = req.body;
       const batches = await prisma.bloodInventory.findMany({
         where: { bloodGroup: request.bloodGroup },
         orderBy: { donationDate: 'asc' }
       });
 
       const totalAvailable = batches.reduce((sum, b) => sum + b.units, 0);
+      const unitsNeeded = allocatedUnits ? parseInt(allocatedUnits) : request.units;
 
-      if (totalAvailable < request.units) {
+      if (totalAvailable < unitsNeeded) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient ${request.bloodGroup} stock. Available: ${totalAvailable}, Requested: ${request.units}`
+          message: `Insufficient ${request.bloodGroup} stock. Available: ${totalAvailable}, Requested/Allocated: ${unitsNeeded}`
         });
       }
 
-      let unitsToDeduct = request.units;
+      let unitsToDeduct = unitsNeeded;
       for (const batch of batches) {
         if (unitsToDeduct <= 0) break;
         if (batch.units <= unitsToDeduct) {
@@ -522,6 +524,14 @@ const updateRequestStatus = async (req, res, next) => {
           });
           unitsToDeduct = 0;
         }
+      }
+
+      if (unitsNeeded !== request.units) {
+        await prisma.bloodRequest.update({
+          where: { id },
+          data: { units: unitsNeeded }
+        });
+        request.units = unitsNeeded;
       }
     }
 
