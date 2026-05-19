@@ -3255,12 +3255,6 @@ async function initNepalLocations() {
                     regProvinceSelect.appendChild(opt);
                 });
             }
-            
-            // Populate donation-location (Choose a hospital...) is now handled dynamically by loadHospitalsForDonor()
-            const donationLocSelect = document.getElementById('donation-location');
-            if (donationLocSelect) {
-                donationLocSelect.innerHTML = '<option value="" disabled selected>Choose a hospital...</option>';
-            }
         }
     } catch (error) {
         console.error('Failed to load Nepal locations:', error);
