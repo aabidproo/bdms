@@ -67,10 +67,14 @@ const updateProfile = async (req, res, next) => {
 
     // Update User and Profile in a transaction
     const updated = await prisma.$transaction(async (tx) => {
-      // Update basic user info
+      // Update basic user info — only include avatar if explicitly sent
+      const userData = { name, email };
+      if (avatar !== undefined) {
+        userData.avatar = avatar;
+      }
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: { name, email, avatar },
+        data: userData,
       });
 
       let updatedProfile = null;

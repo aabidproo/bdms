@@ -866,8 +866,10 @@ function routeUserToDashboard(user) {
                 
                 populateDetailedProfile(profile, 'donor');
                 
-                // Keep local storage in sync
-                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
+                // Keep local storage in sync (include avatar)
+                const updatedUser = { ...user, name: profile.name, avatar: profile.avatar || '' };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                updateNav(updatedUser);
             }
         }).catch(err => console.error('Error fetching donor profile:', err));
 
@@ -892,8 +894,10 @@ function routeUserToDashboard(user) {
                 
                 populateDetailedProfile(profile, 'recipient');
 
-                // Keep local storage in sync
-                localStorage.setItem('user', JSON.stringify({ ...user, name: profile.name }));
+                // Keep local storage in sync (include avatar)
+                const updatedUser = { ...user, name: profile.name, avatar: profile.avatar || '' };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                updateNav(updatedUser);
             }
         }).catch(err => console.error('Error fetching recipient profile:', err));
 
@@ -3480,6 +3484,33 @@ async function showProfileSettings() {
                 }
             }
 
+            // Role specific UI adjustments
+            const phoneGroup = document.getElementById('profile-phone-group');
+            const bloodGroup = document.getElementById('profile-blood-group');
+            const addressGroup = document.getElementById('profile-address-group');
+            const securityCard = document.getElementById('profile-security-card');
+            const emailInput = document.getElementById('edit-profile-email');
+
+            if (user.role === 'ADMIN') {
+                if (phoneGroup) phoneGroup.style.display = 'none';
+                if (bloodGroup) bloodGroup.style.display = 'none';
+                if (addressGroup) addressGroup.style.display = 'none';
+                if (securityCard) securityCard.style.display = 'none';
+                if (emailInput) {
+                    emailInput.disabled = true;
+                    emailInput.classList.add('opacity-60', 'cursor-not-allowed');
+                }
+            } else {
+                if (phoneGroup) phoneGroup.style.display = 'block';
+                if (bloodGroup) bloodGroup.style.display = 'block';
+                if (addressGroup) addressGroup.style.display = 'block';
+                if (securityCard) securityCard.style.display = 'block';
+                if (emailInput) {
+                    emailInput.disabled = false;
+                    emailInput.classList.remove('opacity-60', 'cursor-not-allowed');
+                }
+            }
+
             navigateTo('profile-settings');
         } else {
             alert(data.message || 'Failed to load profile.');
@@ -3501,14 +3532,37 @@ async function saveProfileChanges() {
     const address = document.getElementById('edit-profile-address').value;
     const bloodType = document.getElementById('edit-profile-blood').value;
 
-    if (!name || !email || !phone || !address || !bloodType) {
-        alert('Please fill in all required fields.');
-        return;
+    const user = JSON.parse(localStorage.getItem('user')) || {};
+    const isAdmin = user.role === 'ADMIN';
+
+    if (isAdmin) {
+        if (!name) {
+            alert('Please fill in your name.');
+            return;
+        }
+    } else {
+        if (!name || !email || !phone || !address || !bloodType) {
+            alert('Please fill in all required fields.');
+            return;
+        }
     }
 
     try {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        // Build payload — only include avatar if it was explicitly changed
+        // For admin, exclude email since it's sensitive and not editable, and omit donor/recipient fields
+        let payload = {};
+        if (isAdmin) {
+            payload = { name };
+        } else {
+            payload = { name, email, phone, address, bloodType };
+        }
+
+        if (currentAvatarBase64 !== null) {
+            payload.avatar = currentAvatarBase64;
+        }
 
         const res = await fetch('http://localhost:5001/api/users/profile', {
             method: 'PUT',
@@ -3516,7 +3570,7 @@ async function saveProfileChanges() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ name, email, phone, address, bloodType, avatar: currentAvatarBase64 })
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();
@@ -3612,7 +3666,7 @@ async function updateUserPassword() {
 }
 
 // === Avatar & Photo Management ===
-document.addEventListener('change', (e) => {
+document.addEventListener('change', async (e) => {
     if (e.target && e.target.id === 'avatar-upload') {
         const file = e.target.files[0];
         if (file) {
@@ -3621,23 +3675,59 @@ document.addEventListener('change', (e) => {
                 return;
             }
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 currentAvatarBase64 = event.target.result;
                 const display = document.getElementById('profile-avatar-display');
                 if (display) display.src = currentAvatarBase64;
+                
+                // Automatically save the avatar to the server
+                await autoSaveAvatar(currentAvatarBase64);
             };
             reader.readAsDataURL(file);
         }
     }
 });
 
-function removeProfilePhoto() {
+async function autoSaveAvatar(avatarBase64) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const res = await fetch('http://localhost:5001/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            // Just update the avatar, the backend will preserve other fields
+            body: JSON.stringify({ avatar: avatarBase64 })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            // Update local storage and nav
+            const user = JSON.parse(localStorage.getItem('user'));
+            user.avatar = data.data.user.avatar;
+            localStorage.setItem('user', JSON.stringify(user));
+            updateNav(user);
+        } else {
+            alert('Failed to save avatar dynamically: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Avatar Auto-Save Error:', error);
+    }
+}
+
+async function removeProfilePhoto() {
     currentAvatarBase64 = ""; // Empty string tells backend to clear it
     const display = document.getElementById('profile-avatar-display');
     const user = JSON.parse(localStorage.getItem('user')) || { name: 'User' };
     if (display) {
         display.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=200`;
     }
+    
+    // Automatically clear the avatar on the server
+    await autoSaveAvatar("");
 }
 
 async function fetchDonorMatchedRequests() {
