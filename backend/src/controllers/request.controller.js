@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { createNotification } = require('./notification.controller');
 
 // ─── POST /api/requests ─────────────────────────────────
 const submitRequest = async (req, res, next) => {
@@ -11,7 +12,8 @@ const submitRequest = async (req, res, next) => {
 
     // Get recipient profile
     const recipientProfile = await prisma.recipientProfile.findUnique({
-      where: { userId: req.user.userId }
+      where: { userId: req.user.userId },
+      include: { user: true }
     });
 
     if (!recipientProfile) {
@@ -28,6 +30,22 @@ const submitRequest = async (req, res, next) => {
         status: 'PENDING',
       }
     });
+
+    // Notify Recipient
+    await createNotification(
+      req.user.userId,
+      'Blood Request Submitted 📥',
+      `Your request for ${units} units of ${bloodGroup} at ${hospital} (Urgency: ${urgency || 'Normal'}) has been successfully submitted.`,
+      'info'
+    );
+
+    // Notify Admins
+    await createNotification(
+      null, // Admin notification
+      urgency === 'Urgent' ? '🚨 URGENT Blood Request Received' : '📋 New Blood Request Triage Required',
+      `Patient ${recipientProfile.user?.name || 'Anonymous'} has requested ${units} units of ${bloodGroup} at ${hospital} with ${urgency || 'Normal'} priority.`,
+      urgency === 'Urgent' ? 'danger' : 'warning'
+    );
 
     res.status(201).json({
       success: true,

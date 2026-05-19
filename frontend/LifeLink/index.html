@@ -34,43 +34,125 @@
                 alt="LifeLink Logo" class="h-10 w-10 object-contain">
             <span class="text-xl font-extrabold tracking-tight">LifeLink</span>
         </a>
-        <div class="nav-links hidden md:flex items-center gap-8 font-medium">
-            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
-                data-target="home">Home</a>
-            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
-                data-target="find-blood">Find Blood</a>
-            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
-                data-target="about-us">About Us</a>
-            <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
-                data-target="donors-page">Donors</a>
-            <div id="nav-role-toggle-container" class="hidden items-center mr-4"></div>
-            <div id="nav-user-container" class="hidden items-center relative">
-                <div class="flex items-center gap-2 cursor-pointer group" onclick="toggleDropdown(event)">
-                    <img id="nav-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-white/50 object-cover hidden">
-                    <span id="nav-user-name" class="text-white font-bold text-sm group-hover:text-white/80 transition-colors" title="User Menu"></span>
-                    <i class="fas fa-chevron-down text-white text-xs group-hover:text-white/80 transition-colors"></i>
-                </div>
+        <!-- Wrapper container to align mobile menu, bell, and desktop links -->
+        <div class="flex items-center gap-4">
+            
+            <!-- Notification Bell Icon (Visible to all logged-in users on both Desktop and Mobile!) -->
+            <div id="nav-notification-container" class="hidden items-center relative mr-1 md:mr-3">
+                <button onclick="toggleNotifications(event)" class="relative p-2 text-white/80 hover:text-white transition-all focus:outline-none flex items-center justify-center rounded-full hover:bg-white/10" title="Notifications">
+                    <i class="fas fa-bell text-lg"></i>
+                    <!-- Badge -->
+                    <span id="notification-badge" class="hidden absolute top-1 right-1 bg-white text-[#b21e29] rounded-full w-4 h-4 flex items-center justify-center font-black text-[9px] border border-[#b21e29] animate-pulse">0</span>
+                </button>
                 
-                <!-- Dropdown Menu -->
-                <div id="nav-dropdown" class="hidden absolute top-full right-0 mt-4 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 transform origin-top-right transition-all">
-                    <div class="py-1">
-                        <a href="#" onclick="event.preventDefault(); showProfileSettings(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
-                            <i class="fas fa-user-circle"></i> View Profile
-                        </a>
-                        <div class="h-px bg-gray-100 my-1"></div>
-                        <a href="#" onclick="event.preventDefault(); logout(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
+                <!-- Notification Dropdown Menu -->
+                <div id="notification-dropdown" class="hidden absolute top-full right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 transform origin-top-right transition-all" style="box-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+                            <i class="fas fa-bell text-[#b11e28]"></i> Notifications
+                        </h3>
+                        <button onclick="markAllNotificationsRead(event)" class="text-xs font-bold text-[#b11e28] hover:text-red-800 transition-colors flex items-center gap-1">
+                            <i class="fas fa-check-double"></i> Mark all read
+                        </button>
+                    </div>
+                    
+                    <!-- Notification List -->
+                    <div id="notification-list" class="overflow-y-auto divide-y divide-gray-50 max-h-[350px]">
+                        <div class="p-8 text-center text-gray-400">
+                            <i class="fas fa-bell-slash text-3xl mb-2 block"></i>
+                            <span class="text-sm font-medium">No notifications yet</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <button id="nav-login-btn"
-                class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95"
-                data-target="login">
-                Portal Login
+
+            <div class="nav-links hidden md:flex items-center gap-8 font-medium">
+                <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
+                    data-target="home">Home</a>
+                <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
+                    data-target="find-blood">Find Blood</a>
+                <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
+                    data-target="about-us">About Us</a>
+                <a href="#" class="nav-link text-white/90 hover:text-white transition-colors text-sm tracking-wide"
+                    data-target="donors-page">Donors</a>
+                <div id="nav-role-toggle-container" class="hidden items-center mr-4"></div>
+                <div id="nav-user-container" class="hidden items-center relative">
+                    <div class="flex items-center gap-2 cursor-pointer group" onclick="toggleDropdown(event)">
+                        <img id="nav-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-white/50 object-cover hidden">
+                        <span id="nav-user-name" class="text-white font-bold text-sm group-hover:text-white/80 transition-colors" title="User Menu"></span>
+                        <i class="fas fa-chevron-down text-white text-xs group-hover:text-white/80 transition-colors"></i>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="nav-dropdown" class="hidden absolute top-full right-0 mt-4 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 transform origin-top-right transition-all">
+                        <div class="py-1">
+                            <a href="#" onclick="event.preventDefault(); showProfileSettings(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
+                                <i class="fas fa-user-circle"></i> View Profile
+                            </a>
+                            <div class="h-px bg-gray-100 my-1"></div>
+                            <a href="#" onclick="event.preventDefault(); logout(); toggleDropdown();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#b11e28] transition-colors flex items-center gap-2">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <button id="nav-login-btn"
+                    class="nav-login bg-white text-[#b11e28] px-6 py-2.5 rounded-full hover:bg-white/90 hover:shadow-lg hover:shadow-black/10 transition-all font-bold text-sm active:scale-95"
+                    data-target="login">
+                    Portal Login
+                </button>
+            </div>
+            <!-- Hamburger Button (Mobile Only) -->
+            <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none text-2xl flex items-center justify-center p-2 rounded-lg hover:bg-white/10 active:scale-95 transition-all">
+                <i class="fas fa-bars"></i>
             </button>
         </div>
     </nav>
+
+    <!-- Mobile Nav Drawer Overlay -->
+    <div id="mobile-nav-overlay" class="fixed inset-0 bg-black/50 z-40 hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm"></div>
+
+    <!-- Mobile Nav Drawer -->
+    <div id="mobile-nav-drawer" class="fixed top-0 right-0 h-full w-4/5 max-w-sm bg-[#b21e29] text-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+        <!-- Close Button & Logo -->
+        <div class="flex items-center justify-between p-6 border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <img src="./photos/Logo.png" alt="LifeLink Logo" class="h-8 w-8 object-contain">
+                <span class="text-lg font-extrabold tracking-tight">LifeLink</span>
+            </div>
+            <button id="mobile-menu-close-btn" class="text-white hover:text-white/85 text-2xl focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Links -->
+        <div class="flex-1 overflow-y-auto py-6 px-6 space-y-6 flex flex-col">
+            <a href="#" class="mobile-nav-link text-white/90 hover:text-white text-lg font-bold transition-all py-2 border-b border-white/5" data-target="home">Home</a>
+            <a href="#" class="mobile-nav-link text-white/90 hover:text-white text-lg font-bold transition-all py-2 border-b border-white/5" data-target="find-blood">Find Blood</a>
+            <a href="#" class="mobile-nav-link text-white/90 hover:text-white text-lg font-bold transition-all py-2 border-b border-white/5" data-target="about-us">About Us</a>
+            <a href="#" class="mobile-nav-link text-white/90 hover:text-white text-lg font-bold transition-all py-2 border-b border-white/5" data-target="donors-page">Donors</a>
+            
+            <div id="mobile-nav-user-section" class="pt-4 hidden border-t border-white/10 space-y-4">
+                <div class="flex items-center gap-3 py-2">
+                    <img id="mobile-nav-avatar" src="" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-white/50 object-cover">
+                    <div>
+                        <div id="mobile-nav-name" class="font-bold text-base">User Name</div>
+                        <div class="text-xs text-white/60 font-medium">Logged In</div>
+                    </div>
+                </div>
+                <a href="#" onclick="event.preventDefault(); showProfileSettings(); closeMobileMenu();" class="flex items-center gap-2 py-2 text-white/90 hover:text-white font-bold transition-colors">
+                    <i class="fas fa-user-circle"></i> View Profile
+                </a>
+                <a href="#" onclick="event.preventDefault(); logout(); closeMobileMenu();" class="flex items-center gap-2 py-2 text-white/90 hover:text-white font-bold transition-colors">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+
+            <button id="mobile-nav-login-btn" class="w-full bg-white text-[#b11e28] py-3.5 rounded-full hover:bg-white/95 font-bold text-base active:scale-95 transition-all mt-auto" data-target="login">
+                Portal Login
+            </button>
+        </div>
+    </div>
 
     <!-- Page 1: Home Page (Landing) -->
     <section id="home" class="page-section active">
@@ -519,16 +601,19 @@
                         <span class="text-5xl font-light text-gray-300 tracking-tight">Settings</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-wrap md:flex-nowrap">
                     <button onclick="goToDashboard()" class="px-6 py-3 text-sm font-bold text-gray-400 hover:text-gray-900 transition-all flex items-center gap-2">
                         <i class="fas fa-chevron-left text-xs"></i> Back to Dashboard
+                    </button>
+                    <button onclick="logout()" class="px-6 py-3 text-sm font-bold text-[#b11e28] hover:text-red-800 transition-all flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt text-xs"></i> Logout
                     </button>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                 <!-- Left Sidebar: Profile Card -->
-                <div class="lg:col-span-4 space-y-8 sticky top-24">
+                <div id="profile-card-container" class="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
                     <div class="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col items-center text-center relative overflow-hidden group">
                         <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-gray-50 to-white -z-0"></div>
                         
@@ -1346,72 +1431,79 @@
         <div class="max-w-6xl mx-auto space-y-10 relative overflow-hidden w-full">
 
             <!-- Elegant Header -->
-            <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
-                <div class="space-y-2">
+            <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10 w-full">
+                <div class="space-y-2 flex-1 min-w-0">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-md rounded-full border border-gray-100 shadow-sm mb-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="text-xs font-semibold text-gray-600 uppercase tracking-widest">Donor Portal</span>
                     </div>
-                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-                        Welcome back, <span id="donor-name-display" class="text-[#D32F2F]">User</span>!
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                        Welcome back, <span id="donor-name-display" class="text-[#D32F2F] whitespace-nowrap">User</span>!
                     </h2>
                     <p class="text-lg text-gray-500 font-medium">Your journey to making a difference starts here.</p>
                 </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="showProfileSettings()" class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:shadow-md transition-all active:scale-95">
-                        <i class="fas fa-user-cog text-[#D32F2F]"></i>
-                        View Profile
-                    </button>
+                <div class="flex items-center gap-3 flex-wrap md:flex-nowrap flex-shrink-0 md:mb-1">
+                    <button class="group relative bg-gradient-to-r from-[#b11e28] to-[#8a151d] text-white px-6 py-3 rounded-full text-sm font-bold transition-all shadow-[0_8px_20px_rgba(177,30,40,0.25)] hover:shadow-[0_8px_25px_rgba(177,30,40,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden whitespace-nowrap" onclick="document.getElementById('donor-schedule-form').scrollIntoView({behavior: 'smooth'})">
+                         <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
+                         <i class="fas fa-hand-holding-heart"></i> 
+                         <span>Schedule Donation</span>
+                      </button>
                 </div>
             </header>
 
-            <!-- Floating Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+            <!-- Floating Donor Status & Progress -->
+            <div id="donor-status-container" class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white z-10">
+                <div class="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 tracking-tight">Active Donation Tracker</h3>
+                        <p id="donor-active-info" class="text-sm text-gray-500 font-semibold font-medium mt-1">You have no active appointments. Book one to begin your next life-saving journey.</p>
+                    </div>
+                    <span id="donor-eligibility-badge" class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> <span id="donor-next-eligible">Eligible Now</span>
+                    </span>
+                </div>
                 
-                <div class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col items-center justify-center gap-2 transition-all hover:-translate-y-1.5 duration-500">
-                    <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Your Blood Type</p>
-                    <div class="w-16 h-16 bg-white border border-red-100 text-[#D32F2F] rounded-full flex items-center justify-center text-2xl font-black shadow-sm mb-1">
-                        <span id="donor-blood-display">N/A</span>
+                <!-- Visual Stepper representing the Donation Journey -->
+                <div id="donor-stepper" class="relative flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mx-auto pt-4 pb-2 opacity-50 pointer-events-none">
+                    <!-- Line connections -->
+                    <div class="absolute top-9 left-[12.5%] right-[12.5%] h-1 -translate-y-1/2 hidden md:block z-0">
+                        <div class="absolute inset-0 bg-gray-100 rounded-full"></div>
+                        <!-- Partial progress line -->
+                        <div id="donor-stepper-progress" class="absolute left-0 top-0 bottom-0 bg-[#D32F2F] rounded-full transition-all duration-1000" style="width: 0%;"></div>
                     </div>
-                </div>
 
-                <div class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col gap-4 transition-all hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(211,47,47,0.08)] duration-500">
-                    <div class="flex items-center justify-between">
-                        <div class="p-4 rounded-2xl bg-blue-50 text-blue-500 shadow-sm">
-                            <i class="fas fa-hand-holding-heart text-2xl"></i>
+                    <!-- Step 1 (Schedule) -->
+                    <div id="donor-step-scheduled" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-calendar-alt text-sm"></i>
                         </div>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Scheduled</p>
                     </div>
-                    <div class="mt-1 text-left">
-                        <h3 id="donor-total-donations" class="text-4xl font-extrabold text-gray-900 tracking-tight">0</h3>
-                        <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Total Donations</p>
-                    </div>
-                </div>
 
-                <div class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col gap-4 transition-all hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(211,47,47,0.08)] duration-500">
-                    <div class="flex items-center justify-between">
-                        <div class="p-4 rounded-2xl bg-rose-50 text-rose-500 shadow-sm relative">
-                            <i class="fas fa-heartbeat text-2xl"></i>
+                    <!-- Step 2 (Donate) -->
+                    <div id="donor-step-donated" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-hand-holding-heart text-sm"></i>
                         </div>
-                        <div class="w-16 h-16 absolute top-4 right-4 bg-red-400/20 blur-2xl rounded-full"></div>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Donated</p>
                     </div>
-                    <div class="mt-1 text-left relative z-10">
-                        <h3 id="donor-lives-saved" class="text-4xl font-extrabold text-gray-900 tracking-tight">0</h3>
-                        <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Lives Saved</p>
-                    </div>
-                </div>
 
-                <div class="relative bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col gap-4 transition-all hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(211,47,47,0.08)] duration-500">
-                    <div class="flex items-center justify-between">
-                        <div class="p-4 rounded-2xl bg-emerald-50 text-emerald-500 shadow-sm">
-                            <i class="fas fa-calendar-check text-2xl"></i>
+                    <!-- Step 3 (Screen / Test) -->
+                    <div id="donor-step-tested" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-microscope text-sm"></i>
                         </div>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Screened</p>
                     </div>
-                    <div class="mt-1 text-left">
-                        <h3 id="donor-next-eligible" class="text-3xl font-extrabold text-gray-900 tracking-tight">—</h3>
-                        <p class="text-sm font-semibold tracking-wide text-gray-500 uppercase mt-1">Next Eligible</p>
+
+                    <!-- Step 4 (Save Lives) -->
+                    <div id="donor-step-completed" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
+                        <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
+                            <i class="fas fa-heartbeat text-sm"></i>
+                        </div>
+                        <p class="text-sm font-bold text-gray-500 hidden md:block">Completed</p>
                     </div>
                 </div>
-
             </div>
 
             <!-- Main Content Grid -->
@@ -1466,6 +1558,31 @@
 
                 <!-- Dynamic History & Matches Column -->
                 <div class="lg:col-span-7 flex flex-col gap-6">
+                    <!-- Top stats sub-panel -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex items-center gap-4 transition-all hover:-translate-y-1 duration-300">
+                            <div class="p-3 bg-red-50 text-[#D32F2F] rounded-xl shadow-sm"><i class="fas fa-tint text-xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Blood Type</p>
+                                <p id="donor-blood-display" class="text-2xl font-black text-gray-900">N/A</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex items-center gap-4 transition-all hover:-translate-y-1 duration-300">
+                            <div class="p-3 bg-blue-50 text-blue-500 rounded-xl shadow-sm"><i class="fas fa-hand-holding-heart text-xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Donations</p>
+                                <p id="donor-total-donations" class="text-2xl font-black text-gray-900">0</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex items-center gap-4 transition-all hover:-translate-y-1 duration-300">
+                            <div class="p-3 bg-rose-50 text-rose-500 rounded-xl shadow-sm"><i class="fas fa-heartbeat text-xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Lives Saved</p>
+                                <p id="donor-lives-saved" class="text-2xl font-black text-gray-900">0</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Donation History List -->
                     <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 h-max">
                         <div class="flex items-center justify-between mb-8">
@@ -1507,23 +1624,19 @@
         <div class="max-w-6xl mx-auto space-y-10 relative overflow-hidden w-full">
 
             <!-- Elegant Header -->
-            <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
-                <div class="space-y-2">
+            <header class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10 w-full">
+                <div class="space-y-2 flex-1 min-w-0">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-md rounded-full border border-gray-100 shadow-sm mb-2">
                         <span class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
                         <span class="text-xs font-semibold text-gray-600 uppercase tracking-widest">Patient Portal</span>
                     </div>
-                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-                        Welcome back, <span id="recipient-name-display" class="text-[#b11e28]">User</span><span class="text-[#b11e28]">!</span>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                        Welcome back, <span id="recipient-name-display" class="text-[#b11e28] whitespace-nowrap">User</span>!
                     </h2>
                     <p class="text-lg text-gray-500 font-medium">Manage your blood requests and track life-saving deliveries.</p>
                 </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="showProfileSettings()" class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-full text-sm font-bold text-gray-600 hover:bg-gray-50 hover:shadow-md transition-all active:scale-95">
-                        <i class="fas fa-user-cog text-[#b11e28]"></i>
-                        View Profile
-                    </button>
-                    <button class="group relative bg-gradient-to-r from-[#b11e28] to-[#8a151d] text-white px-8 py-3.5 rounded-full font-semibold transition-all shadow-[0_8px_20px_rgba(177,30,40,0.25)] hover:shadow-[0_8px_25px_rgba(177,30,40,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden" onclick="document.getElementById('recipient-request-form').scrollIntoView({behavior: 'smooth'})">
+                <div class="flex items-center gap-3 flex-wrap md:flex-nowrap flex-shrink-0 md:mb-1">
+                    <button class="group relative bg-gradient-to-r from-[#b11e28] to-[#8a151d] text-white px-6 py-3 rounded-full text-sm font-bold transition-all shadow-[0_8px_20px_rgba(177,30,40,0.25)] hover:shadow-[0_8px_25px_rgba(177,30,40,0.4)] hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 will-change-transform overflow-hidden whitespace-nowrap" onclick="document.getElementById('recipient-request-form').scrollIntoView({behavior: 'smooth'})">
                          <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
                          <i class="fas fa-hand-holding-medical"></i> 
                          <span>Request Blood</span>
@@ -1546,12 +1659,14 @@
                 <!-- Visual Stepper -->
                 <div id="recipient-stepper" class="relative flex flex-col md:flex-row justify-between items-center w-full max-w-4xl mx-auto pt-4 pb-2 opacity-50 pointer-events-none">
                     <!-- Line connections -->
-                    <div class="absolute top-9 left-0 right-0 mx-5 h-1 bg-gray-100 -translate-y-1/2 hidden md:block rounded-full z-0"></div>
-                    <!-- Partial progress line -->
-                    <div id="recipient-stepper-progress" class="absolute top-9 left-0 right-0 mx-5 w-[0%] h-1 bg-[#b11e28] -translate-y-1/2 hidden md:block rounded-full z-0 transition-all duration-1000"></div>
+                    <div class="absolute top-9 left-[12.5%] right-[12.5%] h-1 -translate-y-1/2 hidden md:block z-0">
+                        <div class="absolute inset-0 bg-gray-100 rounded-full"></div>
+                        <!-- Partial progress line -->
+                        <div id="recipient-stepper-progress" class="absolute left-0 top-0 bottom-0 bg-[#b11e28] rounded-full transition-all duration-1000" style="width: 0%;"></div>
+                    </div>
 
                     <!-- Step 1 (Submitted) -->
-                    <div id="step-submitted" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                    <div id="step-submitted" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
                         <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
                             <i class="fas fa-file-medical text-sm"></i>
                         </div>
@@ -1559,7 +1674,7 @@
                     </div>
 
                     <!-- Step 2 (Approved) -->
-                    <div id="step-approved" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                    <div id="step-approved" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
                         <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
                             <i class="fas fa-check text-sm"></i>
                         </div>
@@ -1567,7 +1682,7 @@
                     </div>
 
                     <!-- Step 3 (Dispatched) -->
-                    <div id="step-dispatched" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                    <div id="step-dispatched" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
                         <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
                             <i class="fas fa-shipping-fast text-sm"></i>
                         </div>
@@ -1575,7 +1690,7 @@
                     </div>
 
                     <!-- Step 4 (Delivered) -->
-                    <div id="step-delivered" class="relative z-10 flex flex-col items-center gap-3 w-full md:w-auto my-2 md:my-0">
+                    <div id="step-delivered" class="relative z-10 flex flex-col items-center gap-3 w-full md:flex-1 my-2 md:my-0">
                         <div class="step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10">
                             <i class="fas fa-house-user text-sm"></i>
                         </div>
@@ -1749,9 +1864,6 @@
                 <a href="#" onclick="event.preventDefault(); navigateAdmin('admin-view-requests');" class="admin-sidebar-link" id="link-admin-view-requests">
                     <i class="fas fa-clipboard-list"></i> Requests
                 </a>
-                <a href="#" onclick="event.preventDefault(); showProfileSettings();" class="admin-sidebar-link" id="link-admin-profile">
-                    <i class="fas fa-user-circle"></i> Profile
-                </a>
                 <div style="margin-top:auto;"></div>
             </nav>
             <div style="padding:1.25rem 1.5rem; border-top:1px solid rgba(0,0,0,0.06); background:rgba(0,0,0,0.03); display:flex; align-items:center; gap:0.75rem;">
@@ -1767,15 +1879,9 @@
         <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
             <header style="height:70px; background:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; flex-shrink:0; border-bottom:1px solid #eef0f2;">
                 <div style="display:flex; align-items:center; gap:1rem;">
-                    <button onclick="toggleAdminSidebar()" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:1.1rem; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                        <i class="fas fa-bars"></i>
-                    </button>
                     <h2 id="admin-page-title" style="font-size:1.25rem; font-weight:700; color:#1a1a2e; letter-spacing:-0.02em;">Dashboard Overview</h2>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <button onclick="showProfileSettings()" style="background:#fff; border:1px solid #e2e8f0; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:600; font-size:0.85rem; color:#475569; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
-                        <i class="fas fa-user-cog" style="margin-right:0.4rem; color:#D32F2F;"></i> Profile
-                    </button>
                     <button onclick="fetchAdminUsers()" style="background:#f1f5f9; border:1px solid #e2e8f0; padding:0.5rem 1rem; border-radius:0.5rem; font-weight:600; font-size:0.85rem; color:#475569; cursor:pointer;">
                         <i class="fas fa-sync-alt" style="margin-right:0.4rem;"></i> Refresh
                     </button>
@@ -1916,7 +2022,7 @@
                         <h3><i class="fas fa-hand-holding-heart" style="color:#D32F2F;"></i> Donation Approvals</h3>
                         <span style="background:rgba(22,163,74,0.08); color:#16a34a; padding:0.3rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700;">Manage Donations</span>
                     </div>
-                    <div id="admin-donations-list" style="max-height:500px; overflow-y:auto;">
+                    <div id="admin-donations-list">
                         <div style="text-align:center; padding:3rem; color:#84758c;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading donations...</div>
                     </div>
                 </div>
@@ -1927,7 +2033,7 @@
                         <h3><i class="fas fa-clipboard-list" style="color:#6366f1;"></i> Blood Request Triage</h3>
                         <span style="background:rgba(211,47,47,0.08); color:#D32F2F; padding:0.3rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700;">Priority Triage</span>
                     </div>
-                    <div id="admin-requests-list" style="max-height:500px; overflow-y:auto;">
+                    <div id="admin-requests-list">
                         <div style="text-align:center; padding:3rem; color:#84758c;"><i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i> Loading requests...</div>
                     </div>
                 </div>
@@ -2093,7 +2199,32 @@
             .expiry-amber { color:#633806; }
             .expiry-red { color:#791F1F; }
 
-            /* ─── Toast Notifications ──────────────────── */
+            /* Notification styles */
+            .notification-toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; z-index: 9999; pointer-events: none; }
+            .notification-toast { pointer-events: auto; width: 350px; background: #fff; border-radius: 12px; border: 1px solid #eef0f2; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); display: flex; gap: 1rem; padding: 1rem; animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); transition: all 0.3s; position: relative; overflow: hidden; }
+            .notification-toast.dismissing { animation: toastOut 0.3s forwards; }
+            
+            .notification-toast-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+            
+            .notification-item { padding: 1rem 1.25rem; display: flex; gap: 0.85rem; transition: background 0.2s; cursor: pointer; position: relative; }
+            .notification-item:hover { background: #fafaf9; }
+            .notification-item.unread { background: rgba(178,30,41,0.03); }
+            .notification-item.unread::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px; background: #b11e28; }
+            
+            .notification-item-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+            
+            /* Type-based classes */
+            .notif-success { background: #dcfce7; color: #15803d; }
+            .notif-danger { background: #ffe4e6; color: #b91c1c; }
+            .notif-warning { background: #fef3c7; color: #d97706; }
+            .notif-info { background: #dbeafe; color: #1d4ed8; }
+            
+            /* Custom scrollbar for notifications list */
+            #notification-list::-webkit-scrollbar { width: 5px; }
+            #notification-list::-webkit-scrollbar-track { background: transparent; }
+            #notification-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+            #notification-list::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
             @keyframes toastIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
             @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
         </style>

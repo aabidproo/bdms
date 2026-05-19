@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { createNotification } = require('./notification.controller');
 
 // ─── GET /api/admin/users ───────────────────────────────
 const getUsers = async (req, res, next) => {
@@ -478,13 +479,17 @@ const updateRequestStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'FULFILLED'];
+    const validStatuses = ['PENDING', 'APPROVED', 'DISPATCHED', 'FULFILLED', 'REJECTED'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status.' });
     }
 
-    const request = await prisma.bloodRequest.findUnique({ where: { id } });
+    const request = await prisma.bloodRequest.findUnique({
+      where: { id },
+      include: { recipientProfile: true }
+    });
+    
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found.' });
     }
@@ -521,6 +526,34 @@ const updateRequestStatus = async (req, res, next) => {
     }
 
     const updated = await prisma.bloodRequest.update({ where: { id }, data: { status } });
+
+    // Notify Recipient
+    let title = '';
+    let msg = '';
+    let notifType = 'info';
+
+    if (status === 'APPROVED') {
+      title = 'Blood Request APPROVED! 🎉';
+      msg = `Great news! Your request for ${request.units} units of ${request.bloodGroup} at ${request.hospital} has been approved and allocated.`;
+      notifType = 'success';
+    } else if (status === 'REJECTED') {
+      title = 'Blood Request Status Update ⚠️';
+      msg = `Your request for ${request.units} units of ${request.bloodGroup} at ${request.hospital} was not approved at this time.`;
+      notifType = 'danger';
+    } else if (status === 'DISPATCHED') {
+      title = 'Blood Request DISPATCHED! 🚚';
+      msg = `Your request for ${request.units} units of ${request.bloodGroup} is on its way to ${request.hospital}.`;
+      notifType = 'info';
+    } else if (status === 'FULFILLED') {
+      title = 'Blood Request FULFILLED! ❤️';
+      msg = `Your request for ${request.units} units of ${request.bloodGroup} has been successfully delivered and fulfilled.`;
+      notifType = 'success';
+    }
+
+    if (title && request.recipientProfile?.userId) {
+      await createNotification(request.recipientProfile.userId, title, msg, notifType);
+    }
+
     res.json({ success: true, message: `Request ${status.toLowerCase()}.`, data: updated });
   } catch (error) {
     next(error);
@@ -549,18 +582,22 @@ const updateDonationStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = ['SCHEDULED', 'DONATED', 'SCREENED', 'COMPLETED', 'CANCELLED'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status.' });
     }
 
-    const donation = await prisma.donation.findUnique({ where: { id } });
+    const donation = await prisma.donation.findUnique({
+      where: { id },
+      include: { donorProfile: true }
+    });
+    
     if (!donation) {
       return res.status(404).json({ success: false, message: 'Donation not found.' });
     }
 
-    if (status === 'COMPLETED' && donation.status === 'SCHEDULED') {
+    if (status === 'COMPLETED' && donation.status !== 'COMPLETED') {
       const donor = await prisma.donorProfile.findUnique({
         where: { id: donation.donorProfileId },
         include: { user: { select: { name: true } } }
@@ -587,6 +624,33 @@ const updateDonationStatus = async (req, res, next) => {
       where: { id },
       data: { status, donationDate: status === 'COMPLETED' ? new Date() : undefined }
     });
+
+    // Notify Donor
+    let title = '';
+    let msg = '';
+    let notifType = 'info';
+
+    if (status === 'DONATED') {
+      title = 'Blood Donated Successfully! 🩸';
+      msg = `Thank you for donating blood! Your sample has been received and sent for clinical screening.`;
+      notifType = 'info';
+    } else if (status === 'SCREENED') {
+      title = 'Blood Sample Screened! 🔬';
+      msg = `Your blood sample of type ${donation.bloodType} has passed all preliminary laboratory tests. Preparing for secure inventory storage.`;
+      notifType = 'info';
+    } else if (status === 'COMPLETED') {
+      title = 'Donation COMPLETED! 🎉 Thank you!';
+      msg = `Your blood donation of ${donation.bloodType} was successful. Your contribution helps save up to 3 lives!`;
+      notifType = 'success';
+    } else if (status === 'CANCELLED') {
+      title = 'Donation Appointment Cancelled ⚠️';
+      msg = `Your scheduled blood donation appointment has been marked as cancelled.`;
+      notifType = 'warning';
+    }
+
+    if (title && donation.donorProfile?.userId) {
+      await createNotification(donation.donorProfile.userId, title, msg, notifType);
+    }
 
     res.json({ success: true, message: `Donation marked as ${status.toLowerCase()}.`, data: updated });
   } catch (error) {

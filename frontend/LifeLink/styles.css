@@ -538,3 +538,64 @@ body {
 .validation-msg.error { color: #ef4444; }
 .validation-msg.success { color: #10b981; }
 
+/* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVENESS AND LAYOUT FIXES
+   ═══════════════════════════════════════════════ */
+
+/* Mobile Nav Drawer Styles */
+#mobile-nav-drawer.open {
+    transform: translateX(0);
+}
+
+#mobile-nav-overlay.open {
+    display: block;
+    opacity: 1;
+}
+
+/* Admin Dashboard Mobile Overrides */
+@media (max-width: 768px) {
+    #admin-dashboard.active {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #admin-sidebar {
+        position: fixed !important;
+        top: 72px;
+        left: 0;
+        height: calc(100vh - 72px) !important;
+        z-index: 40;
+        transform: translateX(-100%);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+        width: 270px !important;
+    }
+
+    #admin-sidebar:not(.sidebar-collapsed) {
+        transform: translateX(0);
+    }
+
+    #admin-sidebar.sidebar-collapsed {
+        transform: translateX(-100%);
+    }
+
+    /* Keep main content area filling the screen */
+    #admin-dashboard > div {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Stats Grid stack */
+    #admin-view-dashboard > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Disable sticky profile settings card on mobile/tablet screens to prevent scroll overlaps */
+@media (max-width: 1024px) {
+    #profile-card-container {
+        position: static !important;
+    }
+}
+

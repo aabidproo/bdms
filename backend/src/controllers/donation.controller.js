@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { createNotification } = require('./notification.controller');
 
 // ─── POST /api/donations ────────────────────────────────
 const scheduleDonation = async (req, res, next) => {
@@ -11,7 +12,8 @@ const scheduleDonation = async (req, res, next) => {
 
     // Get donor profile
     const donorProfile = await prisma.donorProfile.findUnique({
-      where: { userId: req.user.userId }
+      where: { userId: req.user.userId },
+      include: { user: true }
     });
 
     if (!donorProfile) {
@@ -28,6 +30,25 @@ const scheduleDonation = async (req, res, next) => {
         status: 'SCHEDULED',
       }
     });
+
+    // Notify Donor
+    const dateFormatted = new Date(scheduledDate).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    await createNotification(
+      req.user.userId,
+      'Donation Appointment Scheduled 🩸',
+      `Your appointment to donate blood has been scheduled for ${dateFormatted} at ${location}. Thank you for your support!`,
+      'success'
+    );
+
+    // Notify Admins
+    await createNotification(
+      null, // broad system/admin alert
+      'New Donation Scheduled 📅',
+      `Donor ${donorProfile.user?.name || 'Anonymous'} has scheduled a donation of blood type ${donorProfile.bloodType} at ${location} for ${dateFormatted}.`,
+      'info'
+    );
 
     res.status(201).json({
       success: true,

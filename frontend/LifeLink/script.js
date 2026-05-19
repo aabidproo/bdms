@@ -73,7 +73,7 @@ function formatTimeAgo(date) {
 }
 
 // === DOM Element Queries ===
-const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo');
+const navLinks = document.querySelectorAll('.nav-link, .nav-login, .logo, .mobile-nav-link, #mobile-nav-login-btn');
 const pageSections = document.querySelectorAll('.page-section');
 
 // === Navigation & SPA Routing ===
@@ -342,6 +342,7 @@ navLinks.forEach(link => {
                 document.getElementById('login').classList.remove('sign-up-active');
                 resetAuthWizard();
             }
+            closeMobileMenu();
         }
     });
 });
@@ -922,17 +923,29 @@ function updateNav(user) {
     const navUserAvatar = document.getElementById('nav-user-avatar');
     const adminSidebarAvatar = document.getElementById('admin-sidebar-avatar');
     
+    // Mobile navigation variables
+    const mobileUserSection = document.getElementById('mobile-nav-user-section');
+    const mobileLoginBtn = document.getElementById('mobile-nav-login-btn');
+    const mobileNavName = document.getElementById('mobile-nav-name');
+    const mobileNavAvatar = document.getElementById('mobile-nav-avatar');
+
     if (user && navUserContainer && navLoginBtn && navUserName) {
         navUserName.textContent = user.name;
+        if (mobileNavName) mobileNavName.textContent = user.name;
         
+        let avatarUrl = '';
+        if (user.avatar) {
+            avatarUrl = user.avatar;
+        } else {
+            avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=100`;
+        }
+
         if (navUserAvatar) {
-            if (user.avatar) {
-                navUserAvatar.src = user.avatar;
-                navUserAvatar.classList.remove('hidden');
-            } else {
-                navUserAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&size=100`;
-                navUserAvatar.classList.remove('hidden');
-            }
+            navUserAvatar.src = avatarUrl;
+            navUserAvatar.classList.remove('hidden');
+        }
+        if (mobileNavAvatar) {
+            mobileNavAvatar.src = avatarUrl;
         }
 
         if (adminSidebarAvatar) {
@@ -946,18 +959,48 @@ function updateNav(user) {
         navLoginBtn.classList.add('hidden');
         navUserContainer.classList.remove('hidden');
         navUserContainer.classList.add('flex');
+
+        if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
+        if (mobileUserSection) mobileUserSection.classList.remove('hidden');
+
         // Hide public nav links when logged in
         document.querySelectorAll('.nav-link[data-target]').forEach(link => {
             link.style.display = 'none';
         });
+        document.querySelectorAll('.mobile-nav-link[data-target]').forEach(link => {
+            link.style.display = 'none';
+        });
+
+        // Start real-time notifications
+        const notifContainer = document.getElementById('nav-notification-container');
+        if (notifContainer) {
+            notifContainer.classList.remove('hidden');
+            notifContainer.classList.add('flex');
+        }
+        startNotificationInterval();
     } else if (navUserContainer && navLoginBtn) {
         navLoginBtn.classList.remove('hidden');
         navUserContainer.classList.add('hidden');
         navUserContainer.classList.remove('flex');
+
+        if (mobileLoginBtn) mobileLoginBtn.classList.remove('hidden');
+        if (mobileUserSection) mobileUserSection.classList.add('hidden');
+
         // Show public nav links when logged out
         document.querySelectorAll('.nav-link[data-target]').forEach(link => {
             link.style.display = '';
         });
+        document.querySelectorAll('.mobile-nav-link[data-target]').forEach(link => {
+            link.style.display = '';
+        });
+
+        // Stop notifications polling
+        const notifContainer = document.getElementById('nav-notification-container');
+        if (notifContainer) {
+            notifContainer.classList.add('hidden');
+            notifContainer.classList.remove('flex');
+        }
+        stopNotificationInterval();
     }
 }
 
@@ -1356,8 +1399,13 @@ async function fetchDonorHistory() {
             fetchDonorEligibility();
         }
 
+        // Update Active Stepper Tracker
+        const activeDonation = data.data.find(d => ['SCHEDULED', 'DONATED', 'SCREENED'].includes(d.status)) || data.data.find(d => d.status === 'COMPLETED');
+        updateDonorStepper(activeDonation);
+
         // Render history
         if (data.data.length === 0) {
+            updateDonorStepper(null);
             historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;"><i class="fas fa-calendar-plus" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>No donations yet. Schedule your first one!</div>';
             return;
         }
@@ -1404,6 +1452,111 @@ async function fetchDonorHistory() {
         console.error('Failed to fetch donor history:', error);
         historyList.innerHTML = '<div style="text-align:center;padding:3rem;color:#94a3b8;">Error loading history.</div>';
     }
+}
+
+function updateDonorStepper(activeDonation) {
+    const stepper = document.getElementById('donor-stepper');
+    const progressLine = document.getElementById('donor-stepper-progress');
+    const infoText = document.getElementById('donor-active-info');
+    if (!stepper || !progressLine) return;
+
+    if (!activeDonation) {
+        stepper.classList.add('opacity-50', 'pointer-events-none');
+        progressLine.style.width = '0%';
+        if (infoText) {
+            infoText.innerHTML = 'You have no active appointments. Book one to begin your next life-saving journey.';
+        }
+        resetDonorStepperUI();
+        return;
+    }
+
+    resetDonorStepperUI();
+
+    stepper.classList.remove('opacity-50', 'pointer-events-none');
+
+    const status = activeDonation.status;
+    const dateStr = new Date(activeDonation.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = new Date(activeDonation.scheduledDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const stepIds = ['donor-step-scheduled', 'donor-step-donated', 'donor-step-tested', 'donor-step-completed'];
+    const icons = ['fa-calendar-alt', 'fa-hand-holding-heart', 'fa-microscope', 'fa-heartbeat'];
+
+    let activeIndex = 0; // 0 = Scheduled, 1 = Donated, 2 = Screened, 3 = Completed
+    if (status === 'SCHEDULED') activeIndex = 0;
+    else if (status === 'DONATED') activeIndex = 1;
+    else if (status === 'SCREENED') activeIndex = 2;
+    else if (status === 'COMPLETED') activeIndex = 3;
+
+    // Set progress bar width
+    if (status === 'SCHEDULED') progressLine.style.width = '0%';
+    else if (status === 'DONATED') progressLine.style.width = '33.333%';
+    else if (status === 'SCREENED') progressLine.style.width = '66.666%';
+    else if (status === 'COMPLETED') progressLine.style.width = '100%';
+
+    stepIds.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const iconDiv = el.querySelector('.step-icon');
+        const label = el.querySelector('p');
+
+        if (iconDiv) {
+            if (index < activeIndex) {
+                // Completed previous step
+                iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-[#D32F2F] text-white shadow-[0_0_15px_rgba(211,47,47,0.3)] transition-transform hover:scale-110 z-10';
+                iconDiv.innerHTML = '<i class="fas fa-check text-sm"></i>';
+                if (label) label.className = 'text-sm font-bold text-gray-900 hidden md:block';
+            } else if (index === activeIndex) {
+                if (status === 'COMPLETED') {
+                    // Final step is checked
+                    iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-[#D32F2F] text-white shadow-[0_0_15px_rgba(211,47,47,0.3)] transition-transform hover:scale-110 z-10';
+                    iconDiv.innerHTML = '<i class="fas fa-check text-sm"></i>';
+                    if (label) label.className = 'text-sm font-bold text-gray-900 hidden md:block';
+                } else {
+                    // Active pulsing step
+                    iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white border-[3px] border-[#D32F2F] text-[#D32F2F] shadow-sm transition-transform hover:scale-110 relative z-10';
+                    iconDiv.innerHTML = `<div class="absolute inset-0 bg-[#D32F2F] rounded-full animate-ping opacity-25"></div><span class="w-2.5 h-2.5 bg-[#D32F2F] rounded-full relative z-10"></span>`;
+                    if (label) label.className = 'text-sm font-bold text-[#D32F2F] hidden md:block';
+                }
+            } else {
+                // Inactive future step
+                iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10';
+                iconDiv.innerHTML = `<i class="fas ${icons[index]} text-sm"></i>`;
+                if (label) label.className = 'text-sm font-bold text-gray-500 hidden md:block';
+            }
+        }
+    });
+
+    if (infoText) {
+        if (status === 'SCHEDULED') {
+            infoText.innerHTML = `You have an upcoming donation scheduled on <span class="font-extrabold text-[#D32F2F]">${dateStr}</span> at <span class="font-extrabold text-gray-800">${escapeHtml(activeDonation.location)}</span>.`;
+        } else if (status === 'DONATED') {
+            infoText.innerHTML = `Thank you for donating blood on <span class="font-extrabold text-[#D32F2F]">${dateStr}</span>! Your blood is currently being prepared for clinical screening.`;
+        } else if (status === 'SCREENED') {
+            infoText.innerHTML = `Your blood sample from <span class="font-extrabold text-indigo-600">${dateStr}</span> has been screened successfully. Preparing for inventory storage.`;
+        } else if (status === 'COMPLETED') {
+            infoText.innerHTML = `Thank you for your life-saving donation on <span class="font-extrabold text-emerald-600">${dateStr}</span>! Your blood has been tested, approved, and added to the inventory to save lives.`;
+        }
+    }
+}
+
+function resetDonorStepperUI() {
+    const stepIds = ['donor-step-scheduled', 'donor-step-donated', 'donor-step-tested', 'donor-step-completed'];
+    const icons = ['fa-calendar-alt', 'fa-hand-holding-heart', 'fa-microscope', 'fa-heartbeat'];
+    
+    stepIds.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const iconDiv = el.querySelector('.step-icon');
+        const label = el.querySelector('p');
+        
+        if (iconDiv) {
+            iconDiv.className = 'step-icon w-10 h-10 rounded-full flex items-center justify-center bg-white text-gray-400 border-2 border-gray-100 shadow-sm transition-transform hover:scale-110 z-10';
+            iconDiv.innerHTML = `<i class="fas ${icons[index]} text-sm"></i>`;
+        }
+        if (label) {
+            label.className = 'text-sm font-bold text-gray-500 hidden md:block';
+        }
+    });
 }
 
 
@@ -1494,7 +1647,7 @@ async function fetchRecipientHistory() {
         }
 
         // Update active tracker
-        const activeReq = data.data.find(r => r.status === 'PENDING' || r.status === 'APPROVED');
+        const activeReq = data.data.find(r => ['PENDING', 'APPROVED', 'DISPATCHED'].includes(r.status)) || data.data.find(r => r.status === 'FULFILLED');
         updateRecipientStepper(activeReq);
 
         const trackerInfo = document.getElementById('recipient-active-info');
@@ -1511,6 +1664,12 @@ async function fetchRecipientHistory() {
                 let label = activeReq.status;
 
                 if (activeReq.status === 'APPROVED') {
+                    colorClass = 'bg-blue-50 text-blue-600 border-blue-100/50';
+                    dotClass = 'bg-blue-500';
+                } else if (activeReq.status === 'DISPATCHED') {
+                    colorClass = 'bg-purple-50 text-purple-600 border-purple-100/50';
+                    dotClass = 'bg-purple-500';
+                } else if (activeReq.status === 'FULFILLED') {
                     colorClass = 'bg-emerald-50 text-emerald-600 border-emerald-100/50';
                     dotClass = 'bg-emerald-500';
                 }
@@ -1602,11 +1761,11 @@ function updateRecipientStepper(activeReq) {
         'PENDING': 1,
         'APPROVED': 2,
         'DISPATCHED': 3,
-        'DELIVERED': 4
+        'FULFILLED': 4
     };
 
     const currentStep = steps[activeReq.status] || 1;
-    const progressWidths = ['0%', '0%', '33.33%', '66.66%', '100%'];
+    const progressWidths = ['0%', '0%', '33.333%', '66.666%', '100%'];
     progressLine.style.width = progressWidths[currentStep];
 
     const stepIds = ['step-submitted', 'step-approved', 'step-dispatched', 'step-delivered'];
@@ -2588,16 +2747,32 @@ async function fetchAdminRequests() {
             if (req.urgency === 'High') urgencyBadge = 'admin-badge-primary';
             else if (req.urgency === 'Critical') urgencyBadge = 'admin-badge-danger';
 
+            let actionButtons = '';
+            if (req.status === 'PENDING') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon approve" onclick="updateReqStatus(\'' + req.id + '\', \'APPROVED\', ' + req.units + ')" title="Approve & Allocate"><i class="fas fa-check"></i></button>' +
+                    '<button class="admin-btn-icon reject" onclick="updateReqStatus(\'' + req.id + '\', \'REJECTED\')" title="Reject"><i class="fas fa-times"></i></button>' +
+                    '</div>';
+            } else if (req.status === 'APPROVED') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onclick="updateReqStatus(\'' + req.id + '\', \'DISPATCHED\')" title="Dispatch Blood"><i class="fas fa-truck"></i></button>' +
+                    '<button class="admin-btn-icon reject" onclick="updateReqStatus(\'' + req.id + '\', \'REJECTED\')" title="Cancel Request"><i class="fas fa-times"></i></button>' +
+                    '</div>';
+            } else if (req.status === 'DISPATCHED') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon approve" style="background:rgba(16,185,129,0.1);color:#10b981;" onclick="updateReqStatus(\'' + req.id + '\', \'FULFILLED\')" title="Mark Delivered"><i class="fas fa-house-user"></i></button>' +
+                    '</div>';
+            } else {
+                actionButtons = '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + req.status + '</div>';
+            }
+
             const div = document.createElement('div');
             div.className = 'admin-request-item';
             div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
                 '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(req.bloodGroup) + '</div>' +
                 '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(req.hospital) + '</div>' +
                 '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + urgencyBadge + '">' + escapeHtml(req.urgency) + '</span> &middot; ' + req.units + ' Units &middot; <strong>' + escapeHtml(req.status) + '</strong></div></div></div>' +
-                '<div style="display:flex;gap:0.5rem;">' +
-                '<button class="admin-btn-icon approve" onclick="updateReqStatus(\'' + req.id + '\', \'APPROVED\')" title="Approve"><i class="fas fa-check"></i></button>' +
-                '<button class="admin-btn-icon reject" onclick="updateReqStatus(\'' + req.id + '\', \'REJECTED\')" title="Reject"><i class="fas fa-times"></i></button>' +
-                '</div>';
+                actionButtons;
             listDiv.appendChild(div);
         });
     } catch (err) {
@@ -2605,20 +2780,45 @@ async function fetchAdminRequests() {
     }
 }
 
-async function updateReqStatus(id, newStatus) {
+async function updateReqStatus(id, newStatus, requestedUnits = null) {
     const token = localStorage.getItem('token');
     try {
+        let allocatedUnits = undefined;
+        
+        // If approving, prompt for partial fulfillment
+        if (newStatus === 'APPROVED' && requestedUnits !== null) {
+            const input = prompt(`Enter units to allocate for Request #${id.substring(0,6)} (Requested: ${requestedUnits}):`, requestedUnits);
+            if (input === null) return; // Admin cancelled the prompt
+            
+            allocatedUnits = parseInt(input);
+            if (isNaN(allocatedUnits) || allocatedUnits <= 0) {
+                alert('Invalid number of units.');
+                return;
+            }
+            if (allocatedUnits > requestedUnits) {
+                alert('Cannot allocate more units than requested.');
+                return;
+            }
+        }
+
+        const bodyData = { status: newStatus };
+        if (allocatedUnits) bodyData.allocatedUnits = allocatedUnits;
+
         const response = await fetch(`http://localhost:5001/api/admin/requests/${id}/status`, {
             method: 'PUT',
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify(bodyData)
         });
         const data = await response.json();
         if (response.ok && data.success) {
-            addToActivityFeed(`Request <strong>${id.substring(0,8)}...</strong> was <strong>${newStatus}</strong>`, newStatus === 'APPROVED' ? 'success' : 'info');
+            let activityMsg = `Request <strong>${id.substring(0,8)}...</strong> was <strong>${newStatus}</strong>`;
+            if (allocatedUnits && allocatedUnits < requestedUnits) {
+                activityMsg += ` (Partially Fulfilled: ${allocatedUnits} units)`;
+            }
+            addToActivityFeed(activityMsg, newStatus === 'APPROVED' ? 'success' : 'info');
             fetchAdminRequests();
             fetchInventory(); // Refresh inventory since stock may have changed
             fetchAdminStats();
@@ -2660,14 +2860,31 @@ async function fetchAdminDonations() {
 
             const div = document.createElement('div');
             div.className = 'admin-request-item';
+            let actionButtons = '';
+            if (don.status === 'SCHEDULED') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon approve" onclick="updateDonationStatus(\'' + don.id + '\', \'DONATED\')" title="Mark as Donated"><i class="fas fa-user-check"></i></button>' +
+                    '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                    '</div>';
+            } else if (don.status === 'DONATED') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon" style="background:rgba(99,102,241,0.1);color:#6366f1;border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;" onclick="updateDonationStatus(\'' + don.id + '\', \'SCREENED\')" title="Mark as Screened"><i class="fas fa-microscope"></i></button>' +
+                    '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                    '</div>';
+            } else if (don.status === 'SCREENED') {
+                actionButtons = '<div style="display:flex;gap:0.5rem;">' +
+                    '<button class="admin-btn-icon approve" style="background:rgba(16,185,129,0.1);color:#10b981;" onclick="updateDonationStatus(\'' + don.id + '\', \'COMPLETED\')" title="Complete & Stock"><i class="fas fa-heartbeat"></i></button>' +
+                    '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
+                    '</div>';
+            } else {
+                actionButtons = '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + don.status + '</div>';
+            }
+
             div.innerHTML = '<div style="display:flex;align-items:center;gap:0.85rem;">' +
                 '<div style="width:40px;height:40px;background:rgba(211,47,47,0.08);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#D32F2F;font-weight:800;font-size:0.8rem;">' + escapeHtml(don.bloodType) + '</div>' +
                 '<div><div style="font-weight:600;color:#1a1a2e;">' + escapeHtml(donorName) + '</div>' +
                 '<div style="font-size:0.78rem;color:#84758c;margin-top:2px;"><span class="' + statusBadge + '">' + escapeHtml(don.status) + '</span> &middot; ' + don.units + ' Unit &middot; ' + date + ' &middot; ' + escapeHtml(don.location) + '</div></div></div>' +
-                (don.status === 'SCHEDULED' ? '<div style="display:flex;gap:0.5rem;">' +
-                '<button class="admin-btn-icon approve" onclick="updateDonationStatus(\'' + don.id + '\', \'COMPLETED\')" title="Complete"><i class="fas fa-check"></i></button>' +
-                '<button class="admin-btn-icon reject" onclick="updateDonationStatus(\'' + don.id + '\', \'CANCELLED\')" title="Cancel"><i class="fas fa-times"></i></button>' +
-                '</div>' : '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;">' + don.status + '</div>');
+                actionButtons;
             listDiv.appendChild(div);
         });
     } catch (err) {
@@ -3260,6 +3477,18 @@ function initChatbot() {
             background: #fef2f2;
             transform: translateX(5px);
         }
+        @media (max-width: 480px) {
+            #lifelink-chat-container {
+                bottom: 20px;
+                right: 20px;
+            }
+            #lifelink-chat-window {
+                width: calc(100vw - 40px);
+                height: calc(100vh - 120px);
+                bottom: 80px;
+                right: 0;
+            }
+        }
     `;
     document.head.appendChild(chatbotStyle);
 
@@ -3413,6 +3642,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+});
+
+// === Mobile Menu Controls ===
+window.openMobileMenu = function() {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    if (drawer && overlay) {
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            drawer.classList.add('open');
+            overlay.classList.add('open');
+        }, 10);
+    }
+}
+
+window.closeMobileMenu = function() {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    if (drawer && overlay) {
+        drawer.classList.remove('open');
+        overlay.classList.remove('open');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('mobile-menu-close-btn');
+    const overlay = document.getElementById('mobile-nav-overlay');
+
+    if (menuBtn) menuBtn.addEventListener('click', openMobileMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeMobileMenu);
+    if (overlay) overlay.addEventListener('click', closeMobileMenu);
 });
 
 function validateField(input) {
@@ -3854,3 +4118,252 @@ async function fetchRecipientMatchedDonors(requestId, requestDetails) {
         if (badgeElement) badgeElement.classList.add('hidden');
     }
 }
+
+// ─── CLIENT-SIDE NOTIFICATION ENGINE ────────────────────
+
+let notificationPollInterval = null;
+let seenNotificationIds = new Set();
+let isFirstNotificationLoad = true;
+
+// Helper: Format relative time
+function getNotificationTimeAgo(dateString) {
+    const now = new Date();
+    const past = new Date(dateString);
+    const ms = now - past;
+    const secs = Math.floor(ms / 1000);
+    const mins = Math.floor(secs / 60);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+    if (secs < 60) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+}
+
+// Helper: Show sleek toast notifications in bottom-right
+function showToastNotification(title, message, type = 'info') {
+    let container = document.getElementById('notification-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-toast-container';
+        container.className = 'notification-toast-container';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    let typeClass = 'notif-info';
+    let icon = 'fas fa-bell';
+    if (type === 'success') { typeClass = 'notif-success'; icon = 'fas fa-check-circle'; }
+    else if (type === 'danger') { typeClass = 'notif-danger'; icon = 'fas fa-exclamation-circle'; }
+    else if (type === 'warning') { typeClass = 'notif-warning'; icon = 'fas fa-exclamation-triangle'; }
+    
+    toast.className = 'notification-toast';
+    toast.innerHTML = `
+        <div class="notification-toast-icon ${typeClass}">
+            <i class="${icon}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-gray-900 text-sm tracking-tight">${escapeHtml(title)}</h4>
+            <p class="text-gray-500 text-[11px] mt-1 font-semibold leading-relaxed">${escapeHtml(message)}</p>
+        </div>
+        <button class="text-gray-400 hover:text-gray-600 text-xs self-start" onclick="event.stopPropagation(); this.parentElement.classList.add('dismissing'); setTimeout(() => this.parentElement.remove(), 300);">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto dismiss after 6 seconds
+    setTimeout(() => {
+        if (toast && toast.parentElement) {
+            toast.classList.add('dismissing');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 6000);
+}
+
+// Toggle Dropdown Display
+function toggleNotifications(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById('notification-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+        // Auto-close standard profile dropdown if open
+        const navDropdown = document.getElementById('nav-dropdown');
+        if (navDropdown) navDropdown.classList.add('hidden');
+    }
+}
+
+// Fetch Notifications from Server
+async function fetchNotifications() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/notifications', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (!data.success) return;
+
+        const notifications = data.data || [];
+        const badge = document.getElementById('notification-badge');
+        const listElement = document.getElementById('notification-list');
+        
+        let unreadCount = 0;
+        
+        // Count unreads and check for new ones to toast
+        notifications.forEach(notif => {
+            if (!notif.isRead) {
+                unreadCount++;
+                if (!seenNotificationIds.has(notif.id)) {
+                    seenNotificationIds.add(notif.id);
+                    // Avoid triggering spam toasts on initial dashboard load
+                    if (!isFirstNotificationLoad) {
+                        showToastNotification(notif.title, notif.message, notif.type);
+                    }
+                }
+            } else {
+                seenNotificationIds.add(notif.id);
+            }
+        });
+
+        isFirstNotificationLoad = false;
+
+        // Render Badge
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            } else {
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+            }
+        }
+
+        // Render Dropdown List
+        if (listElement) {
+            if (notifications.length === 0) {
+                listElement.innerHTML = `
+                    <div class="p-8 text-center text-gray-400">
+                        <i class="fas fa-bell-slash text-3xl mb-2 block"></i>
+                        <span class="text-sm font-semibold">No notifications yet</span>
+                    </div>
+                `;
+                return;
+            }
+
+            listElement.innerHTML = '';
+            notifications.forEach(notif => {
+                const item = document.createElement('div');
+                item.className = `notification-item ${notif.isRead ? '' : 'unread'}`;
+                
+                let iconClass = 'notif-info';
+                let icon = 'fas fa-bell';
+                if (notif.type === 'success') { iconClass = 'notif-success'; icon = 'fas fa-check-circle'; }
+                else if (notif.type === 'danger') { iconClass = 'notif-danger'; icon = 'fas fa-exclamation-circle'; }
+                else if (notif.type === 'warning') { iconClass = 'notif-warning'; icon = 'fas fa-exclamation-triangle'; }
+
+                item.innerHTML = `
+                    <div class="notification-item-icon ${iconClass}">
+                        <i class="${icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start gap-1">
+                            <h4 class="font-bold text-gray-900 text-xs tracking-tight">${escapeHtml(notif.title)}</h4>
+                            <span class="text-[9px] font-bold text-gray-400 whitespace-nowrap">${getNotificationTimeAgo(notif.createdAt)}</span>
+                        </div>
+                        <p class="text-gray-500 text-[10px] mt-1 font-semibold leading-relaxed pr-2">${escapeHtml(notif.message)}</p>
+                    </div>
+                `;
+
+                // Mark read on click
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!notif.isRead) {
+                        markNotificationRead(notif.id);
+                    }
+                });
+
+                listElement.appendChild(item);
+            });
+        }
+
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+// Mark single notification as read
+async function markNotificationRead(id) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/notifications/read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ notificationIds: [id] })
+        });
+        const data = await response.json();
+        if (data.success) {
+            fetchNotifications(); // Refresh list & badge
+        }
+    } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+    }
+}
+
+// Mark all as read
+async function markAllNotificationsRead(event) {
+    if (event) event.stopPropagation();
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:5001/api/notifications/read-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+            fetchNotifications(); // Refresh
+        }
+    } catch (error) {
+        console.error('Failed to mark all as read:', error);
+    }
+}
+
+// Start polling
+function startNotificationInterval() {
+    if (notificationPollInterval) clearInterval(notificationPollInterval);
+    
+    // Initial load
+    isFirstNotificationLoad = true;
+    fetchNotifications();
+
+    // Poll every 10 seconds
+    notificationPollInterval = setInterval(fetchNotifications, 10000);
+}
+
+// Stop polling
+function stopNotificationInterval() {
+    if (notificationPollInterval) {
+        clearInterval(notificationPollInterval);
+        notificationPollInterval = null;
+    }
+    seenNotificationIds.clear();
+    isFirstNotificationLoad = true;
+}
+
+// Window click helper to dismiss dropdown
+window.addEventListener('click', () => {
+    const dropdown = document.getElementById('notification-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+});
+
