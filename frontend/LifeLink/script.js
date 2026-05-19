@@ -272,6 +272,7 @@ function renderDashboardForActiveRole(role) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'donor');
+                loadHospitalsForDonor(profile);
             }
         }).catch(err => console.error('Error fetching donor profile:', err));
 
@@ -296,6 +297,7 @@ function renderDashboardForActiveRole(role) {
                 if (bloodDisplay) bloodDisplay.textContent = bloodType;
                 
                 populateDetailedProfile(profile, 'recipient');
+                loadHospitalsForDonor(profile);
             }
         }).catch(err => console.error('Error fetching recipient profile:', err));
 
@@ -3254,25 +3256,78 @@ async function initNepalLocations() {
                 });
             }
             
-            // Populate donation-location (Choose a hospital...)
+            // Populate donation-location (Choose a hospital...) is now handled dynamically by loadHospitalsForDonor()
             const donationLocSelect = document.getElementById('donation-location');
             if (donationLocSelect) {
                 donationLocSelect.innerHTML = '<option value="" disabled selected>Choose a hospital...</option>';
-                // Flatten all hospitals
-                Object.values(nepalLocations).forEach(districtsObj => {
-                    Object.values(districtsObj).forEach(hospitalsArr => {
-                        hospitalsArr.forEach(hosp => {
-                            const opt = document.createElement('option');
-                            opt.value = hosp;
-                            opt.textContent = hosp;
-                            donationLocSelect.appendChild(opt);
-                        });
-                    });
-                });
             }
         }
     } catch (error) {
         console.error('Failed to load Nepal locations:', error);
+    }
+}
+
+async function loadHospitalsForDonor(profile) {
+    // 1. Get donor profile address
+    const address = profile?.donorProfile?.address || 
+                    profile?.recipientProfile?.address ||
+                    profile?.address || '';
+    
+    console.log('[Hospital Filter] Raw address:', address);
+
+    // 2. Parse district and province from address string
+    // Support formats:
+    //   "Kathmandu, Bagmati Province"       → district=Kathmandu, province=Bagmati Province
+    //   "City, Kathmandu, Bagmati Province" → district=Kathmandu, province=Bagmati Province
+    //   "Kathmandu"                         → district=Kathmandu, province=''
+    
+    let district = '';
+    let province = '';
+    
+    const parts = address.split(',').map(p => p.trim()).filter(Boolean);
+    
+    if (parts.length >= 2) {
+        // Last part = province, second-to-last = district
+        province = parts[parts.length - 1];
+        district = parts[parts.length - 2];
+    } else if (parts.length === 1) {
+        district = parts[0];
+    }
+    
+    console.log('[Hospital Filter] Parsed → district:', district, '| province:', province);
+
+    // 3. Fetch hospitals for this district
+    const dropdown = document.getElementById('donation-location');
+    if (!dropdown) return;
+    
+    dropdown.innerHTML = '<option value="">Loading hospitals...</option>';
+    
+    if (!district) {
+        dropdown.innerHTML = '<option value="">No district found in your profile</option>';
+        console.warn('[Hospital Filter] Could not parse district from address:', address);
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({ district });
+        if (province) params.append('province', province);
+        
+        const res = await fetch(`http://localhost:5001/api/locations/hospitals-by-name?${params}`);
+        const json = await res.json();
+        
+        console.log('[Hospital Filter] API response:', json);
+        
+        if (json.success && json.data.length > 0) {
+            dropdown.innerHTML = '<option value="">Choose a hospital...</option>' +
+                json.data.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+            console.log(`[Hospital Filter] Loaded ${json.data.length} hospitals for ${district}`);
+        } else {
+            dropdown.innerHTML = `<option value="">No hospitals found for ${district}</option>`;
+            console.warn('[Hospital Filter] No hospitals returned for district:', district);
+        }
+    } catch (err) {
+        console.error('[Hospital Filter] Fetch error:', err);
+        dropdown.innerHTML = '<option value="">Error loading hospitals</option>';
     }
 }
 
