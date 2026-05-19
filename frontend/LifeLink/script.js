@@ -379,6 +379,9 @@ window.navigateTo = function(targetId) {
             targetSection.style.display = 'block';
         }
     }
+    if (targetId === 'donor-dashboard' || targetId === 'recipient-dashboard') {
+        populateUserHospitals();
+    }
 }
 
 navLinks.forEach(link => {
@@ -2482,8 +2485,11 @@ window.openDispatchModal = async function(batchId, availableUnits, bloodGroup) {
         const data = await res.json();
         const select = document.getElementById('dispatch-hospital');
         if (data.success && data.data.length > 0) {
+            const { province, district } = getUserProvinceAndDistrict();
+            const filtered = data.data.filter(h => h.province === province && h.district === district);
+            const listToUse = filtered.length > 0 ? filtered : data.data;
             select.innerHTML = '<option value="">— Select Hospital —</option>' +
-                data.data.map(h => `<option value="${h.id}">${escapeHtml(h.name)} — ${escapeHtml(h.city)}</option>`).join('');
+                listToUse.map(h => `<option value="${h.id}">${escapeHtml(h.name)} — ${escapeHtml(h.city)}</option>`).join('');
         } else {
             select.innerHTML = '<option value="">No hospitals available</option>';
         }
@@ -3227,6 +3233,101 @@ function populateDetailedProfile(user, role) {
 
 let nepalLocations = {};
 
+function getUserProvinceAndDistrict() {
+    const userJson = localStorage.getItem('user');
+    if (!userJson) return { province: '', district: '' };
+    try {
+        const user = JSON.parse(userJson);
+        const profile = user.donorProfile || user.recipientProfile || {};
+        const fullAddress = profile.address || user.address || '';
+        const parts = fullAddress.split(',').map(p => p.trim());
+        let city = '';
+        let district = '';
+        let province = '';
+        if (parts.length === 3) {
+            city = parts[0];
+            district = parts[1];
+            province = parts[2];
+        } else if (parts.length === 2) {
+            city = parts[0];
+            district = parts[1];
+        } else {
+            city = fullAddress;
+        }
+        if (!province || !district) {
+            const prov = profile.province || user.province || '';
+            const dist = profile.district || user.district || '';
+            if (prov && dist) {
+                return { province: prov, district: dist };
+            }
+            return { province: 'Bagmati Province', district: 'Kathmandu' };
+        }
+        return { province, district };
+    } catch (e) {
+        console.error('Error parsing user location:', e);
+        return { province: 'Bagmati Province', district: 'Kathmandu' };
+    }
+}
+
+function populateUserHospitals() {
+    const { province, district } = getUserProvinceAndDistrict();
+    console.log('Populating user-scoped hospitals for:', province, district);
+
+    // 1. Donation Location Dropdown
+    const donationLocSelect = document.getElementById('donation-location');
+    if (donationLocSelect) {
+        donationLocSelect.innerHTML = '<option value="" disabled selected>Choose a hospital...</option>';
+        if (province && district && nepalLocations[province] && nepalLocations[province][district]) {
+            const hospitals = nepalLocations[province][district];
+            hospitals.forEach(hosp => {
+                const opt = document.createElement('option');
+                opt.value = hosp;
+                opt.textContent = hosp;
+                donationLocSelect.appendChild(opt);
+            });
+        } else {
+            // Flatten fallback
+            Object.values(nepalLocations).forEach(districtsObj => {
+                Object.values(districtsObj).forEach(hospitalsArr => {
+                    hospitalsArr.forEach(hosp => {
+                        const opt = document.createElement('option');
+                        opt.value = hosp;
+                        opt.textContent = hosp;
+                        donationLocSelect.appendChild(opt);
+                    });
+                });
+            });
+        }
+    }
+
+    // 2. Request Hospital Dropdown
+    const requestHospitalSelect = document.getElementById('request-hospital');
+    if (requestHospitalSelect) {
+        requestHospitalSelect.innerHTML = '<option value="" disabled selected>Select delivery hospital...</option>';
+        if (province && district && nepalLocations[province] && nepalLocations[province][district]) {
+            const hospitals = nepalLocations[province][district];
+            hospitals.forEach(hosp => {
+                const opt = document.createElement('option');
+                opt.value = hosp;
+                opt.textContent = hosp;
+                requestHospitalSelect.appendChild(opt);
+            });
+        } else {
+            // Flatten fallback
+            Object.values(nepalLocations).forEach(districtsObj => {
+                Object.values(districtsObj).forEach(hospitalsArr => {
+                    hospitalsArr.forEach(hosp => {
+                        const opt = document.createElement('option');
+                        opt.value = hosp;
+                        opt.textContent = hosp;
+                        requestHospitalSelect.appendChild(opt);
+                    });
+                });
+            });
+        }
+    }
+}
+
 async function initNepalLocations() {
     try {
         const response = await fetch('http://localhost:5001/api/locations');
@@ -3249,7 +3350,7 @@ async function initNepalLocations() {
             // Populate registration province select
             const regProvinceSelect = document.getElementById('reg-province');
             if (regProvinceSelect) {
-                regProvinceSelect.innerHTML = '<option value="" disabled selected>Select Province</option>';
+                regProvinceSelect.innerHTML = '<option value="" disabled selected>Province</option>';
                 Object.keys(nepalLocations).forEach(prov => {
                     const opt = document.createElement('option');
                     opt.value = prov;
@@ -3266,10 +3367,8 @@ async function initNepalLocations() {
 async function loadHospitalsForDonor(profile) {
     const currentUser = profile;
     console.log('[DEBUG] currentUser object:', JSON.stringify(currentUser, null, 2));
-    console.log('[DEBUG] donorProfile:', currentUser?.donorProfile);
-    console.log('[DEBUG] address field:', currentUser?.donorProfile?.address);
 
-    // 1. Get donor profile address
+    // 1. Get profile address
     const address = currentUser?.donorProfile?.address || 
                     currentUser?.recipientProfile?.address ||
                     currentUser?.address || '';
@@ -3277,18 +3376,12 @@ async function loadHospitalsForDonor(profile) {
     console.log('[Hospital Filter] Raw address:', address);
 
     // 2. Parse district and province from address string
-    // Support formats:
-    //   "Kathmandu, Bagmati Province"       → district=Kathmandu, province=Bagmati Province
-    //   "City, Kathmandu, Bagmati Province" → district=Kathmandu, province=Bagmati Province
-    //   "Kathmandu"                         → district=Kathmandu, province=''
-    
     let district = '';
     let province = '';
     
     const parts = address.split(',').map(p => p.trim()).filter(Boolean);
     
     if (parts.length >= 2) {
-        // Last part = province, second-to-last = district
         province = parts[parts.length - 1];
         district = parts[parts.length - 2];
     } else if (parts.length === 1) {
@@ -3299,12 +3392,15 @@ async function loadHospitalsForDonor(profile) {
 
     // 3. Fetch hospitals for this district
     const dropdown = document.getElementById('donation-location');
-    if (!dropdown) return;
+    const reqDropdown = document.getElementById('request-hospital');
+    if (!dropdown && !reqDropdown) return;
     
-    dropdown.innerHTML = '<option value="">Loading hospitals...</option>';
+    if (dropdown) dropdown.innerHTML = '<option value="">Loading hospitals...</option>';
+    if (reqDropdown) reqDropdown.innerHTML = '<option value="">Loading hospitals...</option>';
     
     if (!district) {
-        dropdown.innerHTML = '<option value="">No district found in your profile</option>';
+        if (dropdown) dropdown.innerHTML = '<option value="">No district found in your profile</option>';
+        if (reqDropdown) reqDropdown.innerHTML = '<option value="">No district found in your profile</option>';
         console.warn('[Hospital Filter] Could not parse district from address:', address);
         return;
     }
@@ -3321,16 +3417,26 @@ async function loadHospitalsForDonor(profile) {
         console.log('[DEBUG] API response:', JSON.stringify(json, null, 2));
         
         if (json.success && json.data.length > 0) {
-            dropdown.innerHTML = '<option value="">Choose a hospital...</option>' +
-                json.data.map(h => `<option value="${h.id}">${h.name}</option>`).join('');
+            if (dropdown) {
+                dropdown.innerHTML = '<option value="" disabled selected>Choose a hospital...</option>' +
+                    json.data.map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            }
+            if (reqDropdown) {
+                reqDropdown.innerHTML = '<option value="" disabled selected>Select delivery hospital...</option>' +
+                    json.data.map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            }
             console.log(`[Hospital Filter] Loaded ${json.data.length} hospitals for ${district}`);
         } else {
-            dropdown.innerHTML = `<option value="">No hospitals found for ${district}</option>`;
+            const fallbackOption = `<option value="">No hospitals found for ${district}</option>`;
+            if (dropdown) dropdown.innerHTML = fallbackOption;
+            if (reqDropdown) reqDropdown.innerHTML = fallbackOption;
             console.warn('[Hospital Filter] No hospitals returned for district:', district);
         }
     } catch (err) {
         console.error('[Hospital Filter] Fetch error:', err);
-        dropdown.innerHTML = '<option value="">Error loading hospitals</option>';
+        const errorOption = '<option value="">Error loading hospitals</option>';
+        if (dropdown) dropdown.innerHTML = errorOption;
+        if (reqDropdown) reqDropdown.innerHTML = errorOption;
     }
 }
 
@@ -3364,7 +3470,7 @@ function updateRegDistricts() {
     const districtSelect = document.getElementById('reg-district');
     const selectedProvince = provinceSelect.value;
 
-    districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
+    districtSelect.innerHTML = '<option value="" disabled selected>District</option>';
 
     if (selectedProvince && nepalLocations[selectedProvince]) {
         districtSelect.disabled = false;
@@ -3390,6 +3496,7 @@ function updateRegAddress() {
     const provinceSelect = document.getElementById('reg-province');
     const districtSelect = document.getElementById('reg-district');
     const addressInput = document.getElementById('reg-address');
+    if (!addressInput) return;
     
     const province = provinceSelect.value;
     const district = districtSelect.value;
